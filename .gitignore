@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Kaggle credentials — NEVER commit your API key
+kaggle.json
+
+# Colab
+.config/
+sample_data/
+
+# Editor
+.vscode/
+.idea/
