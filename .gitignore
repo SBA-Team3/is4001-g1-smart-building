@@ -231,3 +231,5 @@ sample_data/
 # Editor
 .vscode/
 .idea/
+# Office lock files
+~$*
