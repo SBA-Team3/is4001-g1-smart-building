@@ -231,6 +231,8 @@ sample_data/
 # Editor
 .vscode/
 .idea/
+# Office lock files
+~$*
 # Dashboard build artefacts (regenerate with dashboard/build_cache.py)
 dashboard/cache/
 floor_5_Terence/cache/
