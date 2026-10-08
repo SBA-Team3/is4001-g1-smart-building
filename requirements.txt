@@ -3,3 +3,8 @@ numpy
 matplotlib
 jupyter
 nbformat
+scikit-learn
+statsmodels
+scipy
+streamlit
+altair
