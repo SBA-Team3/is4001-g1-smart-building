@@ -1,0 +1,1030 @@
+id,floor,zone,type,layer,start,end,excess_kwh,detail,thb,priority
+A0001,1,floor,consumption above baseline,statistical,2018-07-02 08:00:00,2018-07-02 17:00:00,870.902626460173,"9 h, peak z 5.1, workday",3657.791031132727,high
+A0002,7,floor,after-hours AC,rule,2019-07-27 07:00:00,2019-07-27 18:00:00,759.224853515625,11 h above 0.5 kWh/h on a weekend,3188.744384765625,high
+A0003,7,floor,after-hours AC,rule,2019-08-18 08:00:00,2019-08-18 17:00:00,709.92578125,9 h above 0.5 kWh/h on a weekend,2981.6882812500003,high
+A0004,7,floor,consumption above baseline,statistical,2019-05-21 17:00:00,2019-05-22 05:00:00,697.7623624982642,"12 h, peak z 11.0, workday",2930.60192249271,high
+A0005,7,floor,after-hours AC,rule,2019-07-20 08:00:00,2019-07-20 17:00:00,663.23828125,9 h above 0.5 kWh/h on a weekend,2785.60078125,high
+A0006,7,floor,consumption above baseline,statistical,2019-07-27 08:00:00,2019-07-27 17:00:00,660.615762948092,"9 h, peak z 16.2, weekend",2774.5862043819866,high
+A0007,7,floor,consumption above baseline,statistical,2019-05-04 07:00:00,2019-05-04 18:00:00,649.2877600952799,"11 h, peak z 14.1, weekend",2727.0085924001755,high
+A0008,7,floor,after-hours AC,rule,2019-05-04 07:00:00,2019-05-04 18:00:00,647.1691284179688,11 h above 0.5 kWh/h on a weekend,2718.110339355469,high
+A0009,7,floor,after-hours AC,rule,2019-06-29 08:00:00,2019-06-29 17:00:00,615.622314453125,9 h above 0.5 kWh/h on a weekend,2585.613720703125,high
+A0010,7,floor,after-hours AC,rule,2019-08-03 09:00:00,2019-08-03 18:00:00,605.4749755859375,9 h above 0.5 kWh/h on a weekend,2542.9948974609374,high
+A0011,1,floor,consumption above baseline,statistical,2018-08-17 01:00:00,2018-08-17 06:00:00,558.0193925730715,"5 h, peak z 4.1, workday",2343.6814488069003,high
+A0012,1,floor,consumption above baseline,statistical,2018-08-09 18:00:00,2018-08-09 23:00:00,555.4487572217549,"5 h, peak z 4.3, workday",2332.8847803313706,high
+A0013,7,floor,after-hours AC,rule,2019-07-13 07:00:00,2019-07-13 17:00:00,548.892333984375,10 h above 0.5 kWh/h on a weekend,2305.347802734375,high
+A0014,7,floor,after-hours AC,rule,2019-06-01 07:00:00,2019-06-01 17:00:00,526.3553466796875,10 h above 0.5 kWh/h on a weekend,2210.6924560546877,high
+A0015,2,floor,consumption above baseline,statistical,2018-07-07 07:00:00,2018-07-07 17:00:00,521.6815996021231,"10 h, peak z 16.5, weekend",2191.062718328917,high
+A0016,2,floor,after-hours AC,rule,2018-07-07 07:00:00,2018-07-07 17:00:00,491.0450134277344,10 h above 11.1 kWh/h on a weekend,2062.3890563964846,high
+A0017,2,floor,consumption above baseline,statistical,2018-07-21 07:00:00,2018-07-21 17:00:00,490.8799231649846,"10 h, peak z 14.0, weekend",2061.695677292935,high
+A0018,7,floor,consumption above baseline,statistical,2019-08-03 10:00:00,2019-08-03 17:00:00,482.69387545616985,"7 h, peak z 13.8, weekend",2027.3142769159135,high
+A0019,7,floor,consumption above baseline,statistical,2019-06-01 07:00:00,2019-06-01 17:00:00,468.88994222189734,"10 h, peak z 11.0, weekend",1969.337757331969,high
+A0020,7,floor,after-hours AC,rule,2019-08-31 07:00:00,2019-08-31 17:00:00,468.24700927734375,10 h above 0.5 kWh/h on a weekend,1966.6374389648438,high
+A0021,7,floor,consumption above baseline,statistical,2018-09-23 08:00:00,2018-09-23 17:00:00,464.7880982038503,"9 h, peak z 11.6, weekend",1952.1100124561715,high
+A0022,7,floor,after-hours AC,rule,2019-08-10 07:00:00,2019-08-10 17:00:00,449.41717529296875,10 h above 0.5 kWh/h on a weekend,1887.552136230469,high
+A0023,2,floor,after-hours AC,rule,2018-07-21 07:00:00,2018-07-21 17:00:00,446.4934997558594,10 h above 11.1 kWh/h on a weekend,1875.2726989746095,high
+A0024,7,floor,after-hours AC,rule,2019-07-06 07:00:00,2019-07-06 17:00:00,439.5851745605469,10 h above 0.5 kWh/h on a weekend,1846.257733154297,high
+A0025,7,floor,after-hours AC,rule,2019-09-07 07:00:00,2019-09-07 17:00:00,438.96136474609375,9 h above 0.5 kWh/h on a weekend,1843.6377319335938,high
+A0026,7,floor,after-hours AC,rule,2019-11-23 07:00:00,2019-11-23 18:00:00,431.5131530761719,10 h above 0.5 kWh/h on a weekend,1812.355242919922,high
+A0027,7,floor,after-hours AC,rule,2018-10-14 08:00:00,2018-10-14 18:00:00,420.39764404296875,10 h above 0.5 kWh/h on a weekend,1765.6701049804688,high
+A0028,7,floor,after-hours AC,rule,2018-09-23 08:00:00,2018-09-23 18:00:00,416.2576904296875,10 h above 0.5 kWh/h on a weekend,1748.2822998046877,high
+A0029,2,floor,after-hours AC,rule,2018-08-04 07:00:00,2018-08-04 17:00:00,413.7044982910156,10 h above 11.1 kWh/h on a weekend,1737.5588928222658,high
+A0030,2,floor,consumption above baseline,statistical,2018-08-04 07:00:00,2018-08-04 16:00:00,409.07849734404243,"9 h, peak z 12.3, weekend",1718.1296888449783,high
+A0031,7,floor,after-hours AC,rule,2018-11-17 08:00:00,2018-11-17 16:00:00,402.97216796875,8 h above 0.5 kWh/h on a weekend,1692.4831054687502,high
+A0032,7,floor,consumption above baseline,statistical,2019-05-05 10:00:00,2019-05-05 16:00:00,398.8064356004258,"6 h, peak z 12.5, weekend",1674.9870295217884,high
+A0033,7,floor,after-hours AC,rule,2019-05-05 10:00:00,2019-05-05 17:00:00,398.4154968261719,7 h above 0.5 kWh/h on a weekend,1673.345086669922,high
+A0034,7,floor,consumption above baseline,statistical,2019-07-13 08:00:00,2019-07-13 17:00:00,392.2220886890168,"9 h, peak z 10.3, weekend",1647.3327724938706,high
+A0035,7,floor,consumption above baseline,statistical,2018-08-19 08:00:00,2018-08-19 17:00:00,389.55388314322056,"9 h, peak z 8.8, weekend",1636.1263092015265,high
+A0036,7,floor,after-hours AC,rule,2018-07-07 07:00:00,2018-07-07 18:00:00,385.8700256347656,11 h above 0.5 kWh/h on a weekend,1620.6541076660158,high
+A0037,7,floor,after-hours AC,rule,2019-05-22 00:00:00,2019-05-22 21:00:00,384.0520324707031,9 h above 0.5 kWh/h on a workday,1613.0185363769533,high
+A0038,7,floor,consumption above baseline,statistical,2018-10-14 09:00:00,2018-10-14 17:00:00,383.4295115635581,"8 h, peak z 9.4, weekend",1610.403948566944,high
+A0039,7,floor,after-hours AC,rule,2019-05-21 18:00:00,2019-05-22 00:00:00,374.6864929199219,6 h above 0.5 kWh/h on a workday,1573.6832702636718,high
+A0040,7,floor,after-hours AC,rule,2018-08-04 07:00:00,2018-08-04 18:00:00,374.0588684082031,11 h above 0.5 kWh/h on a weekend,1571.0472473144532,high
+A0041,7,floor,after-hours AC,rule,2018-09-08 07:00:00,2018-09-08 19:00:00,363.2864990234375,12 h above 0.5 kWh/h on a weekend,1525.8032958984375,high
+A0042,7,floor,after-hours AC,rule,2018-08-19 07:00:00,2018-08-19 18:00:00,361.08819580078125,11 h above 0.5 kWh/h on a weekend,1516.5704223632813,high
+A0043,2,floor,after-hours AC,rule,2019-05-09 07:00:00,2019-05-09 17:00:00,353.80401611328125,7 h above 11.1 kWh/h on a holiday,1485.9768676757812,high
+A0044,7,floor,consumption above baseline,statistical,2019-07-20 13:00:00,2019-07-20 17:00:00,351.55318161642333,"4 h, peak z 17.0, weekend",1476.5233627889781,high
+A0045,7,floor,consumption above baseline,statistical,2019-08-18 13:00:00,2019-08-18 17:00:00,350.40165179471217,"4 h, peak z 16.8, weekend",1471.6869375377912,high
+A0046,7,floor,consumption above baseline,statistical,2019-07-06 08:00:00,2019-07-06 17:00:00,347.57946996470673,"9 h, peak z 7.9, weekend",1459.8337738517682,high
+A0047,7,floor,after-hours AC,rule,2018-09-15 09:00:00,2018-09-15 18:00:00,344.5899963378906,9 h above 0.5 kWh/h on a weekend,1447.2779846191406,high
+A0048,1,floor,consumption above baseline,statistical,2018-07-23 16:00:00,2018-07-23 19:00:00,343.00110087757116,"3 h, peak z 5.8, workday",1440.604623685799,high
+A0049,3,floor,after-hours AC,rule,2019-04-27 07:00:00,2019-04-27 17:00:00,334.06768798828125,9 h above 0.5 kWh/h on a weekend,1403.0842895507812,high
+A0050,7,floor,after-hours AC,rule,2019-10-05 09:00:00,2019-10-05 18:00:00,331.9923400878906,9 h above 0.5 kWh/h on a weekend,1394.3678283691406,high
+A0051,7,floor,after-hours AC,rule,2018-08-11 07:00:00,2018-08-11 16:00:00,324.91802978515625,9 h above 0.5 kWh/h on a weekend,1364.6557250976564,high
+A0052,2,floor,after-hours AC,rule,2019-06-15 07:00:00,2019-06-15 17:00:00,323.4460144042969,10 h above 11.1 kWh/h on a weekend,1358.473260498047,high
+A0053,7,floor,consumption above baseline,statistical,2018-10-07 11:00:00,2018-10-07 18:00:00,320.8500002873404,"7 h, peak z 10.4, weekend",1347.5700012068296,high
+A0054,7,floor,consumption above baseline,statistical,2019-08-18 08:00:00,2019-08-18 12:00:00,317.4726158824817,"4 h, peak z 17.5, weekend",1333.3849867064232,high
+A0055,7,floor,consumption above baseline,statistical,2019-05-02 17:00:00,2019-05-02 22:00:00,312.21383402051777,"5 h, peak z 13.9, workday",1311.2981028861748,high
+A0056,7,floor,after-hours AC,rule,2018-09-29 09:00:00,2018-09-29 17:00:00,309.56768798828125,8 h above 0.5 kWh/h on a weekend,1300.1842895507814,high
+A0057,7,floor,consumption above baseline,statistical,2019-06-29 13:00:00,2019-06-29 17:00:00,305.0830084608891,"4 h, peak z 14.3, weekend",1281.3486355357343,high
+A0058,2,floor,consumption above baseline,statistical,2018-09-08 08:00:00,2018-09-08 16:00:00,304.6010755303033,"8 h, peak z 11.0, weekend",1279.324517227274,high
+A0059,2,floor,consumption above baseline,statistical,2019-06-15 08:00:00,2019-06-15 17:00:00,303.5053603983298,"9 h, peak z 9.2, weekend",1274.7225136729853,high
+A0060,7,floor,after-hours AC,rule,2018-10-07 11:00:00,2018-10-07 18:00:00,295.6018371582031,7 h above 0.5 kWh/h on a weekend,1241.5277160644532,high
+A0061,2,floor,consumption above baseline,statistical,2019-06-16 08:00:00,2019-06-16 16:00:00,293.78338715948064,"8 h, peak z 10.6, weekend",1233.8902260698187,high
+A0062,7,floor,after-hours AC,rule,2018-09-01 09:00:00,2018-09-01 17:00:00,292.55816650390625,8 h above 0.5 kWh/h on a weekend,1228.7442993164063,high
+A0063,7,floor,consumption above baseline,statistical,2018-09-30 09:00:00,2018-09-30 17:00:00,292.3902689153267,"8 h, peak z 7.2, weekend",1228.0391294443723,high
+A0064,2,floor,after-hours AC,rule,2018-09-08 08:00:00,2018-09-08 16:00:00,291.396484375,8 h above 11.1 kWh/h on a weekend,1223.865234375,high
+A0065,7,floor,after-hours AC,rule,2018-10-06 08:00:00,2018-10-06 17:00:00,287.43133544921875,9 h above 0.5 kWh/h on a weekend,1207.2116088867188,high
+A0066,2,floor,consumption above baseline,statistical,2019-08-31 08:00:00,2019-08-31 17:00:00,285.88656621966027,"9 h, peak z 11.0, weekend",1200.7235781225731,high
+A0067,7,floor,after-hours AC,rule,2018-08-25 09:00:00,2018-08-25 17:00:00,285.42498779296875,7 h above 0.5 kWh/h on a weekend,1198.7849487304688,high
+A0068,2,floor,after-hours AC,rule,2019-08-31 08:00:00,2019-08-31 17:00:00,283.0655212402344,9 h above 11.1 kWh/h on a weekend,1188.8751892089845,high
+A0069,3,floor,consumption above baseline,statistical,2019-09-14 08:00:00,2019-09-14 16:00:00,280.1544343212819,"8 h, peak z 17.1, weekend",1176.648624149384,high
+A0070,7,floor,after-hours AC,rule,2018-09-22 09:00:00,2018-09-22 17:00:00,279.6513366699219,8 h above 0.5 kWh/h on a weekend,1174.5356140136719,high
+A0071,1,floor,consumption above baseline,statistical,2019-04-29 13:00:00,2019-04-29 16:00:00,278.4425631777344,"3 h, peak z 4.9, workday",1169.4587653464846,high
+A0072,2,floor,consumption above baseline,statistical,2019-07-29 08:00:00,2019-07-29 17:00:00,274.80448195983917,"9 h, peak z 8.3, holiday",1154.1788242313246,high
+A0073,7,floor,consumption above baseline,statistical,2018-09-16 09:00:00,2018-09-16 16:00:00,274.5715618016406,"7 h, peak z 9.4, weekend",1153.2005595668907,high
+A0074,7,floor,after-hours AC,rule,2018-09-30 09:00:00,2018-09-30 17:00:00,274.2864990234375,8 h above 0.5 kWh/h on a weekend,1152.0032958984375,high
+A0075,7,floor,after-hours AC,rule,2018-10-13 08:00:00,2018-10-13 18:00:00,274.169189453125,10 h above 0.5 kWh/h on a holiday,1151.510595703125,high
+A0076,3,floor,consumption above baseline,statistical,2018-09-08 10:00:00,2018-09-08 18:00:00,269.6137467544906,"8 h, peak z 9.1, weekend",1132.3777363688605,high
+A0077,3,floor,after-hours AC,rule,2018-09-08 10:00:00,2018-09-08 19:00:00,267.06182861328125,9 h above 0.5 kWh/h on a weekend,1121.6596801757812,high
+A0078,3,floor,consumption above baseline,statistical,2019-09-15 09:00:00,2019-09-15 16:00:00,265.03141363350346,"7 h, peak z 10.1, weekend",1113.1319372607145,high
+A0079,7,floor,after-hours AC,rule,2018-09-16 09:00:00,2018-09-16 16:00:00,262.9353332519531,7 h above 0.5 kWh/h on a weekend,1104.3283996582031,high
+A0080,7,floor,consumption above baseline,statistical,2019-05-09 07:00:00,2019-05-09 10:00:00,262.85768632482046,"3 h, peak z 21.1, holiday",1104.002282564246,high
+A0081,4,floor,after-hours AC,rule,2019-09-14 07:00:00,2019-09-14 18:00:00,261.9111633300781,11 h above 0.5 kWh/h on a weekend,1100.0268859863281,high
+A0082,2,floor,after-hours AC,rule,2019-07-29 08:00:00,2019-07-29 17:00:00,260.5296325683594,9 h above 11.1 kWh/h on a holiday,1094.2244567871094,high
+A0083,7,floor,consumption above baseline,statistical,2018-11-17 09:00:00,2018-11-17 16:00:00,258.4584142170392,"7 h, peak z 7.8, weekend",1085.5253397115648,high
+A0084,7,floor,after-hours AC,rule,2018-10-15 09:00:00,2018-10-15 18:00:00,257.44635009765625,9 h above 0.5 kWh/h on a holiday,1081.2746704101562,high
+A0085,2,floor,consumption above baseline,statistical,2019-09-29 09:00:00,2019-09-29 17:00:00,255.99894926167948,"8 h, peak z 9.6, weekend",1075.195586899054,high
+A0086,7,floor,consumption above baseline,statistical,2019-11-23 11:00:00,2019-11-23 18:00:00,255.6539644954185,"7 h, peak z 9.0, weekend",1073.7466508807577,high
+A0087,7,floor,consumption above baseline,statistical,2018-09-15 09:00:00,2018-09-15 17:00:00,253.49970886874166,"8 h, peak z 6.6, weekend",1064.698777248715,high
+A0088,1,floor,consumption above baseline,statistical,2018-08-12 11:00:00,2018-08-12 14:00:00,251.1518809133919,"3 h, peak z 4.1, holiday_worked",1054.837899836246,high
+A0089,2,floor,after-hours AC,rule,2019-06-16 08:00:00,2019-06-16 17:00:00,250.70018005371094,9 h above 11.1 kWh/h on a weekend,1052.940756225586,high
+A0090,7,floor,consumption above baseline,statistical,2019-04-22 17:00:00,2019-04-22 21:00:00,249.07360105888083,"4 h, peak z 12.3, workday",1046.1091244472996,high
+A0091,7,floor,after-hours AC,rule,2019-05-09 07:00:00,2019-05-09 17:00:00,246.89932250976562,8 h above 0.5 kWh/h on a holiday,1036.9771545410156,high
+A0092,2,floor,consumption above baseline,statistical,2019-07-21 09:00:00,2019-07-21 16:00:00,243.6157646668367,"7 h, peak z 9.6, weekend",1023.1862116007142,high
+A0093,7,floor,after-hours AC,rule,2019-05-18 08:00:00,2019-05-18 17:00:00,242.74517822265625,8 h above 0.5 kWh/h on a holiday,1019.5297485351563,high
+A0094,2,floor,after-hours AC,rule,2018-07-14 07:00:00,2018-07-14 13:00:00,240.97950744628906,6 h above 11.1 kWh/h on a weekend,1012.1139312744141,high
+A0095,7,floor,after-hours AC,rule,2018-07-22 08:00:00,2018-07-22 17:00:00,237.92050170898438,9 h above 0.5 kWh/h on a weekend,999.2661071777344,medium
+A0096,2,floor,after-hours AC,rule,2019-09-14 00:00:00,2019-09-14 11:00:00,237.36016845703125,11 h above 11.1 kWh/h on a weekend,996.9127075195313,medium
+A0097,7,floor,after-hours AC,rule,2019-05-02 18:00:00,2019-05-02 22:00:00,236.4169921875,4 h above 0.5 kWh/h on a workday,992.9513671875001,medium
+A0098,2,floor,consumption above baseline,statistical,2018-07-12 17:00:00,2018-07-13 06:00:00,236.35818578722362,"13 h, peak z 8.1, workday",992.7043803063392,medium
+A0099,1,floor,consumption above baseline,statistical,2018-10-15 09:00:00,2018-10-15 12:00:00,236.18212527557978,"3 h, peak z 3.8, holiday_worked",991.9649261574351,medium
+A0100,2,floor,after-hours AC,rule,2019-07-20 08:00:00,2019-07-20 17:00:00,235.17666625976562,9 h above 11.1 kWh/h on a weekend,987.7419982910156,medium
+A0101,2,floor,consumption above baseline,statistical,2019-07-14 08:00:00,2019-07-14 17:00:00,235.17254472775141,"9 h, peak z 7.7, weekend",987.724687856556,medium
+A0102,3,floor,after-hours AC,rule,2019-09-14 07:00:00,2019-09-14 17:00:00,233.78018188476562,10 h above 0.5 kWh/h on a weekend,981.8767639160156,medium
+A0103,2,floor,consumption above baseline,statistical,2019-07-28 08:00:00,2019-07-28 16:00:00,231.88404456448674,"8 h, peak z 8.2, holiday",973.9129871708444,medium
+A0104,5,floor,after-hours AC,rule,2019-09-14 07:00:00,2019-09-14 18:00:00,230.67564392089844,11 h above 0.5 kWh/h on a weekend,968.8377044677735,medium
+A0105,7,floor,consumption above baseline,statistical,2019-05-14 17:00:00,2019-05-14 23:00:00,230.0436664266974,"6 h, peak z 8.4, workday",966.1833989921291,medium
+A0106,2,floor,after-hours AC,rule,2019-07-14 08:00:00,2019-07-14 17:00:00,229.9983367919922,9 h above 11.1 kWh/h on a weekend,965.9930145263672,medium
+A0107,7,floor,consumption above baseline,statistical,2019-05-15 17:00:00,2019-05-15 22:00:00,229.9671475060129,"5 h, peak z 9.2, workday",965.8620195252543,medium
+A0108,2,floor,consumption above baseline,statistical,2019-09-22 08:00:00,2019-09-22 17:00:00,229.39048349655857,"9 h, peak z 7.5, weekend",963.440030685546,medium
+A0109,2,floor,after-hours AC,rule,2019-09-29 08:00:00,2019-09-29 17:00:00,229.25851440429688,9 h above 11.1 kWh/h on a weekend,962.8857604980469,medium
+A0110,7,floor,after-hours AC,rule,2018-10-27 08:00:00,2018-10-27 17:00:00,229.18634033203125,8 h above 0.5 kWh/h on a weekend,962.5826293945313,medium
+A0111,2,floor,after-hours AC,rule,2019-07-21 08:00:00,2019-07-21 17:00:00,229.05284118652344,9 h above 11.1 kWh/h on a weekend,962.0219329833985,medium
+A0112,2,floor,consumption above baseline,statistical,2018-09-22 07:00:00,2018-09-22 16:00:00,228.43305813859047,"9 h, peak z 8.1, weekend",959.41884418208,medium
+A0113,7,floor,after-hours AC,rule,2019-09-21 07:00:00,2019-09-21 15:00:00,228.30982971191406,7 h above 0.5 kWh/h on a weekend,958.9012847900391,medium
+A0114,2,floor,consumption above baseline,statistical,2018-07-14 08:00:00,2018-07-14 12:00:00,227.7684989550225,"4 h, peak z 16.3, weekend",956.6276956110945,medium
+A0115,2,floor,after-hours AC,rule,2019-07-13 08:00:00,2019-07-13 17:00:00,224.81365966796875,9 h above 11.1 kWh/h on a weekend,944.2173706054688,medium
+A0116,2,floor,after-hours AC,rule,2019-07-28 08:00:00,2019-07-28 16:00:00,224.12582397460938,8 h above 11.1 kWh/h on a holiday,941.3284606933594,medium
+A0117,2,floor,consumption above baseline,statistical,2019-07-20 09:00:00,2019-07-20 17:00:00,223.70531278451762,"8 h, peak z 7.6, weekend",939.562313694974,medium
+A0118,7,floor,after-hours AC,rule,2019-04-20 09:00:00,2019-04-20 17:00:00,220.6721649169922,7 h above 0.5 kWh/h on a weekend,926.8230926513672,medium
+A0119,7,floor,consumption above baseline,statistical,2018-10-15 10:00:00,2018-10-15 17:00:00,216.91297762008358,"7 h, peak z 5.9, holiday",911.0345060043511,medium
+A0120,2,floor,consumption above baseline,statistical,2019-05-09 07:00:00,2019-05-09 10:00:00,216.91214351818005,"3 h, peak z 18.5, holiday",911.0310027763562,medium
+A0121,4,floor,after-hours AC,rule,2019-05-04 07:00:00,2019-05-04 18:00:00,216.84933471679688,11 h above 0.5 kWh/h on a weekend,910.7672058105469,medium
+A0122,7,floor,consumption above baseline,statistical,2018-08-11 09:00:00,2018-08-11 15:00:00,216.78684123753246,"6 h, peak z 7.5, weekend",910.5047331976364,medium
+A0123,2,floor,after-hours AC,rule,2019-10-27 08:00:00,2019-10-27 17:00:00,216.72683715820312,9 h above 11.1 kWh/h on a weekend,910.2527160644531,medium
+A0124,2,floor,after-hours AC,rule,2019-09-07 00:00:00,2019-09-07 17:00:00,216.24334716796875,11 h above 11.1 kWh/h on a weekend,908.2220581054688,medium
+A0125,1,floor,consumption above baseline,statistical,2018-10-28 18:00:00,2018-10-28 20:00:00,215.9155909640901,"2 h, peak z 4.0, weekend",906.8454820491784,medium
+A0126,3,floor,after-hours AC,rule,2019-09-15 09:00:00,2019-09-15 17:00:00,215.68348693847656,8 h above 0.5 kWh/h on a weekend,905.8706451416016,medium
+A0127,7,floor,after-hours AC,rule,2019-11-09 10:00:00,2019-11-09 17:00:00,214.30418395996094,7 h above 0.5 kWh/h on a weekend,900.077572631836,medium
+A0128,2,floor,consumption above baseline,statistical,2019-10-27 09:00:00,2019-10-27 17:00:00,213.38474263636263,"8 h, peak z 7.1, weekend",896.2159190727231,medium
+A0129,2,floor,consumption above baseline,statistical,2019-09-13 18:00:00,2019-09-14 06:00:00,212.70994400035033,"12 h, peak z 5.4, workday",893.3817648014715,medium
+A0130,2,floor,after-hours AC,rule,2019-09-28 08:00:00,2019-09-28 16:00:00,212.1899871826172,8 h above 11.1 kWh/h on a weekend,891.1979461669922,medium
+A0131,7,floor,consumption above baseline,statistical,2018-09-08 11:00:00,2018-09-08 18:00:00,211.59341405609047,"7 h, peak z 6.6, weekend",888.69233903558,medium
+A0132,7,floor,consumption above baseline,statistical,2019-04-17 17:00:00,2019-04-17 20:00:00,209.09729714860384,"3 h, peak z 13.5, workday",878.2086480241362,medium
+A0133,7,floor,after-hours AC,rule,2019-05-14 18:00:00,2019-05-14 23:00:00,208.88099670410156,5 h above 0.5 kWh/h on a workday,877.3001861572266,medium
+A0134,7,floor,consumption above baseline,statistical,2019-07-20 09:00:00,2019-07-20 12:00:00,208.46679078540666,"3 h, peak z 16.7, weekend",875.560521298708,medium
+A0135,7,floor,consumption above baseline,statistical,2018-08-04 09:00:00,2018-08-04 16:00:00,207.99090271822615,"7 h, peak z 6.7, weekend",873.5617914165499,medium
+A0136,7,floor,after-hours AC,rule,2018-08-05 09:00:00,2018-08-05 17:00:00,206.50399780273438,7 h above 0.5 kWh/h on a weekend,867.3167907714844,medium
+A0137,2,floor,consumption above baseline,statistical,2018-08-11 08:00:00,2018-08-11 16:00:00,204.54998946056924,"8 h, peak z 7.0, weekend",859.1099557343908,medium
+A0138,7,floor,consumption above baseline,statistical,2019-05-31 17:00:00,2019-05-31 21:00:00,203.9129737574894,"4 h, peak z 10.9, workday",856.4344897814555,medium
+A0139,7,floor,after-hours AC,rule,2019-04-22 18:00:00,2019-04-22 22:00:00,200.92483520507812,4 h above 0.5 kWh/h on a workday,843.8843078613281,medium
+A0140,5,floor,consumption above baseline,statistical,2019-09-14 08:00:00,2019-09-14 12:00:00,199.8059210804345,"4 h, peak z 18.0, weekend",839.184868537825,medium
+A0141,2,floor,after-hours AC,rule,2019-08-24 08:00:00,2019-08-24 17:00:00,199.3681640625,9 h above 11.1 kWh/h on a weekend,837.3462890625001,medium
+A0142,4,floor,after-hours AC,rule,2019-04-20 08:00:00,2019-04-20 17:00:00,198.71400451660156,8 h above 0.5 kWh/h on a weekend,834.5988189697266,medium
+A0143,2,floor,consumption above baseline,statistical,2019-09-28 08:00:00,2019-09-28 16:00:00,198.69861271493275,"8 h, peak z 7.2, weekend",834.5341734027176,medium
+A0144,7,floor,consumption above baseline,statistical,2019-04-10 17:00:00,2019-04-10 20:00:00,197.92856678664447,"3 h, peak z 12.9, workday",831.2999805039068,medium
+A0145,7,floor,consumption above baseline,statistical,2019-04-11 17:00:00,2019-04-11 20:00:00,197.53115292262683,"3 h, peak z 12.6, workday",829.6308422750327,medium
+A0146,2,floor,consumption above baseline,statistical,2019-09-07 08:00:00,2019-09-07 17:00:00,195.5752492917121,"9 h, peak z 6.8, weekend",821.4160470251909,medium
+A0147,2,floor,after-hours AC,rule,2018-09-22 07:00:00,2018-09-22 16:00:00,194.99600219726562,9 h above 11.1 kWh/h on a weekend,818.9832092285156,medium
+A0148,2,floor,consumption above baseline,statistical,2019-07-13 08:00:00,2019-07-13 17:00:00,194.2646282655494,"9 h, peak z 6.2, weekend",815.9114387153074,medium
+A0149,7,floor,after-hours AC,rule,2019-05-15 18:00:00,2019-05-15 22:00:00,193.6333465576172,4 h above 0.5 kWh/h on a workday,813.2600555419922,medium
+A0150,2,floor,consumption above baseline,statistical,2019-07-06 08:00:00,2019-07-06 17:00:00,193.57170917205693,"9 h, peak z 6.0, weekend",813.0011785226392,medium
+A0151,7,floor,consumption above baseline,statistical,2019-05-01 17:00:00,2019-05-01 20:00:00,193.0895725473933,"3 h, peak z 13.5, holiday_worked",810.9762046990519,medium
+A0152,2,floor,consumption above baseline,statistical,2018-09-01 08:00:00,2018-09-01 16:00:00,192.78598350436613,"8 h, peak z 6.6, weekend",809.7011307183378,medium
+A0153,7,floor,consumption above baseline,statistical,2019-04-24 17:00:00,2019-04-24 20:00:00,191.34208711128448,"3 h, peak z 13.6, workday",803.6367658673948,medium
+A0154,2,floor,after-hours AC,rule,2018-08-11 08:00:00,2018-08-11 16:00:00,191.1026611328125,8 h above 11.1 kWh/h on a weekend,802.6311767578126,medium
+A0155,7,floor,consumption above baseline,statistical,2019-05-03 17:00:00,2019-05-03 20:00:00,188.84551030294452,"3 h, peak z 13.2, workday",793.151143272367,medium
+A0156,7,floor,consumption above baseline,statistical,2018-09-01 10:00:00,2018-09-01 16:00:00,188.58381836381324,"6 h, peak z 6.6, weekend",792.0520371280156,medium
+A0157,2,floor,consumption above baseline,statistical,2018-09-15 08:00:00,2018-09-15 16:00:00,188.48905294582931,"8 h, peak z 7.8, weekend",791.6540223724832,medium
+A0158,2,floor,consumption above baseline,statistical,2019-08-24 08:00:00,2019-08-24 17:00:00,188.1066218199598,"9 h, peak z 6.1, weekend",790.0478116438312,medium
+A0159,7,floor,consumption above baseline,statistical,2019-09-07 13:00:00,2019-09-07 17:00:00,186.8604682301492,"4 h, peak z 8.9, weekend",784.8139665666266,medium
+A0160,3,floor,consumption above baseline,statistical,2019-05-09 07:00:00,2019-05-09 10:00:00,186.60980603292012,"3 h, peak z 22.4, holiday",783.7611853382646,medium
+A0161,7,floor,consumption above baseline,statistical,2019-08-31 08:00:00,2019-08-31 12:00:00,186.56800940398506,"4 h, peak z 11.5, weekend",783.5856394967373,medium
+A0162,3,floor,after-hours AC,rule,2019-05-09 07:00:00,2019-05-09 10:00:00,186.00750732421875,3 h above 0.5 kWh/h on a holiday,781.2315307617188,medium
+A0163,2,floor,consumption above baseline,statistical,2019-09-01 08:00:00,2019-09-01 16:00:00,184.45620739278513,"8 h, peak z 6.5, weekend",774.7160710496976,medium
+A0164,4,floor,consumption above baseline,statistical,2019-05-04 08:00:00,2019-05-04 17:00:00,184.1723147181892,"9 h, peak z 6.2, weekend",773.5237218163946,medium
+A0165,7,floor,after-hours AC,rule,2018-09-09 08:00:00,2018-09-09 17:00:00,183.703857421875,9 h above 0.5 kWh/h on a weekend,771.556201171875,medium
+A0166,4,floor,after-hours AC,rule,2019-07-27 07:00:00,2019-07-27 17:00:00,183.56784057617188,10 h above 0.5 kWh/h on a weekend,770.9849304199219,medium
+A0167,4,floor,after-hours AC,rule,2018-07-21 07:00:00,2018-07-21 18:00:00,182.25257873535156,10 h above 0.5 kWh/h on a weekend,765.4608306884766,medium
+A0168,7,floor,after-hours AC,rule,2018-07-11 18:00:00,2018-07-11 22:00:00,181.40333557128906,4 h above 0.5 kWh/h on a workday,761.8940093994141,medium
+A0169,2,floor,after-hours AC,rule,2018-09-01 07:00:00,2018-09-01 16:00:00,180.9536590576172,9 h above 11.1 kWh/h on a weekend,760.0053680419923,medium
+A0170,6,floor,after-hours AC,rule,2019-05-20 07:00:00,2019-05-20 17:00:00,180.4294891357422,9 h above 0.5 kWh/h on a holiday,757.8038543701172,medium
+A0171,7,floor,consumption above baseline,statistical,2019-04-09 17:00:00,2019-04-09 20:00:00,178.84287133629456,"3 h, peak z 11.9, workday",751.1400596124372,medium
+A0172,2,floor,after-hours AC,rule,2019-07-06 08:00:00,2019-07-06 17:00:00,178.61276245117188,9 h above 11.1 kWh/h on a weekend,750.1736022949219,medium
+A0173,7,floor,consumption above baseline,statistical,2018-09-29 10:00:00,2018-09-29 16:00:00,178.53675412393108,"6 h, peak z 6.8, weekend",749.8543673205105,medium
+A0174,4,floor,after-hours AC,rule,2019-05-09 07:00:00,2019-05-09 10:00:00,177.986328125,3 h above 0.5 kWh/h on a holiday,747.542578125,medium
+A0175,2,floor,after-hours AC,rule,2019-08-03 07:00:00,2019-08-03 16:00:00,177.84832763671875,9 h above 11.1 kWh/h on a weekend,746.9629760742188,medium
+A0176,4,floor,after-hours AC,rule,2018-07-07 07:00:00,2018-07-07 17:00:00,176.89633178710938,9 h above 0.5 kWh/h on a weekend,742.9645935058594,medium
+A0177,4,floor,after-hours AC,rule,2019-05-25 07:00:00,2019-05-25 17:00:00,176.4911651611328,9 h above 0.5 kWh/h on a weekend,741.2628936767578,medium
+A0178,5,floor,after-hours AC,rule,2019-05-09 07:00:00,2019-05-09 10:00:00,175.80181884765625,3 h above 0.5 kWh/h on a holiday,738.3676391601563,medium
+A0179,7,floor,consumption above baseline,statistical,2019-04-03 17:00:00,2019-04-03 20:00:00,175.45433835949171,"3 h, peak z 10.7, workday",736.9082211098653,medium
+A0180,5,floor,consumption above baseline,statistical,2019-05-09 07:00:00,2019-05-09 10:00:00,174.20093635202167,"3 h, peak z 21.9, holiday",731.6439326784911,medium
+A0181,6,floor,after-hours AC,rule,2019-04-27 07:00:00,2019-04-27 17:00:00,172.70233154296875,9 h above 0.5 kWh/h on a weekend,725.3497924804688,medium
+A0182,4,floor,consumption above baseline,statistical,2019-05-09 07:00:00,2019-05-09 10:00:00,172.04470707342693,"3 h, peak z 22.6, holiday",722.5877697083931,medium
+A0183,2,floor,after-hours AC,rule,2019-09-01 08:00:00,2019-09-01 17:00:00,171.83865356445312,9 h above 11.1 kWh/h on a weekend,721.7223449707031,medium
+A0184,2,floor,consumption above baseline,statistical,2019-07-07 09:00:00,2019-07-07 16:00:00,169.90225791644986,"7 h, peak z 6.7, weekend",713.5894832490894,medium
+A0185,2,floor,after-hours AC,rule,2019-09-22 08:00:00,2019-09-22 17:00:00,169.3843231201172,9 h above 11.1 kWh/h on a weekend,711.4141571044922,medium
+A0186,7,floor,after-hours AC,rule,2019-05-31 18:00:00,2019-05-31 22:00:00,168.55734252929688,4 h above 0.5 kWh/h on a workday,707.940838623047,medium
+A0187,7,floor,consumption above baseline,statistical,2019-04-01 17:00:00,2019-04-01 20:00:00,167.41387473799483,"3 h, peak z 10.8, workday",703.1382738995783,medium
+A0188,1,floor,consumption above baseline,statistical,2019-05-01 14:00:00,2019-05-01 16:00:00,167.14338788924647,"2 h, peak z 4.1, holiday_worked",702.0022291348351,medium
+A0189,4,floor,after-hours AC,rule,2019-07-20 08:00:00,2019-07-20 17:00:00,166.8213348388672,9 h above 0.5 kWh/h on a weekend,700.6496063232422,medium
+A0190,7,floor,consumption above baseline,statistical,2018-09-09 12:00:00,2018-09-09 16:00:00,166.44366772352072,"4 h, peak z 9.6, weekend",699.0634044387871,medium
+A0191,2,floor,after-hours AC,rule,2019-09-21 08:00:00,2019-09-21 17:00:00,166.30117797851562,9 h above 11.1 kWh/h on a weekend,698.4649475097657,medium
+A0192,7,floor,consumption above baseline,statistical,2019-06-29 08:00:00,2019-06-29 12:00:00,165.7047088040191,"4 h, peak z 10.0, weekend",695.9597769768802,medium
+A0193,2,floor,after-hours AC,rule,2018-07-13 00:00:00,2018-07-13 20:00:00,164.638671875,9 h above 11.1 kWh/h on a workday,691.482421875,medium
+A0194,4,floor,consumption above baseline,statistical,2019-08-24 09:00:00,2019-08-24 16:00:00,164.30284093702366,"7 h, peak z 6.8, weekend",690.0719319354994,medium
+A0195,7,floor,consumption above baseline,statistical,2018-07-07 09:00:00,2018-07-07 15:00:00,164.14150303063838,"6 h, peak z 6.0, weekend",689.3943127286813,medium
+A0196,6,floor,after-hours AC,rule,2019-05-09 07:00:00,2019-05-09 15:00:00,163.40882873535156,5 h above 0.5 kWh/h on a holiday,686.3170806884766,medium
+A0197,2,floor,after-hours AC,rule,2018-09-15 08:00:00,2018-09-15 16:00:00,162.55416870117188,8 h above 11.1 kWh/h on a weekend,682.7275085449219,medium
+A0198,2,floor,after-hours AC,rule,2019-06-08 08:00:00,2019-06-08 17:00:00,162.47349548339844,9 h above 11.1 kWh/h on a weekend,682.3886810302735,medium
+A0199,4,floor,consumption above baseline,statistical,2019-09-14 08:00:00,2019-09-14 11:00:00,162.3166193294446,"3 h, peak z 16.2, weekend",681.7298011836673,medium
+A0200,2,floor,consumption above baseline,statistical,2019-09-21 08:00:00,2019-09-21 16:00:00,162.29813538799272,"8 h, peak z 5.9, weekend",681.6521686295695,medium
+A0201,7,floor,consumption above baseline,statistical,2019-05-07 17:00:00,2019-05-07 20:00:00,162.00087782594107,"3 h, peak z 11.3, workday",680.4036868689525,medium
+A0202,4,floor,after-hours AC,rule,2019-08-24 08:00:00,2019-08-24 17:00:00,161.9746551513672,9 h above 0.5 kWh/h on a weekend,680.2935516357422,medium
+A0203,7,floor,consumption above baseline,statistical,2019-08-10 13:00:00,2019-08-10 17:00:00,161.31750493954925,"4 h, peak z 7.4, weekend",677.5335207461069,medium
+A0204,5,floor,consumption above baseline,statistical,2018-08-17 13:00:00,2018-08-17 17:00:00,160.53129100407048,"4 h, peak z 13.2, closure",674.2314222170961,medium
+A0205,4,floor,after-hours AC,rule,2018-07-01 00:00:00,2018-07-01 18:00:00,159.9881591796875,18 h above 0.5 kWh/h on a weekend,671.9502685546876,medium
+A0206,7,floor,consumption above baseline,statistical,2019-04-30 17:00:00,2019-04-30 20:00:00,158.0878728628719,"3 h, peak z 11.8, workday",663.969066024062,medium
+A0207,7,floor,after-hours AC,rule,2019-08-24 11:00:00,2019-08-24 17:00:00,157.70367431640625,6 h above 0.5 kWh/h on a weekend,662.3554321289063,medium
+A0208,7,floor,consumption above baseline,statistical,2019-04-29 17:00:00,2019-04-29 20:00:00,157.6664235717604,"3 h, peak z 11.3, workday",662.1989790013937,medium
+A0209,7,floor,consumption above baseline,statistical,2019-09-07 08:00:00,2019-09-07 12:00:00,156.72300793661412,"4 h, peak z 8.3, weekend",658.2366333337793,medium
+A0210,4,floor,consumption above baseline,statistical,2019-07-27 08:00:00,2019-07-27 17:00:00,156.61372316742327,"9 h, peak z 4.7, weekend",657.7776373031778,medium
+A0211,7,floor,consumption above baseline,statistical,2019-04-26 17:00:00,2019-04-26 20:00:00,155.81629765997874,"3 h, peak z 10.1, workday",654.4284501719108,medium
+A0212,3,floor,after-hours AC,rule,2019-09-21 08:00:00,2019-09-21 17:00:00,155.17466735839844,8 h above 0.5 kWh/h on a weekend,651.7336029052734,medium
+A0213,6,floor,consumption above baseline,statistical,2019-05-09 07:00:00,2019-05-09 10:00:00,155.15448963234888,"3 h, peak z 19.8, holiday",651.6488564558654,medium
+A0214,7,floor,after-hours AC,rule,2018-07-21 11:00:00,2018-07-21 17:00:00,155.0921630859375,6 h above 0.5 kWh/h on a weekend,651.3870849609375,medium
+A0215,2,floor,after-hours AC,rule,2018-12-29 07:00:00,2018-12-29 16:00:00,154.5818328857422,9 h above 11.1 kWh/h on a weekend,649.2436981201172,medium
+A0216,5,floor,after-hours AC,rule,2018-08-17 13:00:00,2018-08-17 17:00:00,154.4268341064453,4 h above 0.5 kWh/h on a closure,648.5927032470703,medium
+A0217,7,floor,after-hours AC,rule,2018-07-05 18:00:00,2018-07-05 21:00:00,152.89566040039062,3 h above 0.5 kWh/h on a workday,642.1617736816406,medium
+A0218,4,floor,after-hours AC,rule,2018-07-14 08:00:00,2018-07-14 17:00:00,151.6929931640625,9 h above 0.5 kWh/h on a weekend,637.1105712890625,medium
+A0219,7,floor,consumption above baseline,statistical,2019-05-28 17:00:00,2019-05-28 20:00:00,151.17093605292348,"3 h, peak z 10.5, workday",634.9179314222787,medium
+A0220,7,floor,consumption above baseline,statistical,2018-07-11 18:00:00,2018-07-11 21:00:00,150.70016955328498,"3 h, peak z 9.7, workday",632.940712123797,medium
+A0221,2,floor,after-hours AC,rule,2019-07-07 08:00:00,2019-07-07 16:00:00,150.66934204101562,8 h above 11.1 kWh/h on a weekend,632.8112365722657,medium
+A0222,3,floor,consumption above baseline,statistical,2019-04-27 08:00:00,2019-04-27 12:00:00,149.30397823722586,"4 h, peak z 11.4, weekend",627.0767085963487,medium
+A0223,7,floor,consumption above baseline,statistical,2019-05-16 17:00:00,2019-05-16 20:00:00,147.7930980793518,"3 h, peak z 9.8, workday",620.7310119332776,medium
+A0224,2,floor,consumption above baseline,statistical,2018-07-10 17:00:00,2018-07-10 20:00:00,146.72236043261276,"3 h, peak z 13.0, workday",616.2339138169737,medium
+A0225,4,floor,after-hours AC,rule,2019-09-07 07:00:00,2019-09-07 17:00:00,146.38150024414062,9 h above 0.5 kWh/h on a weekend,614.8023010253906,medium
+A0226,3,floor,consumption above baseline,statistical,2019-04-27 13:00:00,2019-04-27 17:00:00,146.1429739156983,"4 h, peak z 10.6, weekend",613.8004904459328,medium
+A0227,7,floor,consumption above baseline,statistical,2019-08-10 08:00:00,2019-08-10 12:00:00,145.6079851581427,"4 h, peak z 8.7, weekend",611.5535376641993,medium
+A0228,7,floor,consumption above baseline,statistical,2019-05-24 17:00:00,2019-05-24 20:00:00,143.54402325357233,"3 h, peak z 9.4, workday",602.8848976650038,medium
+A0229,2,floor,consumption above baseline,statistical,2018-07-13 17:00:00,2018-07-13 20:00:00,142.00657254033933,"3 h, peak z 12.5, workday",596.4276046694252,medium
+A0230,7,floor,consumption above baseline,statistical,2019-05-27 17:00:00,2019-05-27 20:00:00,141.96920286549042,"3 h, peak z 10.5, workday",596.2706520350598,medium
+A0231,7,floor,after-hours AC,rule,2019-04-30 18:00:00,2019-04-30 21:00:00,141.3001708984375,3 h above 0.5 kWh/h on a workday,593.4607177734375,medium
+A0232,2,floor,consumption above baseline,statistical,2019-05-09 13:00:00,2019-05-09 17:00:00,141.21060557695478,"4 h, peak z 11.8, holiday",593.0845434232101,medium
+A0233,7,floor,consumption above baseline,statistical,2018-07-22 13:00:00,2018-07-22 17:00:00,140.9518346801649,"4 h, peak z 6.9, weekend",591.9977056566926,medium
+A0234,7,floor,after-hours AC,rule,2019-04-10 18:00:00,2019-04-10 21:00:00,140.70750427246094,3 h above 0.5 kWh/h on a workday,590.9715179443359,medium
+A0235,7,floor,consumption above baseline,statistical,2019-08-31 13:00:00,2019-08-31 17:00:00,139.69532811443753,"4 h, peak z 7.9, weekend",586.7203780806376,medium
+A0236,7,floor,after-hours AC,rule,2018-10-20 12:00:00,2018-10-20 18:00:00,139.6566619873047,6 h above 0.5 kWh/h on a weekend,586.5579803466798,medium
+A0237,2,floor,consumption above baseline,statistical,2018-07-06 17:00:00,2018-07-06 20:00:00,138.97466574553349,"3 h, peak z 12.3, workday",583.6935961312406,medium
+A0238,2,floor,consumption above baseline,statistical,2018-07-20 17:00:00,2018-07-20 20:00:00,138.68586843969274,"3 h, peak z 12.2, workday",582.4806474467096,medium
+A0239,2,floor,consumption above baseline,statistical,2018-07-09 17:00:00,2018-07-09 20:00:00,138.53339728172057,"3 h, peak z 11.8, workday",581.8402685832264,medium
+A0240,7,floor,consumption above baseline,statistical,2019-05-23 17:00:00,2019-05-23 20:00:00,137.2013998743919,"3 h, peak z 10.2, workday",576.2458794724461,medium
+A0241,2,floor,consumption above baseline,statistical,2018-07-18 17:00:00,2018-07-18 20:00:00,136.8497643839881,"3 h, peak z 12.2, workday",574.76901041275,medium
+A0242,7,floor,consumption above baseline,statistical,2019-04-19 17:00:00,2019-04-19 21:00:00,136.8465637216749,"4 h, peak z 8.1, workday",574.7555676310346,medium
+A0243,7,floor,consumption above baseline,statistical,2018-08-05 13:00:00,2018-08-05 17:00:00,135.46170360780678,"4 h, peak z 6.4, weekend",568.9391551527885,medium
+A0244,7,floor,after-hours AC,rule,2019-04-11 18:00:00,2019-04-11 21:00:00,133.59384155273438,3 h above 0.5 kWh/h on a workday,561.0941345214844,medium
+A0245,7,floor,consumption above baseline,statistical,2019-04-25 17:00:00,2019-04-25 21:00:00,131.70675270859704,"4 h, peak z 6.7, workday",553.1683613761076,medium
+A0246,2,floor,consumption above baseline,statistical,2018-07-24 17:00:00,2018-07-24 20:00:00,131.66132120287813,"3 h, peak z 11.1, workday",552.9775490520882,medium
+A0247,6,floor,consumption above baseline,statistical,2019-05-20 08:00:00,2019-05-20 12:00:00,131.4520566483413,"4 h, peak z 9.4, holiday",552.0986379230335,medium
+A0248,4,floor,consumption above baseline,statistical,2019-05-21 08:00:00,2019-05-21 12:00:00,130.3781431671744,"4 h, peak z 5.3, workday",547.5882013021325,medium
+A0249,6,floor,after-hours AC,rule,2018-08-04 09:00:00,2018-08-04 18:00:00,129.87632751464844,9 h above 0.5 kWh/h on a weekend,545.4805755615234,medium
+A0250,7,floor,after-hours AC,rule,2019-04-17 18:00:00,2019-04-17 21:00:00,129.85366821289062,3 h above 0.5 kWh/h on a workday,545.3854064941406,medium
+A0251,7,floor,consumption above baseline,statistical,2018-07-03 17:00:00,2018-07-03 20:00:00,129.10230156752817,"3 h, peak z 9.1, workday",542.2296665836184,medium
+A0252,4,floor,after-hours AC,rule,2019-06-01 07:00:00,2019-06-01 19:00:00,128.57017517089844,12 h above 0.5 kWh/h on a weekend,539.9947357177734,medium
+A0253,6,floor,consumption above baseline,statistical,2018-08-04 10:00:00,2018-08-04 17:00:00,128.55337359022286,"7 h, peak z 6.4, weekend",539.9241690789361,medium
+A0254,2,floor,consumption above baseline,statistical,2018-07-26 17:00:00,2018-07-26 20:00:00,128.06236290908726,"3 h, peak z 11.4, workday",537.8619242181665,medium
+A0255,7,floor,consumption above baseline,statistical,2018-07-05 18:00:00,2018-07-05 20:00:00,127.89698343692216,"2 h, peak z 11.7, workday",537.167330435073,medium
+A0256,2,floor,consumption above baseline,statistical,2018-08-16 17:00:00,2018-08-16 20:00:00,127.25312386535336,"3 h, peak z 10.7, workday",534.4631202344841,medium
+A0257,3,floor,consumption above baseline,statistical,2018-10-11 07:00:00,2018-10-11 09:00:00,124.88536855400838,"2 h, peak z 22.0, closure",524.5185479268353,medium
+A0258,4,floor,consumption above baseline,statistical,2019-06-04 08:00:00,2019-06-04 12:00:00,124.24263382778646,"4 h, peak z 5.2, workday",521.8190620767032,medium
+A0259,7,floor,consumption above baseline,statistical,2019-04-20 13:00:00,2019-04-20 17:00:00,123.54027599011344,"4 h, peak z 6.5, weekend",518.8691591584765,medium
+A0260,7,floor,after-hours AC,rule,2019-04-03 18:00:00,2019-04-03 21:00:00,122.92849731445312,3 h above 0.5 kWh/h on a workday,516.2996887207031,medium
+A0261,2,floor,consumption above baseline,statistical,2018-07-11 17:00:00,2018-07-11 20:00:00,122.57241465923796,"3 h, peak z 10.9, workday",514.8041415687994,medium
+A0262,4,floor,after-hours AC,rule,2019-09-21 07:00:00,2019-09-21 17:00:00,122.24016571044922,9 h above 0.5 kWh/h on a weekend,513.4086959838868,medium
+A0263,7,floor,consumption above baseline,statistical,2019-05-18 13:00:00,2019-05-18 17:00:00,120.58830169178665,"4 h, peak z 5.7, holiday",506.47086710550394,medium
+A0264,4,floor,after-hours AC,rule,2019-10-19 07:00:00,2019-10-19 17:00:00,120.39716339111328,9 h above 0.5 kWh/h on a weekend,505.6680862426758,medium
+A0265,7,floor,after-hours AC,rule,2019-05-03 18:00:00,2019-05-03 20:00:00,119.4461669921875,2 h above 0.5 kWh/h on a workday,501.6739013671875,medium
+A0266,6,floor,consumption above baseline,statistical,2019-05-20 13:00:00,2019-05-20 17:00:00,119.07998963546827,"4 h, peak z 9.4, holiday",500.13595646896675,medium
+A0267,2,floor,consumption above baseline,statistical,2018-07-17 17:00:00,2018-07-17 21:00:00,118.41754617306927,"4 h, peak z 8.7, workday",497.35369392689097,medium
+A0268,7,floor,after-hours AC,rule,2019-04-01 18:00:00,2019-04-01 20:00:00,116.72049713134766,2 h above 0.5 kWh/h on a workday,490.2260879516602,medium
+A0269,3,floor,consumption above baseline,statistical,2019-04-17 13:00:00,2019-04-17 16:00:00,116.03584338226024,"3 h, peak z 5.5, workday",487.350542205493,medium
+A0270,7,floor,after-hours AC,rule,2019-04-26 18:00:00,2019-04-26 20:00:00,115.68717193603516,2 h above 0.5 kWh/h on a workday,485.8861221313477,medium
+A0271,7,floor,after-hours AC,rule,2019-04-09 18:00:00,2019-04-09 20:00:00,115.24034118652344,2 h above 0.5 kWh/h on a workday,484.0094329833985,medium
+A0272,7,floor,consumption above baseline,statistical,2019-04-18 17:00:00,2019-04-18 20:00:00,114.7398847882097,"3 h, peak z 7.4, workday",481.90751611048074,medium
+A0273,7,floor,after-hours AC,rule,2019-05-23 18:00:00,2019-05-23 21:00:00,114.16717529296875,3 h above 0.5 kWh/h on a workday,479.50213623046875,medium
+A0274,4,floor,after-hours AC,rule,2018-09-15 08:00:00,2018-09-15 17:00:00,111.69451141357422,9 h above 0.5 kWh/h on a weekend,469.11694793701173,medium
+A0275,2,floor,after-hours AC,rule,2019-09-13 18:00:00,2019-09-14 00:00:00,111.43299102783203,6 h above 11.1 kWh/h on a workday,468.01856231689453,medium
+A0276,7,floor,after-hours AC,rule,2019-04-25 18:00:00,2019-04-25 22:00:00,111.31383514404297,4 h above 0.5 kWh/h on a workday,467.5181076049805,medium
+A0277,2,floor,consumption above baseline,statistical,2018-09-03 17:00:00,2018-09-03 20:00:00,111.24382653182607,"3 h, peak z 9.9, workday",467.2240714336695,medium
+A0278,7,floor,after-hours AC,rule,2018-08-18 10:00:00,2018-08-18 18:00:00,111.10116577148438,5 h above 0.5 kWh/h on a weekend,466.6248962402344,medium
+A0279,7,floor,consumption above baseline,statistical,2018-07-06 17:00:00,2018-07-06 19:00:00,110.84745472870341,"2 h, peak z 10.7, workday",465.5593098605543,medium
+A0280,7,floor,after-hours AC,rule,2018-07-27 07:00:00,2018-07-27 10:00:00,110.70133209228516,3 h above 0.5 kWh/h on a holiday,464.94559478759766,medium
+A0281,4,floor,after-hours AC,rule,2018-08-04 09:00:00,2018-08-04 18:00:00,110.62733459472656,9 h above 0.5 kWh/h on a weekend,464.6348052978516,medium
+A0282,7,floor,after-hours AC,rule,2019-05-07 18:00:00,2019-05-07 20:00:00,110.18133544921875,2 h above 0.5 kWh/h on a workday,462.76160888671876,medium
+A0283,7,floor,after-hours AC,rule,2019-04-24 18:00:00,2019-04-24 20:00:00,109.42283630371094,2 h above 0.5 kWh/h on a workday,459.57591247558594,medium
+A0284,7,floor,after-hours AC,rule,2019-05-24 18:00:00,2019-05-24 20:00:00,108.87350463867188,2 h above 0.5 kWh/h on a workday,457.2687194824219,medium
+A0285,7,floor,consumption above baseline,statistical,2019-05-08 18:00:00,2019-05-08 20:00:00,108.80453462511858,"2 h, peak z 11.7, workday",456.97904542549804,medium
+A0286,7,floor,after-hours AC,rule,2018-07-03 18:00:00,2018-07-03 20:00:00,108.7888412475586,2 h above 0.5 kWh/h on a workday,456.9131332397461,medium
+A0287,7,floor,after-hours AC,rule,2019-05-08 18:00:00,2019-05-08 20:00:00,108.55484008789062,2 h above 0.5 kWh/h on a workday,455.9303283691406,medium
+A0288,6,floor,consumption above baseline,statistical,2019-04-27 08:00:00,2019-04-27 12:00:00,108.07044876788217,"4 h, peak z 7.8, weekend",453.89588482510516,medium
+A0289,3,floor,consumption above baseline,statistical,2019-05-21 13:00:00,2019-05-21 16:00:00,107.50921762935931,"3 h, peak z 4.9, workday",451.53871404330914,medium
+A0290,6,floor,consumption above baseline,statistical,2019-04-27 13:00:00,2019-04-27 17:00:00,107.34140794549793,"4 h, peak z 7.9, weekend",450.83391337109134,medium
+A0291,7,floor,after-hours AC,rule,2019-04-29 18:00:00,2019-04-29 20:00:00,106.95866394042969,2 h above 0.5 kWh/h on a workday,449.2263885498047,medium
+A0292,7,floor,after-hours AC,rule,2019-05-16 18:00:00,2019-05-16 21:00:00,106.63484191894531,3 h above 0.5 kWh/h on a workday,447.86633605957036,medium
+A0293,4,floor,after-hours AC,rule,2018-09-01 07:00:00,2018-09-01 17:00:00,105.77183532714844,9 h above 0.5 kWh/h on a weekend,444.24170837402346,medium
+A0294,7,floor,consumption above baseline,statistical,2019-09-21 08:00:00,2019-09-21 11:00:00,104.09367787712384,"3 h, peak z 7.8, weekend",437.19344708392015,medium
+A0295,4,floor,after-hours AC,rule,2019-08-31 09:00:00,2019-08-31 17:00:00,103.9046630859375,7 h above 0.5 kWh/h on a weekend,436.39958496093755,medium
+A0296,4,floor,consumption above baseline,statistical,2019-04-20 13:00:00,2019-04-20 17:00:00,103.7847339874663,"4 h, peak z 7.7, weekend",435.8958827473585,medium
+A0297,7,floor,consumption above baseline,statistical,2019-04-23 17:00:00,2019-04-23 20:00:00,103.4193215749963,"3 h, peak z 6.5, workday",434.36115061498447,medium
+A0298,7,floor,after-hours AC,rule,2019-05-01 18:00:00,2019-05-01 20:00:00,103.06950378417969,2 h above 0.5 kWh/h on a holiday_worked,432.8919158935547,medium
+A0299,2,floor,after-hours AC,rule,2018-12-24 18:00:00,2018-12-24 21:00:00,102.39850616455078,3 h above 11.1 kWh/h on a workday,430.0737258911133,medium
+A0300,5,floor,consumption above baseline,statistical,2019-04-17 09:00:00,2019-04-17 12:00:00,101.79689614647445,"3 h, peak z 4.7, workday",427.5469638151927,medium
+A0301,7,floor,consumption above baseline,statistical,2019-04-05 17:00:00,2019-04-05 20:00:00,100.9216568824634,"3 h, peak z 6.6, workday",423.8709589063463,medium
+A0302,2,floor,consumption above baseline,statistical,2018-09-06 17:00:00,2018-09-06 20:00:00,100.1161214072229,"3 h, peak z 9.2, workday",420.4877099103362,medium
+A0303,7,floor,consumption above baseline,statistical,2018-07-27 07:00:00,2018-07-27 10:00:00,100.1144816916815,"3 h, peak z 8.4, holiday",420.4808231050623,medium
+A0304,3,floor,consumption above baseline,statistical,2019-09-21 08:00:00,2019-09-21 12:00:00,99.82033967661621,"4 h, peak z 8.2, weekend",419.24542664178813,medium
+A0305,7,floor,after-hours AC,rule,2019-05-28 18:00:00,2019-05-28 20:00:00,99.52850341796875,2 h above 0.5 kWh/h on a workday,418.01971435546875,medium
+A0306,7,floor,consumption above baseline,statistical,2019-04-04 17:00:00,2019-04-04 20:00:00,99.33472974517097,"3 h, peak z 6.3, workday",417.20586492971813,medium
+A0307,7,floor,consumption above baseline,statistical,2019-10-05 10:00:00,2019-10-05 13:00:00,99.18157390779572,"3 h, peak z 7.1, weekend",416.56261041274206,medium
+A0308,2,floor,consumption above baseline,statistical,2018-09-12 17:00:00,2018-09-12 20:00:00,99.16931739971494,"3 h, peak z 8.8, workday",416.5111330788028,medium
+A0309,7,floor,consumption above baseline,statistical,2018-08-25 13:00:00,2018-08-25 16:00:00,98.96012450788572,"3 h, peak z 6.4, weekend",415.6325229331201,medium
+A0310,7,floor,consumption above baseline,statistical,2019-05-17 17:00:00,2019-05-17 20:00:00,98.62228024591272,"3 h, peak z 6.2, workday",414.2135770328334,medium
+A0311,7,floor,after-hours AC,rule,2019-05-27 18:00:00,2019-05-27 20:00:00,98.1346664428711,2 h above 0.5 kWh/h on a workday,412.16559906005864,medium
+A0312,3,floor,consumption above baseline,statistical,2019-09-19 18:00:00,2019-09-19 21:00:00,97.00726691044545,"3 h, peak z 8.6, workday",407.43052102387094,medium
+A0313,7,floor,consumption above baseline,statistical,2018-08-20 17:00:00,2018-08-20 20:00:00,96.98105312591014,"3 h, peak z 6.1, workday",407.3204231288226,medium
+A0314,7,floor,consumption above baseline,statistical,2019-05-29 19:00:00,2019-05-29 21:00:00,96.61011310257744,"2 h, peak z 9.5, workday",405.76247503082527,medium
+A0315,3,floor,after-hours AC,rule,2018-10-11 07:00:00,2018-10-11 09:00:00,96.33732604980469,2 h above 0.5 kWh/h on a closure,404.6167694091797,medium
+A0316,7,floor,consumption above baseline,statistical,2019-05-22 17:00:00,2019-05-22 20:00:00,96.28243596730456,"3 h, peak z 6.3, workday",404.3862310626792,medium
+A0317,7,floor,after-hours AC,rule,2019-05-29 19:00:00,2019-05-29 21:00:00,96.0561752319336,2 h above 0.5 kWh/h on a workday,403.4359359741211,medium
+A0318,7,floor,after-hours AC,rule,2019-04-19 18:00:00,2019-04-19 21:00:00,95.9001693725586,3 h above 0.5 kWh/h on a workday,402.7807113647461,medium
+A0319,7,floor,after-hours AC,rule,2018-10-04 18:00:00,2018-10-04 21:00:00,95.62266540527344,3 h above 0.5 kWh/h on a workday,401.6151947021485,medium
+A0320,4,floor,consumption above baseline,statistical,2019-07-18 08:00:00,2019-07-18 11:00:00,95.13430751609091,"3 h, peak z 4.6, workday",399.56409156758184,medium
+A0321,2,floor,after-hours AC,rule,2018-07-26 18:00:00,2018-07-26 21:00:00,95.12149810791016,3 h above 11.1 kWh/h on a workday,399.51029205322266,medium
+A0322,7,floor,consumption above baseline,statistical,2018-07-22 09:00:00,2018-07-22 12:00:00,94.69791449913012,"3 h, peak z 6.5, weekend",397.73124089634655,medium
+A0323,2,floor,after-hours AC,rule,2018-07-10 18:00:00,2018-07-10 20:00:00,93.70767211914062,2 h above 11.1 kWh/h on a workday,393.5722229003906,medium
+A0324,2,floor,after-hours AC,rule,2019-09-06 18:00:00,2019-09-07 00:00:00,92.88433074951172,6 h above 11.1 kWh/h on a workday,390.1141891479492,medium
+A0325,2,floor,after-hours AC,rule,2018-07-06 18:00:00,2018-07-06 20:00:00,92.74217224121094,2 h above 11.1 kWh/h on a workday,389.5171234130859,medium
+A0326,2,floor,consumption above baseline,statistical,2018-07-19 17:00:00,2018-07-19 19:00:00,92.67369643670992,"2 h, peak z 11.6, workday",389.2295250341817,medium
+A0327,6,floor,consumption above baseline,statistical,2019-04-17 08:00:00,2019-04-17 11:00:00,92.02593640102297,"3 h, peak z 5.1, workday",386.5089328842965,medium
+A0328,2,floor,after-hours AC,rule,2019-06-14 18:00:00,2019-06-14 22:00:00,91.763671875,4 h above 11.1 kWh/h on a workday,385.407421875,medium
+A0329,4,floor,consumption above baseline,statistical,2018-07-21 13:00:00,2018-07-21 18:00:00,91.72329249672481,"5 h, peak z 5.5, weekend",385.2378284862442,medium
+A0330,2,floor,consumption above baseline,statistical,2019-09-14 08:00:00,2019-09-14 11:00:00,91.70902837061571,"3 h, peak z 8.8, weekend",385.17791915658603,medium
+A0331,2,floor,consumption above baseline,statistical,2018-08-28 17:00:00,2018-08-28 20:00:00,91.63833462093574,"3 h, peak z 8.4, workday",384.8810054079301,medium
+A0332,7,floor,consumption above baseline,statistical,2018-08-14 17:00:00,2018-08-14 20:00:00,91.5714515789615,"3 h, peak z 5.7, workday",384.60009663163834,medium
+A0333,2,floor,after-hours AC,rule,2019-07-03 18:00:00,2019-07-04 00:00:00,91.44248962402344,6 h above 11.1 kWh/h on a workday,384.05845642089844,medium
+A0334,7,floor,after-hours AC,rule,2019-06-22 09:00:00,2019-06-22 16:00:00,90.80400085449219,6 h above 0.5 kWh/h on a weekend,381.3768035888672,medium
+A0335,7,floor,consumption above baseline,statistical,2018-08-25 09:00:00,2018-08-25 12:00:00,90.30074752303108,"3 h, peak z 7.6, weekend",379.2631395967305,medium
+A0336,2,floor,after-hours AC,rule,2018-07-18 18:00:00,2018-07-18 20:00:00,89.28766632080078,2 h above 11.1 kWh/h on a workday,375.0081985473633,medium
+A0337,4,floor,consumption above baseline,statistical,2019-05-21 13:00:00,2019-05-21 16:00:00,88.41545108997616,"3 h, peak z 4.9, workday",371.3448945778999,medium
+A0338,2,floor,after-hours AC,rule,2018-07-09 18:00:00,2018-07-09 20:00:00,88.08934020996094,2 h above 11.1 kWh/h on a workday,369.97522888183596,medium
+A0339,6,floor,consumption above baseline,statistical,2019-07-18 08:00:00,2019-07-18 11:00:00,88.07350589294833,"3 h, peak z 4.7, workday",369.908724750383,medium
+A0340,7,floor,after-hours AC,rule,2019-04-05 18:00:00,2019-04-05 21:00:00,87.72699737548828,3 h above 0.5 kWh/h on a workday,368.4533889770508,medium
+A0341,3,floor,consumption above baseline,statistical,2019-05-21 09:00:00,2019-05-21 11:00:00,87.10158321048542,"2 h, peak z 5.5, workday",365.82664948403874,medium
+A0342,3,floor,consumption above baseline,statistical,2019-04-17 09:00:00,2019-04-17 11:00:00,87.06938491603653,"2 h, peak z 5.6, workday",365.69141664735344,medium
+A0343,2,floor,consumption above baseline,statistical,2019-06-14 18:00:00,2019-06-14 22:00:00,86.60640747175191,"4 h, peak z 5.7, workday",363.746911381358,medium
+A0344,7,floor,consumption above baseline,statistical,2018-08-07 17:00:00,2018-08-07 20:00:00,86.51524254044993,"3 h, peak z 5.6, workday",363.36401866988973,medium
+A0345,2,floor,after-hours AC,rule,2018-08-16 18:00:00,2018-08-16 21:00:00,86.23167419433594,3 h above 11.1 kWh/h on a workday,362.17303161621095,medium
+A0346,7,floor,after-hours AC,rule,2019-05-17 18:00:00,2019-05-17 21:00:00,86.16566467285156,3 h above 0.5 kWh/h on a workday,361.8957916259766,medium
+A0347,2,floor,consumption above baseline,statistical,2018-12-24 18:00:00,2018-12-24 20:00:00,85.8976236813629,"2 h, peak z 10.6, workday",360.7700194617242,medium
+A0348,4,floor,consumption above baseline,statistical,2019-04-20 08:00:00,2019-04-20 12:00:00,85.35042740532776,"4 h, peak z 6.2, weekend",358.47179510237663,medium
+A0349,4,floor,consumption above baseline,statistical,2019-05-25 08:00:00,2019-05-25 12:00:00,85.07843172762415,"4 h, peak z 5.5, weekend",357.32941325602144,medium
+A0350,4,floor,consumption above baseline,statistical,2019-06-04 13:00:00,2019-06-04 16:00:00,84.29176263282957,"3 h, peak z 4.4, workday",354.0254030578842,medium
+A0351,3,floor,after-hours AC,rule,2019-09-19 18:00:00,2019-09-19 22:00:00,83.7298355102539,4 h above 0.5 kWh/h on a workday,351.6653091430664,medium
+A0352,4,floor,consumption above baseline,statistical,2019-07-20 08:00:00,2019-07-20 12:00:00,83.47904271492494,"4 h, peak z 6.4, weekend",350.61197940268477,medium
+A0353,2,floor,after-hours AC,rule,2018-07-11 18:00:00,2018-07-11 20:00:00,83.15575408935547,2 h above 11.1 kWh/h on a workday,349.254167175293,medium
+A0354,2,floor,after-hours AC,rule,2018-07-20 18:00:00,2018-07-20 20:00:00,82.64167022705078,2 h above 11.1 kWh/h on a workday,347.0950149536133,medium
+A0355,7,floor,consumption above baseline,statistical,2018-08-24 17:00:00,2018-08-24 20:00:00,82.2432353346432,"3 h, peak z 5.4, workday",345.42158840550144,medium
+A0356,2,floor,consumption above baseline,statistical,2018-08-14 17:00:00,2018-08-14 20:00:00,81.05732607040213,"3 h, peak z 7.5, workday",340.4407694956889,medium
+A0357,7,floor,consumption above baseline,statistical,2018-08-01 17:00:00,2018-08-01 20:00:00,80.97036804817014,"3 h, peak z 5.1, workday",340.0755458023146,medium
+A0358,2,floor,consumption above baseline,statistical,2018-09-07 17:00:00,2018-09-07 20:00:00,80.6373355846851,"3 h, peak z 7.8, workday",338.67680945567747,medium
+A0359,7,floor,after-hours AC,rule,2018-07-06 18:00:00,2018-07-06 21:00:00,80.18617248535156,3 h above 0.5 kWh/h on a workday,336.78192443847655,medium
+A0360,7,floor,consumption above baseline,statistical,2018-07-18 17:00:00,2018-07-18 20:00:00,80.18369151434568,"3 h, peak z 5.3, workday",336.77150436025187,medium
+A0361,7,floor,consumption above baseline,statistical,2018-07-10 17:00:00,2018-07-10 20:00:00,79.87623115821404,"3 h, peak z 5.8, workday",335.480170864499,medium
+A0362,7,floor,after-hours AC,rule,2019-04-23 18:00:00,2019-04-23 21:00:00,79.8338394165039,3 h above 0.5 kWh/h on a workday,335.30212554931643,medium
+A0363,7,floor,after-hours AC,rule,2019-05-10 18:00:00,2019-05-10 21:00:00,79.17932891845703,3 h above 0.5 kWh/h on a workday,332.55318145751954,medium
+A0364,2,floor,after-hours AC,rule,2018-07-12 18:00:00,2018-07-13 00:00:00,79.05899810791016,6 h above 11.1 kWh/h on a workday,332.0477920532227,medium
+A0365,4,floor,consumption above baseline,statistical,2019-05-25 13:00:00,2019-05-25 16:00:00,79.04245264205261,"3 h, peak z 7.1, weekend",331.97830109662095,medium
+A0366,4,floor,consumption above baseline,statistical,2018-07-07 07:00:00,2018-07-07 11:00:00,78.91878227874328,"4 h, peak z 7.5, weekend",331.4588855707218,medium
+A0367,2,floor,after-hours AC,rule,2018-12-26 18:00:00,2018-12-26 23:00:00,78.13683319091797,5 h above 11.1 kWh/h on a workday,328.1746994018555,medium
+A0368,7,floor,after-hours AC,rule,2018-10-01 18:00:00,2018-10-01 22:00:00,77.90800476074219,4 h above 0.5 kWh/h on a workday,327.2136199951172,medium
+A0369,2,floor,after-hours AC,rule,2018-07-24 18:00:00,2018-07-24 20:00:00,77.88116455078125,2 h above 11.1 kWh/h on a workday,327.10089111328125,medium
+A0370,2,floor,consumption above baseline,statistical,2019-06-17 17:00:00,2019-06-17 19:00:00,77.85364626323977,"2 h, peak z 10.7, workday",326.98531430560706,medium
+A0371,7,floor,consumption above baseline,statistical,2018-07-20 17:00:00,2018-07-20 20:00:00,77.80795490050602,"3 h, peak z 4.8, workday",326.7934105821253,medium
+A0372,4,floor,after-hours AC,rule,2018-11-21 15:00:00,2018-11-21 17:00:00,77.76433563232422,2 h above 0.5 kWh/h on a closure,326.6102096557617,medium
+A0373,7,floor,after-hours AC,rule,2019-09-01 07:00:00,2019-09-01 10:00:00,77.33150482177734,3 h above 0.5 kWh/h on a weekend,324.79232025146484,medium
+A0374,7,floor,consumption above baseline,statistical,2019-05-13 17:00:00,2019-05-13 20:00:00,76.70700460889088,"3 h, peak z 4.8, workday",322.1694193573417,medium
+A0375,2,floor,consumption above baseline,statistical,2019-08-03 12:00:00,2019-08-03 16:00:00,76.54662510976559,"4 h, peak z 5.2, weekend",321.4958254610155,medium
+A0376,2,floor,after-hours AC,rule,2018-07-17 18:00:00,2018-07-17 21:00:00,76.10616302490234,3 h above 11.1 kWh/h on a workday,319.64588470458983,medium
+A0377,7,floor,after-hours AC,rule,2018-08-01 18:00:00,2018-08-01 21:00:00,75.74083709716797,3 h above 0.5 kWh/h on a workday,318.1115158081055,medium
+A0378,4,floor,consumption above baseline,statistical,2019-07-20 13:00:00,2019-07-20 16:00:00,75.32939030870673,"3 h, peak z 6.8, weekend",316.3834392965683,medium
+A0379,7,floor,after-hours AC,rule,2019-08-30 18:00:00,2019-08-30 21:00:00,75.23799896240234,3 h above 0.5 kWh/h on a workday,315.99959564208984,medium
+A0380,7,floor,after-hours AC,rule,2018-10-03 18:00:00,2018-10-03 21:00:00,74.96183013916016,3 h above 0.5 kWh/h on a workday,314.83968658447264,medium
+A0381,3,floor,consumption above baseline,statistical,2019-05-07 09:00:00,2019-05-07 11:00:00,74.7573665417556,"2 h, peak z 4.8, workday",313.98093947537353,medium
+A0382,4,floor,consumption above baseline,statistical,2018-07-21 08:00:00,2018-07-21 12:00:00,74.7314579878913,"4 h, peak z 5.1, weekend",313.8721235491435,medium
+A0383,2,floor,consumption above baseline,statistical,2019-07-02 18:00:00,2019-07-02 22:00:00,74.63573572808144,"4 h, peak z 5.2, workday",313.47009005794206,medium
+A0384,7,floor,after-hours AC,rule,2018-12-22 11:00:00,2018-12-22 18:00:00,74.21382904052734,7 h above 0.5 kWh/h on a weekend,311.69808197021484,medium
+A0385,3,floor,consumption above baseline,statistical,2019-06-04 09:00:00,2019-06-04 11:00:00,74.00917048194722,"2 h, peak z 4.7, workday",310.8385160241784,medium
+A0386,2,floor,consumption above baseline,statistical,2019-05-30 17:00:00,2019-05-30 20:00:00,73.6681964441763,"3 h, peak z 9.6, workday",309.4064250655405,medium
+A0387,2,floor,after-hours AC,rule,2019-07-02 18:00:00,2019-07-02 22:00:00,73.55266571044922,4 h above 11.1 kWh/h on a workday,308.9211959838867,medium
+A0388,7,floor,after-hours AC,rule,2019-04-18 18:00:00,2019-04-18 21:00:00,73.38750457763672,3 h above 0.5 kWh/h on a workday,308.2275192260742,medium
+A0389,7,floor,consumption above baseline,statistical,2019-05-10 17:00:00,2019-05-10 20:00:00,73.06328049446977,"3 h, peak z 4.8, workday",306.86577807677304,medium
+A0390,2,floor,after-hours AC,rule,2018-12-19 18:00:00,2018-12-19 22:00:00,72.90483856201172,4 h above 11.1 kWh/h on a workday,306.20032196044923,medium
+A0391,5,floor,after-hours AC,rule,2019-03-09 07:00:00,2019-03-09 17:00:00,72.74583435058594,10 h above 0.5 kWh/h on a weekend,305.5325042724609,medium
+A0392,7,floor,after-hours AC,rule,2018-08-14 18:00:00,2018-08-14 21:00:00,71.86784362792969,3 h above 0.5 kWh/h on a workday,301.8449432373047,medium
+A0393,5,floor,after-hours AC,rule,2019-10-23 07:00:00,2019-10-23 17:00:00,71.84532928466797,9 h above 0.5 kWh/h on a holiday,301.7503829956055,medium
+A0394,7,floor,after-hours AC,rule,2018-07-14 09:00:00,2018-07-14 17:00:00,71.68600463867188,8 h above 0.5 kWh/h on a weekend,301.0812194824219,medium
+A0395,7,floor,after-hours AC,rule,2018-07-20 18:00:00,2018-07-20 21:00:00,71.6760025024414,3 h above 0.5 kWh/h on a workday,301.0392105102539,medium
+A0396,7,floor,after-hours AC,rule,2018-07-24 18:00:00,2018-07-24 21:00:00,71.65750122070312,3 h above 0.5 kWh/h on a workday,300.9615051269531,medium
+A0397,7,floor,after-hours AC,rule,2018-08-20 18:00:00,2018-08-20 21:00:00,71.41834259033203,3 h above 0.5 kWh/h on a workday,299.95703887939453,medium
+A0398,2,floor,after-hours AC,rule,2018-12-27 18:00:00,2018-12-27 20:00:00,71.35700988769531,2 h above 11.1 kWh/h on a workday,299.69944152832034,medium
+A0399,2,floor,consumption above baseline,statistical,2018-08-20 17:00:00,2018-08-20 20:00:00,71.01090120552746,"3 h, peak z 6.2, workday",298.24578506321535,medium
+A0400,7,floor,after-hours AC,rule,2018-09-21 18:00:00,2018-09-21 21:00:00,70.97349548339844,3 h above 0.5 kWh/h on a workday,298.08868103027345,medium
+A0401,3,floor,consumption above baseline,statistical,2019-04-18 09:00:00,2019-04-18 11:00:00,70.85908388164445,"2 h, peak z 4.8, workday",297.6081523029067,medium
+A0402,7,floor,after-hours AC,rule,2018-07-10 18:00:00,2018-07-10 21:00:00,70.55133819580078,3 h above 0.5 kWh/h on a workday,296.3156204223633,medium
+A0403,7,floor,after-hours AC,rule,2019-04-04 18:00:00,2019-04-04 21:00:00,70.14717102050781,3 h above 0.5 kWh/h on a workday,294.6181182861328,medium
+A0404,6,floor,consumption above baseline,statistical,2019-09-20 17:00:00,2019-09-20 21:00:00,69.95421314099269,"4 h, peak z 5.3, workday",293.8076951921693,medium
+A0405,7,floor,consumption above baseline,statistical,2019-05-18 09:00:00,2019-05-18 12:00:00,69.93477910107902,"3 h, peak z 4.9, holiday",293.7260722245319,medium
+A0406,7,floor,after-hours AC,rule,2019-05-13 18:00:00,2019-05-13 21:00:00,69.77949523925781,3 h above 0.5 kWh/h on a workday,293.0738800048828,medium
+A0407,2,floor,after-hours AC,rule,2019-08-14 18:00:00,2019-08-14 22:00:00,69.23049926757812,4 h above 11.1 kWh/h on a workday,290.7680969238281,medium
+A0408,7,floor,after-hours AC,rule,2018-08-07 18:00:00,2018-08-07 21:00:00,69.18617248535156,3 h above 0.5 kWh/h on a workday,290.58192443847656,medium
+A0409,5,floor,consumption above baseline,statistical,2019-04-17 14:00:00,2019-04-17 16:00:00,69.07444879534238,"2 h, peak z 4.7, workday",290.112684940438,medium
+A0410,2,floor,after-hours AC,rule,2019-07-04 00:00:00,2019-07-04 21:00:00,68.85932922363281,5 h above 11.1 kWh/h on a workday,289.2091827392578,medium
+A0411,7,floor,after-hours AC,rule,2018-07-18 18:00:00,2018-07-18 20:00:00,68.79400634765625,2 h above 0.5 kWh/h on a workday,288.93482666015626,medium
+A0412,2,floor,consumption above baseline,statistical,2018-09-04 17:00:00,2018-09-04 20:00:00,68.06628931735224,"3 h, peak z 6.0, workday",285.8784151328794,medium
+A0413,2,floor,consumption above baseline,statistical,2018-09-21 17:00:00,2018-09-21 20:00:00,67.88830257935803,"3 h, peak z 6.0, workday",285.13087083330373,medium
+A0414,2,floor,consumption above baseline,statistical,2018-09-11 17:00:00,2018-09-11 20:00:00,67.45676605350484,"3 h, peak z 6.7, workday",283.31841742472034,medium
+A0415,3,floor,consumption above baseline,statistical,2019-09-21 13:00:00,2019-09-21 16:00:00,66.79057182371145,"3 h, peak z 5.8, weekend",280.52040165958806,medium
+A0416,7,floor,after-hours AC,rule,2019-02-23 07:00:00,2019-02-23 09:00:00,66.16083526611328,2 h above 0.5 kWh/h on a weekend,277.8755081176758,medium
+A0417,4,floor,consumption above baseline,statistical,2019-05-07 09:00:00,2019-05-07 11:00:00,65.15876699715797,"2 h, peak z 4.8, workday",273.66682138806345,medium
+A0418,7,floor,consumption above baseline,statistical,2018-09-21 18:00:00,2018-09-21 20:00:00,64.95619149934706,"2 h, peak z 6.0, workday",272.8160042972577,medium
+A0419,7,floor,consumption above baseline,statistical,2018-09-24 17:00:00,2018-09-24 20:00:00,64.83590387588859,"3 h, peak z 4.1, workday",272.3107962787321,medium
+A0420,7,floor,after-hours AC,rule,2018-08-24 18:00:00,2018-08-24 21:00:00,64.59049987792969,3 h above 0.5 kWh/h on a workday,271.2800994873047,medium
+A0421,2,floor,consumption above baseline,statistical,2019-09-06 18:00:00,2019-09-06 22:00:00,64.46154074578489,"4 h, peak z 4.3, workday",270.7384711322965,medium
+A0422,7,floor,after-hours AC,rule,2019-03-29 18:00:00,2019-03-29 20:00:00,64.39100646972656,2 h above 0.5 kWh/h on a workday,270.4422271728516,medium
+A0423,2,floor,after-hours AC,rule,2018-09-06 18:00:00,2018-09-06 20:00:00,64.2518310546875,2 h above 11.1 kWh/h on a workday,269.8576904296875,medium
+A0424,5,floor,after-hours AC,rule,2019-03-30 07:00:00,2019-03-30 16:00:00,64.12466430664062,8 h above 0.5 kWh/h on a weekend,269.32359008789064,medium
+A0425,5,floor,consumption above baseline,statistical,2019-05-07 09:00:00,2019-05-07 11:00:00,63.9064479271954,"2 h, peak z 4.2, workday",268.4070812942207,medium
+A0426,2,floor,after-hours AC,rule,2018-09-03 18:00:00,2018-09-03 20:00:00,63.895164489746094,2 h above 11.1 kWh/h on a workday,268.3596908569336,medium
+A0427,2,floor,consumption above baseline,statistical,2018-08-01 17:00:00,2018-08-01 20:00:00,63.76530616224168,"3 h, peak z 5.4, workday",267.81428588141506,medium
+A0428,2,floor,consumption above baseline,statistical,2018-09-17 17:00:00,2018-09-17 20:00:00,63.727499155611795,"3 h, peak z 5.8, workday",267.6554964535695,medium
+A0429,5,floor,consumption above baseline,statistical,2019-07-18 09:00:00,2019-07-18 11:00:00,63.51913261050379,"2 h, peak z 4.0, workday",266.7803569641159,medium
+A0430,2,floor,consumption above baseline,statistical,2018-09-13 17:00:00,2018-09-13 20:00:00,63.39522946013929,"3 h, peak z 5.9, workday",266.25996373258505,medium
+A0431,5,floor,consumption above baseline,statistical,2019-04-18 14:00:00,2019-04-18 16:00:00,63.12679759796495,"2 h, peak z 4.1, workday",265.1325499114528,medium
+A0432,2,floor,consumption above baseline,statistical,2018-09-10 17:00:00,2018-09-10 20:00:00,63.11186830492549,"3 h, peak z 6.1, workday",265.06984688068707,medium
+A0433,2,floor,consumption above baseline,statistical,2019-08-19 17:00:00,2019-08-19 20:00:00,62.84213071174021,"3 h, peak z 5.6, workday",263.9369489893089,medium
+A0434,2,floor,consumption above baseline,statistical,2018-08-17 17:00:00,2018-08-17 20:00:00,62.18764873646007,"3 h, peak z 5.8, workday",261.1881246931323,medium
+A0435,2,floor,consumption above baseline,statistical,2019-07-03 20:00:00,2019-07-04 00:00:00,61.52663744449276,"4 h, peak z 4.4, workday",258.4118772668696,medium
+A0436,7,floor,consumption above baseline,statistical,2018-07-09 17:00:00,2018-07-09 20:00:00,61.329002188897704,"3 h, peak z 3.8, workday",257.58180919337036,medium
+A0437,7,floor,consumption above baseline,statistical,2019-08-30 19:00:00,2019-08-30 21:00:00,61.075698541421424,"2 h, peak z 5.8, workday",256.51793387397,medium
+A0438,3,floor,consumption above baseline,statistical,2019-09-18 18:00:00,2019-09-18 20:00:00,61.03254535843517,"2 h, peak z 8.8, workday",256.3366905054277,medium
+A0439,2,floor,consumption above baseline,statistical,2019-04-24 17:00:00,2019-04-24 19:00:00,60.96166779036884,"2 h, peak z 9.1, workday",256.03900471954915,medium
+A0440,2,floor,after-hours AC,rule,2018-09-12 18:00:00,2018-09-12 20:00:00,60.95249938964844,2 h above 11.1 kWh/h on a workday,256.00049743652346,medium
+A0441,2,floor,consumption above baseline,statistical,2019-05-31 17:00:00,2019-05-31 19:00:00,60.87171053236639,"2 h, peak z 11.0, workday",255.66118423593886,medium
+A0442,2,floor,consumption above baseline,statistical,2018-08-21 17:00:00,2018-08-21 20:00:00,60.731349555865634,"3 h, peak z 5.4, workday",255.07166813463567,medium
+A0443,7,floor,after-hours AC,rule,2018-10-09 18:00:00,2018-10-09 21:00:00,60.50450134277344,3 h above 0.5 kWh/h on a workday,254.11890563964846,medium
+A0444,2,floor,consumption above baseline,statistical,2018-08-30 17:00:00,2018-08-30 20:00:00,60.36446281845382,"3 h, peak z 5.2, workday",253.53074383750607,medium
+A0445,5,floor,consumption above baseline,statistical,2019-04-18 09:00:00,2019-04-18 11:00:00,59.859128763819925,"2 h, peak z 3.8, workday",251.4083408080437,medium
+A0446,2,floor,consumption above baseline,statistical,2018-07-04 17:00:00,2018-07-04 20:00:00,59.70991770934951,"3 h, peak z 6.5, workday",250.78165437926796,medium
+A0447,3,floor,after-hours AC,rule,2019-09-18 18:00:00,2019-09-18 20:00:00,59.55849838256836,2 h above 0.5 kWh/h on a workday,250.14569320678712,medium
+A0448,2,floor,consumption above baseline,statistical,2018-08-22 17:00:00,2018-08-22 20:00:00,59.542243830265264,"3 h, peak z 5.2, workday",250.0774240871141,medium
+A0449,3,floor,consumption above baseline,statistical,2019-04-18 13:00:00,2019-04-18 15:00:00,59.34814564597903,"2 h, peak z 3.7, workday",249.26221171311195,medium
+A0450,7,floor,after-hours AC,rule,2018-09-11 18:00:00,2018-09-11 21:00:00,58.62750244140625,3 h above 0.5 kWh/h on a workday,246.23551025390626,medium
+A0451,2,floor,consumption above baseline,statistical,2018-08-02 17:00:00,2018-08-02 20:00:00,58.313091113643225,"3 h, peak z 5.3, workday",244.91498267730157,medium
+A0452,3,floor,after-hours AC,rule,2019-06-29 10:00:00,2019-06-29 17:00:00,57.97916793823242,6 h above 0.5 kWh/h on a weekend,243.51250534057618,medium
+A0453,5,floor,after-hours AC,rule,2018-08-25 08:00:00,2018-08-25 17:00:00,57.890167236328125,8 h above 0.5 kWh/h on a weekend,243.13870239257812,medium
+A0454,7,floor,consumption above baseline,statistical,2018-08-05 10:00:00,2018-08-05 12:00:00,57.88113716831601,"2 h, peak z 6.5, weekend",243.10077610692724,medium
+A0455,6,floor,consumption above baseline,statistical,2019-04-17 14:00:00,2019-04-17 16:00:00,57.7086478588064,"2 h, peak z 4.7, workday",242.3763210069869,medium
+A0456,2,floor,after-hours AC,rule,2018-08-28 18:00:00,2018-08-28 20:00:00,57.57600021362305,2 h above 11.1 kWh/h on a workday,241.8192008972168,medium
+A0457,7,floor,consumption above baseline,statistical,2018-07-24 18:00:00,2018-07-24 20:00:00,57.46051502907749,"2 h, peak z 5.3, workday",241.3341631221255,medium
+A0458,5,floor,consumption above baseline,statistical,2019-06-04 08:00:00,2019-06-04 10:00:00,57.044013328641455,"2 h, peak z 3.7, workday",239.58485598029412,medium
+A0459,2,floor,consumption above baseline,statistical,2018-07-25 17:00:00,2018-07-25 19:00:00,56.78078507485775,"2 h, peak z 9.4, workday",238.47929731440254,medium
+A0460,2,floor,consumption above baseline,statistical,2018-08-07 17:00:00,2018-08-07 20:00:00,56.666852988362876,"3 h, peak z 5.2, workday",238.0007825511241,medium
+A0461,2,floor,consumption above baseline,statistical,2018-09-05 17:00:00,2018-09-05 20:00:00,55.89398054254238,"3 h, peak z 5.3, workday",234.754718278678,medium
+A0462,4,floor,consumption above baseline,statistical,2019-07-30 08:00:00,2019-07-30 10:00:00,55.57320291854573,"2 h, peak z 4.0, workday",233.4074522578921,medium
+A0463,4,floor,consumption above baseline,statistical,2019-07-18 14:00:00,2019-07-18 16:00:00,55.41495681347567,"2 h, peak z 4.3, workday",232.74281861659782,medium
+A0464,2,floor,after-hours AC,rule,2019-08-19 18:00:00,2019-08-19 21:00:00,55.238162994384766,3 h above 11.1 kWh/h on a workday,232.00028457641602,medium
+A0465,2,floor,after-hours AC,rule,2019-04-24 18:00:00,2019-04-24 20:00:00,54.54616928100586,2 h above 11.1 kWh/h on a workday,229.09391098022462,medium
+A0466,2,floor,consumption above baseline,statistical,2018-08-31 17:00:00,2018-08-31 20:00:00,54.10487626462333,"3 h, peak z 4.7, workday",227.240480311418,medium
+A0467,2,floor,after-hours AC,rule,2019-06-17 18:00:00,2019-06-17 20:00:00,53.63966751098633,2 h above 11.1 kWh/h on a workday,225.2866035461426,medium
+A0468,2,floor,consumption above baseline,statistical,2018-08-29 17:00:00,2018-08-29 20:00:00,53.5277857368031,"3 h, peak z 4.7, workday",224.816700094573,medium
+A0469,4,floor,consumption above baseline,statistical,2018-07-07 13:00:00,2018-07-07 16:00:00,53.362618673010545,"3 h, peak z 4.7, weekend",224.1229984266443,medium
+A0470,2,floor,consumption above baseline,statistical,2018-08-24 17:00:00,2018-08-24 20:00:00,53.11906762110691,"3 h, peak z 4.8, workday",223.10008400864902,medium
+A0471,4,floor,consumption above baseline,statistical,2019-05-10 08:00:00,2019-05-10 10:00:00,53.01455987161462,"2 h, peak z 3.9, workday",222.6611514607814,medium
+A0472,6,floor,consumption above baseline,statistical,2019-05-21 09:00:00,2019-05-21 11:00:00,52.77031003222264,"2 h, peak z 4.0, workday",221.63530213533508,medium
+A0473,2,floor,consumption above baseline,statistical,2018-08-08 17:00:00,2018-08-08 20:00:00,52.71218764443641,"3 h, peak z 4.5, workday",221.39118810663294,medium
+A0474,4,floor,after-hours AC,rule,2019-02-23 07:00:00,2019-02-23 09:00:00,52.58266830444336,2 h above 0.5 kWh/h on a weekend,220.84720687866212,medium
+A0475,2,floor,consumption above baseline,statistical,2019-09-19 18:00:00,2019-09-19 21:00:00,52.3138584366359,"3 h, peak z 4.7, workday",219.71820543387076,medium
+A0476,7,floor,after-hours AC,rule,2018-07-13 18:00:00,2018-07-13 21:00:00,52.193668365478516,3 h above 0.5 kWh/h on a workday,219.2134071350098,medium
+A0477,4,floor,consumption above baseline,statistical,2019-09-07 13:00:00,2019-09-07 16:00:00,51.88399188929493,"3 h, peak z 4.5, weekend",217.91276593503872,medium
+A0478,2,floor,consumption above baseline,statistical,2018-09-18 18:00:00,2018-09-18 20:00:00,51.84917600290095,"2 h, peak z 6.8, workday",217.766539212184,medium
+A0479,7,floor,consumption above baseline,statistical,2019-04-20 10:00:00,2019-04-20 12:00:00,51.34839509226214,"2 h, peak z 5.0, weekend",215.663259387501,medium
+A0480,2,floor,after-hours AC,rule,2019-09-19 18:00:00,2019-09-19 21:00:00,51.342166900634766,3 h above 11.1 kWh/h on a workday,215.63710098266603,medium
+A0481,4,floor,consumption above baseline,statistical,2018-07-14 09:00:00,2018-07-14 12:00:00,51.09068678377035,"3 h, peak z 4.6, weekend",214.5808844918355,medium
+A0482,7,floor,after-hours AC,rule,2019-11-02 14:00:00,2019-11-02 17:00:00,51.03916931152344,3 h above 0.5 kWh/h on a weekend,214.36451110839846,medium
+A0483,7,floor,consumption above baseline,statistical,2018-10-06 11:00:00,2018-10-06 13:00:00,50.856827075238826,"2 h, peak z 5.1, weekend",213.59867371600308,medium
+A0484,2,floor,after-hours AC,rule,2019-08-06 18:00:00,2019-08-06 21:00:00,50.80299758911133,3 h above 11.1 kWh/h on a workday,213.3725898742676,medium
+A0485,4,floor,consumption above baseline,statistical,2018-07-14 13:00:00,2018-07-14 16:00:00,50.61365324922558,"3 h, peak z 4.4, weekend",212.57734364674744,medium
+A0486,4,floor,consumption above baseline,statistical,2019-09-07 08:00:00,2019-09-07 11:00:00,50.5219182653466,"3 h, peak z 4.5, weekend",212.19205671445573,medium
+A0487,2,floor,after-hours AC,rule,2019-09-17 18:00:00,2019-09-17 21:00:00,50.337833404541016,3 h above 11.1 kWh/h on a workday,211.41890029907228,medium
+A0488,2,floor,after-hours AC,rule,2018-12-28 18:00:00,2018-12-28 21:00:00,50.06449890136719,3 h above 11.1 kWh/h on a workday,210.2708953857422,medium
+A0489,2,floor,after-hours AC,rule,2019-06-13 18:00:00,2019-06-13 21:00:00,50.02166748046875,3 h above 11.1 kWh/h on a workday,210.09100341796875,medium
+A0490,5,floor,after-hours AC,rule,2019-03-16 08:00:00,2019-03-16 17:00:00,49.94049835205078,9 h above 0.5 kWh/h on a weekend,209.7500930786133,medium
+A0491,2,floor,after-hours AC,rule,2018-08-14 18:00:00,2018-08-14 20:00:00,49.923667907714844,2 h above 11.1 kWh/h on a workday,209.67940521240234,medium
+A0492,2,floor,consumption above baseline,statistical,2019-08-29 17:00:00,2019-08-29 20:00:00,49.777792706266794,"3 h, peak z 4.3, workday",209.06672936632054,medium
+A0493,6,floor,after-hours AC,rule,2019-09-20 18:00:00,2019-09-20 21:00:00,49.768165588378906,3 h above 0.5 kWh/h on a workday,209.02629547119142,medium
+A0494,7,floor,after-hours AC,rule,2019-05-30 18:00:00,2019-05-30 20:00:00,49.74833297729492,2 h above 0.5 kWh/h on a workday,208.9429985046387,medium
+A0495,4,floor,consumption above baseline,statistical,2019-07-19 08:00:00,2019-07-19 10:00:00,49.692829536311024,"2 h, peak z 3.6, workday",208.7098840525063,medium
+A0496,2,floor,consumption above baseline,statistical,2019-09-26 17:00:00,2019-09-26 20:00:00,49.60651113141364,"3 h, peak z 4.4, workday",208.3473467519373,medium
+A0497,7,floor,after-hours AC,rule,2018-09-24 18:00:00,2018-09-24 21:00:00,49.57833480834961,3 h above 0.5 kWh/h on a workday,208.22900619506837,medium
+A0498,6,floor,after-hours AC,rule,2019-02-23 07:00:00,2019-02-23 09:00:00,49.25749969482422,2 h above 0.5 kWh/h on a weekend,206.88149871826172,medium
+A0499,6,floor,consumption above baseline,statistical,2019-05-10 14:00:00,2019-05-10 16:00:00,49.257015009988336,"2 h, peak z 3.6, workday",206.87946304195103,medium
+A0500,2,floor,after-hours AC,rule,2018-07-19 18:00:00,2018-07-19 20:00:00,49.11199951171875,2 h above 11.1 kWh/h on a workday,206.27039794921876,medium
+A0501,7,floor,consumption above baseline,statistical,2019-03-29 18:00:00,2019-03-29 20:00:00,48.5263557029466,"2 h, peak z 4.8, workday",203.81069395237574,medium
+A0502,2,floor,consumption above baseline,statistical,2019-09-06 23:00:00,2019-09-07 02:00:00,48.44336597275273,"3 h, peak z 4.1, workday",203.46213708556147,medium
+A0503,4,floor,consumption above baseline,statistical,2019-02-23 07:00:00,2019-02-23 09:00:00,48.4212974753696,"2 h, peak z 7.8, weekend",203.3694493965523,medium
+A0504,3,floor,after-hours AC,rule,2018-07-27 07:00:00,2018-07-27 09:00:00,48.148834228515625,2 h above 0.5 kWh/h on a holiday,202.22510375976563,medium
+A0505,2,floor,after-hours AC,rule,2018-07-25 18:00:00,2018-07-25 20:00:00,48.124168395996094,2 h above 11.1 kWh/h on a workday,202.12150726318362,medium
+A0506,7,floor,consumption above baseline,statistical,2019-02-23 07:00:00,2019-02-23 09:00:00,48.064837059541645,"2 h, peak z 4.6, weekend",201.8723156500749,medium
+A0507,3,floor,after-hours AC,rule,2019-02-23 07:00:00,2019-02-23 09:00:00,47.95933532714844,2 h above 0.5 kWh/h on a weekend,201.42920837402343,medium
+A0508,2,floor,after-hours AC,rule,2019-09-12 18:00:00,2019-09-12 21:00:00,47.81333541870117,3 h above 11.1 kWh/h on a workday,200.81600875854494,medium
+A0509,2,z2,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z2_AC6(kW): flat on 96% of days,,medium
+A0510,6,z2,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z2_Light(kW): flat on 85% of days,,medium
+A0511,7,z3,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z3_Light(kW): flat on 81% of days,,medium
+A0512,7,z1,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z1_AC3(kW): flat on 66% of days,,medium
+A0513,2,z3,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z3_Plug(kW): flat on 65% of days,,medium
+A0514,5,z3,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z3_Plug(kW): flat on 62% of days,,medium
+A0515,7,z3,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z3_Plug(kW): flat on 59% of days,,medium
+A0516,2,z4,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z4_Plug(kW): flat on 58% of days,,medium
+A0517,7,z2,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z2_Plug(kW): flat on 48% of days,,medium
+A0518,7,z1,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z1_AC2(kW): flat on 43% of days,,medium
+A0519,7,z4,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z4_Plug(kW): flat on 43% of days,,medium
+A0520,2,z2,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z2_Plug(kW): flat on 41% of days,,medium
+A0521,3,z1,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z1_AC4(kW): flat on 33% of days,,medium
+A0522,3,z4,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z4_Plug(kW): flat on 30% of days,,medium
+A0523,5,z5,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z5_Plug(kW): flat on 27% of days,,medium
+A0524,5,z2,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z2_Plug(kW): flat on 23% of days,,medium
+A0525,3,z5,frozen meter,data quality,2018-07-01 00:00:00,2019-12-31 23:00:00,,z5_Plug(kW): flat on 23% of days,,medium
+A0526,2,floor,after-hours AC,rule,2019-08-08 18:00:00,2019-08-08 21:00:00,47.580665588378906,3 h above 11.1 kWh/h on a workday,199.83879547119142,low
+A0527,7,floor,after-hours AC,rule,2018-07-09 18:00:00,2018-07-09 20:00:00,47.557830810546875,2 h above 0.5 kWh/h on a workday,199.74288940429688,low
+A0528,2,floor,after-hours AC,rule,2019-09-05 18:00:00,2019-09-05 21:00:00,47.53783416748047,3 h above 11.1 kWh/h on a workday,199.65890350341797,low
+A0529,2,floor,consumption above baseline,statistical,2018-12-27 18:00:00,2018-12-27 20:00:00,47.46509036657321,"2 h, peak z 5.9, workday",199.3533795396075,low
+A0530,2,floor,after-hours AC,rule,2019-08-23 18:00:00,2019-08-23 21:00:00,47.41633605957031,3 h above 11.1 kWh/h on a workday,199.14861145019532,low
+A0531,2,floor,after-hours AC,rule,2019-06-05 18:00:00,2019-06-05 20:00:00,46.45650100708008,2 h above 11.1 kWh/h on a workday,195.11730422973633,low
+A0532,2,floor,after-hours AC,rule,2018-09-18 18:00:00,2018-09-18 21:00:00,46.454166412353516,3 h above 11.1 kWh/h on a workday,195.10749893188478,low
+A0533,3,floor,consumption above baseline,statistical,2019-06-23 11:00:00,2019-06-23 14:00:00,46.44661044802895,"3 h, peak z 3.8, weekend",195.0757638817216,low
+A0534,6,floor,consumption above baseline,statistical,2019-02-23 07:00:00,2019-02-23 09:00:00,46.244064504219594,"2 h, peak z 7.1, weekend",194.2250709177223,low
+A0535,2,floor,consumption above baseline,statistical,2019-09-17 18:00:00,2019-09-17 21:00:00,46.22018913260978,"3 h, peak z 4.0, workday",194.1247943569611,low
+A0536,2,floor,consumption above baseline,statistical,2019-06-05 17:00:00,2019-06-05 20:00:00,45.57594213786139,"3 h, peak z 3.9, workday",191.41895697901785,low
+A0537,2,floor,consumption above baseline,statistical,2019-08-14 18:00:00,2019-08-14 21:00:00,45.37006131484784,"3 h, peak z 3.9, workday",190.55425752236093,low
+A0538,2,floor,after-hours AC,rule,2019-07-19 18:00:00,2019-07-19 20:00:00,44.98332977294922,2 h above 11.1 kWh/h on a workday,188.92998504638672,low
+A0539,2,floor,consumption above baseline,statistical,2019-09-30 18:00:00,2019-09-30 20:00:00,44.98323290444638,"2 h, peak z 5.6, workday",188.92957819867482,low
+A0540,2,floor,consumption above baseline,statistical,2019-09-12 18:00:00,2019-09-12 20:00:00,44.982812896057744,"2 h, peak z 6.1, workday",188.92781416344255,low
+A0541,2,floor,after-hours AC,rule,2019-08-21 18:00:00,2019-08-21 20:00:00,44.807830810546875,2 h above 11.1 kWh/h on a workday,188.1928894042969,low
+A0542,7,floor,after-hours AC,rule,2019-02-16 12:00:00,2019-02-16 15:00:00,44.74699783325195,3 h above 0.5 kWh/h on a weekend,187.9373908996582,low
+A0543,2,floor,consumption above baseline,statistical,2018-09-19 18:00:00,2018-09-19 20:00:00,44.54870713828721,"2 h, peak z 5.9, workday",187.1045699808063,low
+A0544,7,floor,consumption above baseline,statistical,2018-09-22 15:00:00,2018-09-22 17:00:00,44.407218019373644,"2 h, peak z 4.3, weekend",186.51031568136932,low
+A0545,2,floor,after-hours AC,rule,2019-08-16 18:00:00,2019-08-16 20:00:00,44.035831451416016,2 h above 11.1 kWh/h on a workday,184.95049209594728,low
+A0546,2,floor,after-hours AC,rule,2019-09-25 18:00:00,2019-09-25 21:00:00,43.89716720581055,3 h above 11.1 kWh/h on a workday,184.3681022644043,low
+A0547,2,floor,consumption above baseline,statistical,2019-07-19 18:00:00,2019-07-19 20:00:00,43.7687608047698,"2 h, peak z 5.4, workday",183.82879538003317,low
+A0548,2,floor,consumption above baseline,statistical,2018-09-14 18:00:00,2018-09-14 20:00:00,43.62184398530853,"2 h, peak z 5.7, workday",183.21174473829583,low
+A0549,2,floor,after-hours AC,rule,2019-09-20 18:00:00,2019-09-20 21:00:00,43.596168518066406,3 h above 11.1 kWh/h on a workday,183.10390777587892,low
+A0550,7,floor,after-hours AC,rule,2018-08-06 18:00:00,2018-08-06 20:00:00,43.46366882324219,2 h above 0.5 kWh/h on a workday,182.5474090576172,low
+A0551,2,floor,after-hours AC,rule,2019-05-30 18:00:00,2019-05-30 20:00:00,43.21733093261719,2 h above 11.1 kWh/h on a workday,181.5127899169922,low
+A0552,3,floor,consumption above baseline,statistical,2018-07-27 07:00:00,2018-07-27 09:00:00,43.136144235345284,"2 h, peak z 5.6, holiday",181.1718057884502,low
+A0553,5,floor,after-hours AC,rule,2019-02-23 07:00:00,2019-02-23 09:00:00,42.632999420166016,2 h above 0.5 kWh/h on a weekend,179.05859756469727,low
+A0554,2,floor,after-hours AC,rule,2019-05-29 18:00:00,2019-05-29 21:00:00,42.450164794921875,3 h above 11.1 kWh/h on a workday,178.2906921386719,low
+A0555,2,floor,after-hours AC,rule,2018-08-20 18:00:00,2018-08-20 20:00:00,42.384498596191406,2 h above 11.1 kWh/h on a workday,178.0148941040039,low
+A0556,6,floor,after-hours AC,rule,2018-07-27 07:00:00,2018-07-27 09:00:00,42.181663513183594,2 h above 0.5 kWh/h on a holiday,177.1629867553711,low
+A0557,2,floor,after-hours AC,rule,2019-09-23 18:00:00,2019-09-23 21:00:00,41.79316711425781,3 h above 11.1 kWh/h on a workday,175.53130187988282,low
+A0558,2,floor,consumption above baseline,statistical,2018-08-03 17:00:00,2018-08-03 19:00:00,41.69193014334266,"2 h, peak z 5.6, workday",175.10610660203918,low
+A0559,2,floor,after-hours AC,rule,2019-06-06 18:00:00,2019-06-06 20:00:00,41.49716567993164,2 h above 11.1 kWh/h on a workday,174.2880958557129,low
+A0560,2,floor,consumption above baseline,statistical,2019-09-09 18:00:00,2019-09-09 20:00:00,41.25331521014037,"2 h, peak z 5.3, workday",173.26392388258958,low
+A0561,3,floor,consumption above baseline,statistical,2019-02-23 07:00:00,2019-02-23 09:00:00,41.17790604223096,"2 h, peak z 5.4, weekend",172.94720537737004,low
+A0562,2,floor,after-hours AC,rule,2018-09-07 18:00:00,2018-09-07 20:00:00,41.098663330078125,2 h above 11.1 kWh/h on a workday,172.61438598632813,low
+A0563,7,floor,consumption above baseline,statistical,2018-07-13 18:00:00,2018-07-13 20:00:00,40.943078747559184,"2 h, peak z 3.9, workday",171.9609307397486,low
+A0564,2,floor,after-hours AC,rule,2019-08-28 18:00:00,2019-08-28 21:00:00,40.781166076660156,3 h above 11.1 kWh/h on a workday,171.28089752197266,low
+A0565,2,floor,after-hours AC,rule,2019-08-15 18:00:00,2019-08-15 20:00:00,40.69133377075195,2 h above 11.1 kWh/h on a workday,170.90360183715822,low
+A0566,2,floor,after-hours AC,rule,2018-12-21 18:00:00,2018-12-21 20:00:00,40.59633255004883,2 h above 11.1 kWh/h on a workday,170.50459671020508,low
+A0567,2,floor,after-hours AC,rule,2019-09-30 18:00:00,2019-09-30 20:00:00,40.31483459472656,2 h above 11.1 kWh/h on a workday,169.32230529785156,low
+A0568,2,floor,after-hours AC,rule,2018-09-11 18:00:00,2018-09-11 20:00:00,39.98216247558594,2 h above 11.1 kWh/h on a workday,167.92508239746095,low
+A0569,2,floor,after-hours AC,rule,2018-09-10 18:00:00,2018-09-10 20:00:00,39.72216796875,2 h above 11.1 kWh/h on a workday,166.83310546875,low
+A0570,4,floor,after-hours AC,rule,2018-07-27 07:00:00,2018-07-27 09:00:00,39.657501220703125,2 h above 0.5 kWh/h on a holiday,166.56150512695314,low
+A0571,5,floor,consumption above baseline,statistical,2019-02-23 07:00:00,2019-02-23 09:00:00,39.54381143617975,"2 h, peak z 6.0, weekend",166.08400803195497,low
+A0572,2,floor,after-hours AC,rule,2019-06-07 18:00:00,2019-06-07 20:00:00,39.40599822998047,2 h above 11.1 kWh/h on a workday,165.50519256591798,low
+A0573,7,floor,consumption above baseline,statistical,2018-10-27 15:00:00,2018-10-27 17:00:00,39.32805910031057,"2 h, peak z 3.6, weekend",165.1778482213044,low
+A0574,2,floor,after-hours AC,rule,2019-08-07 18:00:00,2019-08-07 20:00:00,39.09333038330078,2 h above 11.1 kWh/h on a workday,164.19198760986328,low
+A0575,2,floor,after-hours AC,rule,2019-10-03 18:00:00,2019-10-03 20:00:00,38.91266632080078,2 h above 11.1 kWh/h on a workday,163.43319854736328,low
+A0576,2,floor,consumption above baseline,statistical,2019-08-16 18:00:00,2019-08-16 20:00:00,38.84494030120993,"2 h, peak z 4.9, workday",163.1487492650817,low
+A0577,2,floor,after-hours AC,rule,2018-08-31 18:00:00,2018-08-31 21:00:00,38.81883239746094,3 h above 11.1 kWh/h on a workday,163.03909606933595,low
+A0578,2,floor,after-hours AC,rule,2019-10-01 18:00:00,2019-10-01 20:00:00,38.727500915527344,2 h above 11.1 kWh/h on a workday,162.65550384521484,low
+A0579,5,floor,after-hours AC,rule,2018-07-27 07:00:00,2018-07-27 09:00:00,38.72283172607422,2 h above 0.5 kWh/h on a holiday,162.63589324951172,low
+A0580,2,floor,after-hours AC,rule,2018-09-04 18:00:00,2018-09-04 20:00:00,38.59716796875,2 h above 11.1 kWh/h on a workday,162.10810546875,low
+A0581,4,floor,consumption above baseline,statistical,2018-07-27 07:00:00,2018-07-27 09:00:00,38.415406493019475,"2 h, peak z 4.8, holiday",161.3447072706818,low
+A0582,2,floor,consumption above baseline,statistical,2019-08-21 18:00:00,2019-08-21 20:00:00,38.1517282344997,"2 h, peak z 4.8, workday",160.23725858489874,low
+A0583,2,floor,consumption above baseline,statistical,2019-09-02 18:00:00,2019-09-02 20:00:00,38.11444212702848,"2 h, peak z 5.0, workday",160.08065693351963,low
+A0584,2,floor,after-hours AC,rule,2019-07-31 18:00:00,2019-07-31 20:00:00,37.774330139160156,2 h above 11.1 kWh/h on a workday,158.65218658447267,low
+A0585,2,floor,consumption above baseline,statistical,2018-08-15 18:00:00,2018-08-15 20:00:00,37.575382287261306,"2 h, peak z 4.9, workday",157.8166056064975,low
+A0586,2,floor,after-hours AC,rule,2018-10-02 18:00:00,2018-10-02 20:00:00,37.5551643371582,2 h above 11.1 kWh/h on a workday,157.73169021606446,low
+A0587,2,floor,after-hours AC,rule,2019-09-09 18:00:00,2019-09-09 20:00:00,37.51616668701172,2 h above 11.1 kWh/h on a workday,157.56790008544922,low
+A0588,2,floor,after-hours AC,rule,2019-08-02 18:00:00,2019-08-02 20:00:00,37.51333236694336,2 h above 11.1 kWh/h on a workday,157.5559959411621,low
+A0589,2,floor,after-hours AC,rule,2018-09-17 18:00:00,2018-09-17 20:00:00,37.41316604614258,2 h above 11.1 kWh/h on a workday,157.13529739379882,low
+A0590,2,floor,after-hours AC,rule,2019-10-02 18:00:00,2019-10-02 20:00:00,37.322998046875,2 h above 11.1 kWh/h on a workday,156.756591796875,low
+A0591,2,floor,consumption above baseline,statistical,2019-07-05 18:00:00,2019-07-05 20:00:00,37.16543597136257,"2 h, peak z 4.9, workday",156.0948310797228,low
+A0592,2,floor,consumption above baseline,statistical,2018-08-10 17:00:00,2018-08-10 19:00:00,37.1549621793933,"2 h, peak z 4.8, workday",156.05084115345187,low
+A0593,2,floor,after-hours AC,rule,2018-08-01 18:00:00,2018-08-01 20:00:00,37.02949905395508,2 h above 11.1 kWh/h on a workday,155.52389602661134,low
+A0594,2,floor,consumption above baseline,statistical,2019-09-16 18:00:00,2019-09-16 20:00:00,36.657529980961975,"2 h, peak z 4.5, workday",153.9616259200403,low
+A0595,2,floor,after-hours AC,rule,2019-08-20 18:00:00,2019-08-20 20:00:00,36.5716667175293,2 h above 11.1 kWh/h on a workday,153.60100021362305,low
+A0596,5,floor,consumption above baseline,statistical,2018-07-27 07:00:00,2018-07-27 09:00:00,36.484733893158335,"2 h, peak z 4.8, holiday",153.23588235126502,low
+A0597,2,floor,after-hours AC,rule,2018-09-21 18:00:00,2018-09-21 20:00:00,36.44049835205078,2 h above 11.1 kWh/h on a workday,153.0500930786133,low
+A0598,2,floor,after-hours AC,rule,2019-09-16 18:00:00,2019-09-16 20:00:00,36.26316833496094,2 h above 11.1 kWh/h on a workday,152.30530700683593,low
+A0599,2,floor,after-hours AC,rule,2018-07-04 18:00:00,2018-07-04 20:00:00,36.194000244140625,2 h above 11.1 kWh/h on a workday,152.01480102539062,low
+A0600,4,floor,consumption above baseline,statistical,2019-09-14 15:00:00,2019-09-14 17:00:00,36.02962282575576,"2 h, peak z 4.7, weekend",151.32441586817419,low
+A0601,2,floor,after-hours AC,rule,2019-07-05 18:00:00,2019-07-05 20:00:00,35.93316650390625,2 h above 11.1 kWh/h on a workday,150.91929931640627,low
+A0602,2,floor,after-hours AC,rule,2019-08-30 18:00:00,2019-08-30 20:00:00,35.87249755859375,2 h above 11.1 kWh/h on a workday,150.66448974609375,low
+A0603,2,floor,after-hours AC,rule,2019-08-01 18:00:00,2019-08-01 20:00:00,35.8594970703125,2 h above 11.1 kWh/h on a workday,150.6098876953125,low
+A0604,2,floor,after-hours AC,rule,2019-09-18 18:00:00,2019-09-18 20:00:00,35.64733123779297,2 h above 11.1 kWh/h on a workday,149.7187911987305,low
+A0605,4,floor,consumption above baseline,statistical,2019-09-21 08:00:00,2019-09-21 10:00:00,35.4352025388249,"2 h, peak z 4.7, weekend",148.8278506630646,low
+A0606,2,floor,after-hours AC,rule,2018-09-19 18:00:00,2018-09-19 20:00:00,35.15699768066406,2 h above 11.1 kWh/h on a workday,147.65939025878907,low
+A0607,2,floor,after-hours AC,rule,2019-08-22 18:00:00,2019-08-22 20:00:00,35.141666412353516,2 h above 11.1 kWh/h on a workday,147.59499893188476,low
+A0608,2,floor,consumption above baseline,statistical,2019-06-10 17:00:00,2019-06-10 19:00:00,35.09021307863141,"2 h, peak z 4.7, workday",147.37889493025193,low
+A0609,2,floor,consumption above baseline,statistical,2019-08-30 18:00:00,2019-08-30 20:00:00,35.066413957682144,"2 h, peak z 4.3, workday",147.278938622265,low
+A0610,2,floor,consumption above baseline,statistical,2019-09-23 18:00:00,2019-09-23 20:00:00,34.89093331401152,"2 h, peak z 4.5, workday",146.54191991884838,low
+A0611,2,floor,consumption above baseline,statistical,2019-06-13 18:00:00,2019-06-13 20:00:00,34.796785984224556,"2 h, peak z 4.9, workday",146.14650113374313,low
+A0612,2,floor,after-hours AC,rule,2018-08-07 18:00:00,2018-08-07 20:00:00,34.682334899902344,2 h above 11.1 kWh/h on a workday,145.66580657958986,low
+A0613,2,floor,after-hours AC,rule,2019-08-27 18:00:00,2019-08-27 20:00:00,34.62299728393555,2 h above 11.1 kWh/h on a workday,145.4165885925293,low
+A0614,2,floor,after-hours AC,rule,2019-09-24 18:00:00,2019-09-24 20:00:00,34.587501525878906,2 h above 11.1 kWh/h on a workday,145.26750640869142,low
+A0615,2,floor,after-hours AC,rule,2018-09-13 18:00:00,2018-09-13 20:00:00,34.58616638183594,2 h above 11.1 kWh/h on a workday,145.26189880371095,low
+A0616,2,floor,consumption above baseline,statistical,2018-08-09 17:00:00,2018-08-09 19:00:00,34.56913888280884,"2 h, peak z 4.3, workday",145.19038330779716,low
+A0617,2,floor,after-hours AC,rule,2018-08-21 18:00:00,2018-08-21 20:00:00,34.553497314453125,2 h above 11.1 kWh/h on a workday,145.12468872070312,low
+A0618,2,floor,after-hours AC,rule,2018-09-14 18:00:00,2018-09-14 20:00:00,34.515167236328125,2 h above 11.1 kWh/h on a workday,144.96370239257814,low
+A0619,2,floor,after-hours AC,rule,2018-08-17 18:00:00,2018-08-17 20:00:00,34.440834045410156,2 h above 11.1 kWh/h on a workday,144.65150299072266,low
+A0620,2,floor,after-hours AC,rule,2019-09-10 18:00:00,2019-09-10 20:00:00,34.32849884033203,2 h above 11.1 kWh/h on a workday,144.17969512939453,low
+A0621,2,floor,after-hours AC,rule,2018-08-22 18:00:00,2018-08-22 20:00:00,34.21666717529297,2 h above 11.1 kWh/h on a workday,143.7100021362305,low
+A0622,2,floor,after-hours AC,rule,2019-08-29 18:00:00,2019-08-29 20:00:00,34.037330627441406,2 h above 11.1 kWh/h on a workday,142.9567886352539,low
+A0623,2,floor,consumption above baseline,statistical,2019-09-05 19:00:00,2019-09-05 21:00:00,33.969645781333426,"2 h, peak z 4.4, workday",142.6725122816004,low
+A0624,2,floor,consumption above baseline,statistical,2019-09-10 18:00:00,2019-09-10 20:00:00,33.92604921915023,"2 h, peak z 4.7, workday",142.48940672043096,low
+A0625,2,floor,after-hours AC,rule,2019-09-02 18:00:00,2019-09-02 20:00:00,33.6533317565918,2 h above 11.1 kWh/h on a workday,141.34399337768556,low
+A0626,2,floor,after-hours AC,rule,2018-08-15 18:00:00,2018-08-15 20:00:00,33.57149887084961,2 h above 11.1 kWh/h on a workday,141.00029525756835,low
+A0627,2,floor,consumption above baseline,statistical,2019-06-21 17:00:00,2019-06-21 19:00:00,33.557252427273994,"2 h, peak z 4.8, workday",140.94046019455078,low
+A0628,2,floor,after-hours AC,rule,2018-08-02 18:00:00,2018-08-02 20:00:00,33.55616760253906,2 h above 11.1 kWh/h on a workday,140.93590393066407,low
+A0629,2,floor,after-hours AC,rule,2019-06-21 18:00:00,2019-06-21 20:00:00,33.33116912841797,2 h above 11.1 kWh/h on a workday,139.99091033935548,low
+A0630,4,floor,consumption above baseline,statistical,2018-09-01 13:00:00,2018-09-01 15:00:00,33.244093799356435,"2 h, peak z 4.2, weekend",139.62519395729703,low
+A0631,2,floor,consumption above baseline,statistical,2019-08-15 18:00:00,2019-08-15 20:00:00,33.22737756154146,"2 h, peak z 4.6, workday",139.55498575847415,low
+A0632,2,floor,consumption above baseline,statistical,2019-07-04 19:00:00,2019-07-04 21:00:00,33.192927103954425,"2 h, peak z 4.4, workday",139.4102938366086,low
+A0633,2,floor,after-hours AC,rule,2019-09-04 18:00:00,2019-09-04 20:00:00,33.14366149902344,2 h above 11.1 kWh/h on a workday,139.20337829589843,low
+A0634,2,floor,consumption above baseline,statistical,2019-09-25 18:00:00,2019-09-25 20:00:00,33.04381536839656,"2 h, peak z 4.4, workday",138.78402454726555,low
+A0635,2,floor,consumption above baseline,statistical,2019-08-01 18:00:00,2019-08-01 20:00:00,33.001819016108826,"2 h, peak z 4.2, workday",138.60763986765707,low
+A0636,2,floor,consumption above baseline,statistical,2019-09-03 18:00:00,2019-09-03 20:00:00,32.955154692480576,"2 h, peak z 4.2, workday",138.41164970841842,low
+A0637,7,floor,after-hours AC,rule,2018-10-08 19:00:00,2018-10-08 21:00:00,32.7518310546875,2 h above 0.5 kWh/h on a workday,137.5576904296875,low
+A0638,2,floor,after-hours AC,rule,2019-08-26 18:00:00,2019-08-26 20:00:00,32.737831115722656,2 h above 11.1 kWh/h on a workday,137.49889068603517,low
+A0639,2,floor,after-hours AC,rule,2018-08-24 18:00:00,2018-08-24 20:00:00,32.66733169555664,2 h above 11.1 kWh/h on a workday,137.2027931213379,low
+A0640,4,floor,consumption above baseline,statistical,2018-09-15 08:00:00,2018-09-15 10:00:00,32.65261431665611,"2 h, peak z 4.1, weekend",137.1409801299557,low
+A0641,2,floor,after-hours AC,rule,2018-08-30 18:00:00,2018-08-30 20:00:00,32.60483169555664,2 h above 11.1 kWh/h on a workday,136.9402931213379,low
+A0642,2,floor,consumption above baseline,statistical,2019-09-20 18:00:00,2019-09-20 20:00:00,32.562068468218584,"2 h, peak z 4.2, workday",136.76068756651807,low
+A0643,2,floor,after-hours AC,rule,2019-08-05 18:00:00,2019-08-05 20:00:00,32.183998107910156,2 h above 11.1 kWh/h on a workday,135.17279205322265,low
+A0644,2,floor,after-hours AC,rule,2018-08-08 18:00:00,2018-08-08 20:00:00,32.182167053222656,2 h above 11.1 kWh/h on a workday,135.16510162353515,low
+A0645,2,floor,consumption above baseline,statistical,2019-08-27 18:00:00,2019-08-27 20:00:00,31.963955014696086,"2 h, peak z 4.1, workday",134.24861106172358,low
+A0646,2,floor,after-hours AC,rule,2018-07-27 07:00:00,2018-07-27 09:00:00,31.958332061767578,2 h above 11.1 kWh/h on a holiday,134.22499465942383,low
+A0647,2,floor,consumption above baseline,statistical,2019-08-22 18:00:00,2019-08-22 20:00:00,31.757396684219476,"2 h, peak z 4.0, workday",133.3810660737218,low
+A0648,2,floor,after-hours AC,rule,2018-09-05 18:00:00,2018-09-05 20:00:00,31.73316764831543,2 h above 11.1 kWh/h on a workday,133.2793041229248,low
+A0649,2,floor,after-hours AC,rule,2019-07-08 18:00:00,2019-07-08 20:00:00,31.498165130615234,2 h above 11.1 kWh/h on a workday,132.29229354858398,low
+A0650,2,floor,after-hours AC,rule,2018-09-26 18:00:00,2018-09-26 21:00:00,31.481164932250977,3 h above 11.1 kWh/h on a workday,132.2208927154541,low
+A0651,4,floor,consumption above baseline,statistical,2019-08-31 13:00:00,2019-08-31 15:00:00,31.460071837576123,"2 h, peak z 4.1, weekend",132.13230171781973,low
+A0652,2,floor,after-hours AC,rule,2019-09-03 18:00:00,2019-09-03 20:00:00,31.42449951171875,2 h above 11.1 kWh/h on a workday,131.98289794921877,low
+A0653,2,floor,after-hours AC,rule,2019-09-26 18:00:00,2019-09-26 20:00:00,31.17733383178711,2 h above 11.1 kWh/h on a workday,130.94480209350587,low
+A0654,2,floor,consumption above baseline,statistical,2019-10-01 18:00:00,2019-10-01 20:00:00,30.758044735659894,"2 h, peak z 3.9, workday",129.18378788977157,low
+A0655,2,floor,consumption above baseline,statistical,2019-08-08 18:00:00,2019-08-08 20:00:00,30.38109928392408,"2 h, peak z 3.8, workday",127.60061699248114,low
+A0656,5,floor,consumption above baseline,statistical,2019-10-23 14:00:00,2019-10-23 16:00:00,30.24018110985081,"2 h, peak z 4.0, holiday",127.0087606613734,low
+A0657,2,floor,after-hours AC,rule,2019-06-11 18:00:00,2019-06-11 20:00:00,30.043498992919922,2 h above 11.1 kWh/h on a workday,126.18269577026368,low
+A0658,2,floor,after-hours AC,rule,2018-07-05 18:00:00,2018-07-05 20:00:00,29.354331970214844,2 h above 11.1 kWh/h on a workday,123.28819427490235,low
+A0659,4,floor,after-hours AC,rule,2019-09-01 07:00:00,2019-09-01 10:00:00,29.034833908081055,3 h above 0.5 kWh/h on a weekend,121.94630241394043,low
+A0660,2,floor,consumption above baseline,statistical,2018-07-05 18:00:00,2018-07-05 20:00:00,28.998133086767556,"2 h, peak z 3.7, workday",121.79215896442373,low
+A0661,2,floor,after-hours AC,rule,2018-08-29 18:00:00,2018-08-29 20:00:00,28.995834350585938,2 h above 11.1 kWh/h on a workday,121.78250427246094,low
+A0662,2,floor,consumption above baseline,statistical,2018-10-02 18:00:00,2018-10-02 20:00:00,28.885461148036445,"2 h, peak z 3.6, workday",121.31893682175307,low
+A0663,5,floor,consumption above baseline,statistical,2019-03-16 10:00:00,2019-03-16 12:00:00,28.792410378941597,"2 h, peak z 3.8, weekend",120.92812359155471,low
+A0664,6,floor,consumption above baseline,statistical,2019-04-21 08:00:00,2019-04-21 10:00:00,28.672783531293803,"2 h, peak z 3.8, weekend",120.42569083143398,low
+A0665,2,floor,after-hours AC,rule,2019-05-31 18:00:00,2019-05-31 19:00:00,27.385164260864258,1 h above 11.1 kWh/h on a workday,115.01768989562989,low
+A0666,3,floor,after-hours AC,rule,2019-11-23 07:00:00,2019-11-23 09:00:00,27.203332901000977,2 h above 0.5 kWh/h on a weekend,114.25399818420411,low
+A0667,2,floor,after-hours AC,rule,2018-07-03 18:00:00,2018-07-03 20:00:00,27.159666061401367,2 h above 11.1 kWh/h on a workday,114.07059745788575,low
+A0668,2,floor,after-hours AC,rule,2019-08-09 18:00:00,2019-08-09 20:00:00,26.685998916625977,2 h above 11.1 kWh/h on a workday,112.08119544982911,low
+A0669,5,floor,after-hours AC,rule,2019-11-23 07:00:00,2019-11-23 09:00:00,26.222999572753906,2 h above 0.5 kWh/h on a weekend,110.13659820556641,low
+A0670,4,floor,after-hours AC,rule,2019-11-23 07:00:00,2019-11-23 09:00:00,25.499666213989258,2 h above 0.5 kWh/h on a weekend,107.09859809875489,low
+A0671,2,floor,after-hours AC,rule,2018-07-02 18:00:00,2018-07-02 20:00:00,23.469999313354492,2 h above 11.1 kWh/h on a workday,98.57399711608888,low
+A0672,2,floor,after-hours AC,rule,2019-07-01 18:00:00,2019-07-01 19:00:00,23.3093318939209,1 h above 11.1 kWh/h on a workday,97.89919395446778,low
+A0673,2,floor,after-hours AC,rule,2019-06-12 18:00:00,2019-06-12 19:00:00,23.17799949645996,1 h above 11.1 kWh/h on a workday,97.34759788513183,low
+A0674,7,floor,after-hours AC,rule,2018-07-16 18:00:00,2018-07-16 19:00:00,22.3070011138916,1 h above 0.5 kWh/h on a workday,93.68940467834473,low
+A0675,2,floor,after-hours AC,rule,2019-06-10 18:00:00,2019-06-10 19:00:00,21.82149887084961,1 h above 11.1 kWh/h on a workday,91.65029525756836,low
+A0676,2,floor,after-hours AC,rule,2019-06-18 18:00:00,2019-06-18 19:00:00,21.12883186340332,1 h above 11.1 kWh/h on a workday,88.74109382629395,low
+A0677,2,floor,after-hours AC,rule,2019-02-23 08:00:00,2019-02-23 09:00:00,19.82416534423828,1 h above 11.1 kWh/h on a weekend,83.26149444580078,low
+A0678,2,floor,after-hours AC,rule,2019-06-26 18:00:00,2019-06-26 19:00:00,19.529666900634766,1 h above 11.1 kWh/h on a workday,82.02460098266602,low
+A0679,3,floor,after-hours AC,rule,2019-07-16 09:00:00,2019-07-16 18:00:00,18.444000244140625,9 h above 0.5 kWh/h on a holiday,77.46480102539063,low
+A0680,2,floor,after-hours AC,rule,2019-04-30 18:00:00,2019-04-30 19:00:00,18.21583366394043,1 h above 11.1 kWh/h on a workday,76.50650138854981,low
+A0681,2,floor,after-hours AC,rule,2018-08-10 18:00:00,2018-08-10 19:00:00,18.092500686645508,1 h above 11.1 kWh/h on a workday,75.98850288391114,low
+A0682,2,floor,after-hours AC,rule,2018-08-03 18:00:00,2018-08-03 19:00:00,17.769500732421875,1 h above 11.1 kWh/h on a workday,74.63190307617188,low
+A0683,2,floor,after-hours AC,rule,2018-08-09 18:00:00,2018-08-09 19:00:00,17.280166625976562,1 h above 11.1 kWh/h on a workday,72.57669982910157,low
+A0684,2,floor,after-hours AC,rule,2019-06-27 18:00:00,2019-06-27 19:00:00,16.913166046142578,1 h above 11.1 kWh/h on a workday,71.03529739379883,low
+A0685,5,floor,after-hours AC,rule,2018-09-08 09:00:00,2018-09-08 16:00:00,16.604999542236328,7 h above 0.5 kWh/h on a weekend,69.74099807739258,low
+A0686,6,floor,after-hours AC,rule,2019-05-19 12:00:00,2019-05-19 21:00:00,14.988165855407715,9 h above 0.5 kWh/h on a weekend,62.950296592712405,low
+A0687,7,floor,after-hours AC,rule,2019-06-19 18:00:00,2019-06-19 19:00:00,13.031999588012695,1 h above 0.5 kWh/h on a workday,54.734398269653326,low
+A0688,5,floor,after-hours AC,rule,2019-09-30 18:00:00,2019-10-01 00:00:00,11.421000480651855,6 h above 0.5 kWh/h on a workday,47.96820201873779,low
+A0689,2,floor,after-hours AC,rule,2019-01-16 18:00:00,2019-01-16 19:00:00,10.367166519165039,1 h above 11.1 kWh/h on a workday,43.54209938049316,low
+A0690,2,floor,after-hours AC,rule,2019-04-23 18:00:00,2019-04-23 19:00:00,10.253665924072266,1 h above 11.1 kWh/h on a workday,43.06539688110352,low
+A0691,7,floor,after-hours AC,rule,2019-09-14 07:00:00,2019-09-14 08:00:00,9.536832809448242,1 h above 0.5 kWh/h on a weekend,40.05469779968262,low
+A0692,5,floor,after-hours AC,rule,2018-11-17 10:00:00,2018-11-17 16:00:00,9.360332489013672,6 h above 0.5 kWh/h on a weekend,39.31339645385742,low
+A0693,6,floor,after-hours AC,rule,2019-07-29 00:00:00,2019-07-29 20:00:00,9.229000091552734,9 h above 0.5 kWh/h on a holiday,38.761800384521486,low
+A0694,2,floor,after-hours AC,rule,2019-05-01 18:00:00,2019-05-01 19:00:00,9.16550064086914,1 h above 11.1 kWh/h on a holiday_worked,38.495102691650395,low
+A0695,2,floor,after-hours AC,rule,2019-05-02 18:00:00,2019-05-02 19:00:00,9.055500030517578,1 h above 11.1 kWh/h on a workday,38.03310012817383,low
+A0696,2,floor,after-hours AC,rule,2019-05-07 18:00:00,2019-05-07 19:00:00,8.73750114440918,1 h above 11.1 kWh/h on a workday,36.69750480651856,low
+A0697,6,floor,after-hours AC,rule,2019-06-16 09:00:00,2019-06-16 16:00:00,8.62600040435791,7 h above 0.5 kWh/h on a weekend,36.22920169830322,low
+A0698,2,floor,after-hours AC,rule,2019-05-21 18:00:00,2019-05-21 19:00:00,8.417667388916016,1 h above 11.1 kWh/h on a workday,35.35420303344727,low
+A0699,2,floor,after-hours AC,rule,2019-05-03 18:00:00,2019-05-03 19:00:00,8.198333740234375,1 h above 11.1 kWh/h on a workday,34.43300170898438,low
+A0700,6,floor,after-hours AC,rule,2018-12-10 16:00:00,2018-12-10 21:00:00,8.075166702270508,5 h above 0.5 kWh/h on a holiday,33.915700149536136,low
+A0701,2,floor,after-hours AC,rule,2019-05-08 18:00:00,2019-05-08 19:00:00,7.838000774383545,1 h above 11.1 kWh/h on a workday,32.91960325241089,low
+A0702,3,floor,after-hours AC,rule,2019-05-20 09:00:00,2019-05-20 17:00:00,7.74500036239624,7 h above 0.5 kWh/h on a holiday,32.52900152206421,low
+A0703,6,floor,after-hours AC,rule,2019-09-14 07:00:00,2019-09-14 08:00:00,7.685999870300293,1 h above 0.5 kWh/h on a weekend,32.28119945526123,low
+A0704,2,floor,after-hours AC,rule,2019-11-23 08:00:00,2019-11-23 09:00:00,7.203166484832764,1 h above 11.1 kWh/h on a weekend,30.253299236297607,low
+A0705,6,floor,after-hours AC,rule,2019-04-16 11:00:00,2019-04-16 17:00:00,7.072166442871094,6 h above 0.5 kWh/h on a holiday,29.703099060058594,low
+A0706,6,floor,after-hours AC,rule,2018-11-25 10:00:00,2018-11-25 17:00:00,7.022166728973389,7 h above 0.5 kWh/h on a weekend,29.493100261688234,low
+A0707,2,floor,after-hours AC,rule,2019-05-10 18:00:00,2019-05-10 19:00:00,6.864833354949951,1 h above 11.1 kWh/h on a workday,28.832300090789797,low
+A0708,2,floor,after-hours AC,rule,2019-05-17 18:00:00,2019-05-17 19:00:00,6.61033296585083,1 h above 11.1 kWh/h on a workday,27.763398456573487,low
+A0709,6,floor,after-hours AC,rule,2019-03-02 09:00:00,2019-03-02 16:00:00,6.5465006828308105,7 h above 0.5 kWh/h on a weekend,27.495302867889407,low
+A0710,6,floor,after-hours AC,rule,2019-05-25 10:00:00,2019-05-25 16:00:00,5.99399995803833,6 h above 0.5 kWh/h on a weekend,25.17479982376099,low
+A0711,2,floor,after-hours AC,rule,2019-05-27 18:00:00,2019-05-27 19:00:00,5.752999782562256,1 h above 11.1 kWh/h on a workday,24.162599086761475,low
+A0712,2,floor,after-hours AC,rule,2019-05-15 18:00:00,2019-05-15 19:00:00,5.574167728424072,1 h above 11.1 kWh/h on a workday,23.411504459381103,low
+A0713,6,floor,after-hours AC,rule,2019-04-06 10:00:00,2019-04-06 17:00:00,5.533999919891357,7 h above 0.5 kWh/h on a holiday,23.242799663543703,low
+A0714,2,floor,after-hours AC,rule,2019-05-16 18:00:00,2019-05-16 19:00:00,5.528666973114014,1 h above 11.1 kWh/h on a workday,23.220401287078857,low
+A0715,6,floor,after-hours AC,rule,2018-08-11 10:00:00,2018-08-11 17:00:00,5.513999938964844,7 h above 0.5 kWh/h on a weekend,23.158799743652345,low
+A0716,2,floor,after-hours AC,rule,2019-05-13 18:00:00,2019-05-13 19:00:00,5.4994988441467285,1 h above 11.1 kWh/h on a workday,23.09789514541626,low
+A0717,2,floor,after-hours AC,rule,2019-05-28 18:00:00,2019-05-28 19:00:00,5.488000392913818,1 h above 11.1 kWh/h on a workday,23.04960165023804,low
+A0718,5,floor,after-hours AC,rule,2018-10-23 11:00:00,2018-10-23 17:00:00,5.462499618530273,6 h above 0.5 kWh/h on a holiday,22.942498397827148,low
+A0719,4,floor,after-hours AC,rule,2019-12-22 12:00:00,2019-12-22 18:00:00,5.303666591644287,4 h above 0.5 kWh/h on a weekend,22.275399684906006,low
+A0720,6,floor,after-hours AC,rule,2018-11-06 18:00:00,2018-11-06 23:00:00,5.177833557128906,5 h above 0.5 kWh/h on a workday,21.74690093994141,low
+A0721,2,floor,after-hours AC,rule,2019-05-22 18:00:00,2019-05-22 19:00:00,5.145999431610107,1 h above 11.1 kWh/h on a workday,21.613197612762452,low
+A0722,3,floor,after-hours AC,rule,2019-04-16 10:00:00,2019-04-16 14:00:00,5.023666858673096,4 h above 0.5 kWh/h on a holiday,21.099400806427003,low
+A0723,2,floor,after-hours AC,rule,2019-05-23 18:00:00,2019-05-23 19:00:00,4.846499919891357,1 h above 11.1 kWh/h on a workday,20.3552996635437,low
+A0724,2,floor,after-hours AC,rule,2019-05-24 18:00:00,2019-05-24 19:00:00,4.571000576019287,1 h above 11.1 kWh/h on a workday,19.198202419281007,low
+A0725,4,floor,after-hours AC,rule,2019-08-12 09:00:00,2019-08-12 14:00:00,4.474666595458984,5 h above 0.5 kWh/h on a holiday,18.793599700927736,low
+A0726,6,floor,after-hours AC,rule,2019-02-02 10:00:00,2019-02-02 16:00:00,4.36466646194458,6 h above 0.5 kWh/h on a weekend,18.33159914016724,low
+A0727,4,floor,after-hours AC,rule,2019-12-14 12:00:00,2019-12-14 15:00:00,4.151000022888184,3 h above 0.5 kWh/h on a weekend,17.434200096130372,low
+A0728,5,floor,after-hours AC,rule,2019-10-01 00:00:00,2019-10-01 03:00:00,4.101500034332275,3 h above 0.5 kWh/h on a workday,17.22630014419556,low
+A0729,6,floor,after-hours AC,rule,2018-11-29 18:00:00,2018-11-29 22:00:00,3.9786665439605713,4 h above 0.5 kWh/h on a workday,16.7103994846344,low
+A0730,6,floor,after-hours AC,rule,2018-09-01 09:00:00,2018-09-01 16:00:00,3.884833574295044,7 h above 0.5 kWh/h on a weekend,16.316301012039187,low
+A0731,6,floor,after-hours AC,rule,2019-07-20 15:00:00,2019-07-21 00:00:00,3.828000068664551,4 h above 0.5 kWh/h on a weekend,16.077600288391114,low
+A0732,3,floor,after-hours AC,rule,2019-04-20 10:00:00,2019-04-20 14:00:00,3.824333429336548,4 h above 0.5 kWh/h on a weekend,16.062200403213502,low
+A0733,3,floor,after-hours AC,rule,2019-04-12 09:00:00,2019-04-12 12:00:00,3.625,3 h above 0.5 kWh/h on a closure,15.225000000000001,low
+A0734,6,floor,after-hours AC,rule,2018-11-07 18:00:00,2018-11-07 22:00:00,3.567500114440918,4 h above 0.5 kWh/h on a workday,14.983500480651855,low
+A0735,6,floor,after-hours AC,rule,2019-07-16 14:00:00,2019-07-16 21:00:00,3.553333282470703,4 h above 0.5 kWh/h on a holiday,14.923999786376953,low
+A0736,3,floor,after-hours AC,rule,2019-06-03 11:00:00,2019-06-03 14:00:00,3.4083333015441895,3 h above 0.5 kWh/h on a holiday,14.314999866485596,low
+A0737,4,floor,after-hours AC,rule,2019-09-28 13:00:00,2019-09-28 15:00:00,3.312333345413208,2 h above 0.5 kWh/h on a weekend,13.911800050735474,low
+A0738,3,floor,after-hours AC,rule,2019-10-19 11:00:00,2019-10-19 16:00:00,3.2679998874664307,3 h above 0.5 kWh/h on a weekend,13.725599527359009,low
+A0739,6,floor,after-hours AC,rule,2019-07-28 00:00:00,2019-07-29 00:00:00,3.2230000495910645,4 h above 0.5 kWh/h on a holiday,13.536600208282472,low
+A0740,4,floor,after-hours AC,rule,2018-10-27 12:00:00,2018-10-27 14:00:00,3.1366665363311768,2 h above 0.5 kWh/h on a weekend,13.173999452590943,low
+A0741,3,floor,after-hours AC,rule,2019-05-04 10:00:00,2019-05-04 13:00:00,3.0406668186187744,3 h above 0.5 kWh/h on a weekend,12.770800638198853,low
+A0742,6,floor,after-hours AC,rule,2019-07-13 21:00:00,2019-07-14 00:00:00,2.9798331260681152,3 h above 0.5 kWh/h on a weekend,12.515299129486085,low
+A0743,5,floor,after-hours AC,rule,2018-07-25 18:00:00,2018-07-25 20:00:00,2.9703333377838135,2 h above 0.5 kWh/h on a workday,12.475400018692017,low
+A0744,6,floor,after-hours AC,rule,2019-04-29 18:00:00,2019-04-29 20:00:00,2.862499952316284,2 h above 0.5 kWh/h on a workday,12.022499799728394,low
+A0745,3,floor,after-hours AC,rule,2019-06-01 12:00:00,2019-06-01 16:00:00,2.757833242416382,4 h above 0.5 kWh/h on a weekend,11.582899618148804,low
+A0746,6,floor,after-hours AC,rule,2019-06-02 09:00:00,2019-06-02 12:00:00,2.627833366394043,3 h above 0.5 kWh/h on a weekend,11.03690013885498,low
+A0747,5,floor,after-hours AC,rule,2018-08-21 18:00:00,2018-08-21 20:00:00,2.6031665802001953,2 h above 0.5 kWh/h on a workday,10.93329963684082,low
+A0748,5,floor,after-hours AC,rule,2018-08-01 18:00:00,2018-08-01 20:00:00,2.5931668281555176,2 h above 0.5 kWh/h on a workday,10.891300678253174,low
+A0749,3,floor,after-hours AC,rule,2019-04-08 09:00:00,2019-04-08 12:00:00,2.565166711807251,3 h above 0.5 kWh/h on a holiday,10.773700189590455,low
+A0750,3,floor,after-hours AC,rule,2019-10-26 11:00:00,2019-10-26 16:00:00,2.560666561126709,3 h above 0.5 kWh/h on a weekend,10.754799556732179,low
+A0751,5,floor,after-hours AC,rule,2018-07-20 18:00:00,2018-07-20 20:00:00,2.560333490371704,2 h above 0.5 kWh/h on a workday,10.753400659561157,low
+A0752,3,floor,after-hours AC,rule,2019-06-15 10:00:00,2019-06-15 13:00:00,2.4656667709350586,3 h above 0.5 kWh/h on a weekend,10.355800437927247,low
+A0753,4,floor,after-hours AC,rule,2018-07-15 07:00:00,2018-07-15 08:00:00,2.436000108718872,1 h above 0.5 kWh/h on a weekend,10.231200456619263,low
+A0754,6,floor,after-hours AC,rule,2019-05-11 08:00:00,2019-05-11 11:00:00,2.2731666564941406,3 h above 0.5 kWh/h on a weekend,9.54729995727539,low
+A0755,3,floor,after-hours AC,rule,2019-04-06 10:00:00,2019-04-06 12:00:00,2.242666721343994,2 h above 0.5 kWh/h on a holiday,9.419200229644776,low
+A0756,5,floor,after-hours AC,rule,2019-04-08 12:00:00,2019-04-08 14:00:00,2.2360000610351562,2 h above 0.5 kWh/h on a holiday,9.391200256347657,low
+A0757,6,floor,after-hours AC,rule,2019-07-17 16:00:00,2019-07-17 20:00:00,2.2284998893737793,3 h above 0.5 kWh/h on a holiday,9.359699535369874,low
+A0758,5,floor,after-hours AC,rule,2019-04-27 13:00:00,2019-04-27 15:00:00,2.2255001068115234,2 h above 0.5 kWh/h on a weekend,9.3471004486084,low
+A0759,6,floor,after-hours AC,rule,2019-08-03 16:00:00,2019-08-04 00:00:00,2.1068334579467773,3 h above 0.5 kWh/h on a weekend,8.848700523376465,low
+A0760,3,floor,after-hours AC,rule,2019-09-07 10:00:00,2019-09-07 14:00:00,2.1016666889190674,3 h above 0.5 kWh/h on a weekend,8.827000093460084,low
+A0761,3,floor,after-hours AC,rule,2019-10-12 10:00:00,2019-10-12 15:00:00,2.0956666469573975,2 h above 0.5 kWh/h on a weekend,8.80179991722107,low
+A0762,3,floor,after-hours AC,rule,2018-12-15 11:00:00,2018-12-15 14:00:00,2.080416679382324,3 h above 0.5 kWh/h on a weekend,8.737750053405762,low
+A0763,6,floor,after-hours AC,rule,2019-07-15 19:00:00,2019-07-15 22:00:00,2.053666591644287,3 h above 0.5 kWh/h on a workday,8.625399684906006,low
+A0764,5,floor,after-hours AC,rule,2018-09-26 18:00:00,2018-09-26 20:00:00,2.0425000190734863,2 h above 0.5 kWh/h on a workday,8.578500080108643,low
+A0765,3,floor,after-hours AC,rule,2019-07-31 18:00:00,2019-07-31 20:00:00,2.0250000953674316,2 h above 0.5 kWh/h on a workday,8.505000400543214,low
+A0766,3,floor,after-hours AC,rule,2019-04-29 18:00:00,2019-04-29 20:00:00,2.0146665573120117,2 h above 0.5 kWh/h on a workday,8.46159954071045,low
+A0767,6,floor,after-hours AC,rule,2019-07-21 00:00:00,2019-07-21 17:00:00,1.9920001029968262,2 h above 0.5 kWh/h on a weekend,8.366400432586671,low
+A0768,3,floor,after-hours AC,rule,2019-07-06 10:00:00,2019-07-06 13:00:00,1.9823333024978638,3 h above 0.5 kWh/h on a weekend,8.325799870491029,low
+A0769,5,floor,after-hours AC,rule,2019-07-06 10:00:00,2019-07-06 12:00:00,1.9620001316070557,2 h above 0.5 kWh/h on a weekend,8.240400552749634,low
+A0770,3,floor,after-hours AC,rule,2019-02-16 10:00:00,2019-02-16 12:00:00,1.9286668300628662,2 h above 0.5 kWh/h on a weekend,8.100400686264038,low
+A0771,3,floor,after-hours AC,rule,2019-08-31 11:00:00,2019-08-31 13:00:00,1.9183334112167358,2 h above 0.5 kWh/h on a weekend,8.057000327110291,low
+A0772,4,floor,after-hours AC,rule,2019-03-17 12:00:00,2019-03-17 14:00:00,1.8946666717529297,2 h above 0.5 kWh/h on a weekend,7.957600021362305,low
+A0773,6,floor,after-hours AC,rule,2019-04-30 05:00:00,2019-04-30 07:00:00,1.873666763305664,2 h above 0.5 kWh/h on a workday,7.869400405883789,low
+A0774,3,floor,after-hours AC,rule,2019-05-25 10:00:00,2019-05-25 13:00:00,1.8570001125335693,3 h above 0.5 kWh/h on a weekend,7.799400472640992,low
+A0775,3,floor,after-hours AC,rule,2019-07-27 12:00:00,2019-07-27 16:00:00,1.809833288192749,2 h above 0.5 kWh/h on a weekend,7.601299810409547,low
+A0776,6,floor,after-hours AC,rule,2019-06-15 16:00:00,2019-06-15 17:00:00,1.7994999885559082,1 h above 0.5 kWh/h on a weekend,7.5578999519348145,low
+A0777,3,floor,after-hours AC,rule,2019-08-03 10:00:00,2019-08-03 12:00:00,1.7971665859222412,2 h above 0.5 kWh/h on a weekend,7.548099660873413,low
+A0778,6,floor,after-hours AC,rule,2019-08-18 00:00:00,2019-08-18 03:00:00,1.7918334007263184,3 h above 0.5 kWh/h on a weekend,7.525700283050537,low
+A0779,6,floor,after-hours AC,rule,2019-03-23 13:00:00,2019-03-23 15:00:00,1.7834999561309814,2 h above 0.5 kWh/h on a weekend,7.490699815750123,low
+A0780,6,floor,after-hours AC,rule,2019-07-27 16:00:00,2019-07-28 00:00:00,1.7821667194366455,2 h above 0.5 kWh/h on a weekend,7.485100221633911,low
+A0781,3,floor,after-hours AC,rule,2018-07-30 09:00:00,2018-07-30 11:00:00,1.7093334197998047,2 h above 0.5 kWh/h on a holiday,7.17920036315918,low
+A0782,5,floor,after-hours AC,rule,2018-09-22 11:00:00,2018-09-22 13:00:00,1.690999984741211,2 h above 0.5 kWh/h on a weekend,7.102199935913086,low
+A0783,7,floor,after-hours AC,rule,2018-07-15 07:00:00,2018-07-15 08:00:00,1.687666654586792,1 h above 0.5 kWh/h on a weekend,7.088199949264527,low
+A0784,3,floor,after-hours AC,rule,2019-06-22 09:00:00,2019-06-22 10:00:00,1.683166742324829,1 h above 0.5 kWh/h on a weekend,7.069300317764283,low
+A0785,5,floor,after-hours AC,rule,2018-07-23 18:00:00,2018-07-23 20:00:00,1.6726666688919067,2 h above 0.5 kWh/h on a workday,7.025200009346008,low
+A0786,6,floor,after-hours AC,rule,2019-04-08 12:00:00,2019-04-08 14:00:00,1.6411666870117188,2 h above 0.5 kWh/h on a holiday,6.892900085449219,low
+A0787,3,floor,after-hours AC,rule,2018-12-10 10:00:00,2018-12-10 12:00:00,1.6200000047683716,2 h above 0.5 kWh/h on a holiday,6.804000020027161,low
+A0788,5,floor,after-hours AC,rule,2018-07-24 18:00:00,2018-07-24 19:00:00,1.590833306312561,1 h above 0.5 kWh/h on a workday,6.681499886512757,low
+A0789,5,floor,after-hours AC,rule,2018-07-18 18:00:00,2018-07-18 19:00:00,1.5640000104904175,1 h above 0.5 kWh/h on a workday,6.568800044059754,low
+A0790,6,floor,after-hours AC,rule,2019-01-12 15:00:00,2019-01-12 16:00:00,1.5583332777023315,1 h above 0.5 kWh/h on a holiday,6.544999766349793,low
+A0791,5,floor,after-hours AC,rule,2018-09-10 18:00:00,2018-09-10 19:00:00,1.4850000143051147,1 h above 0.5 kWh/h on a workday,6.237000060081482,low
+A0792,5,floor,after-hours AC,rule,2018-07-17 18:00:00,2018-07-17 19:00:00,1.444000005722046,1 h above 0.5 kWh/h on a workday,6.064800024032593,low
+A0793,6,floor,after-hours AC,rule,2019-08-04 00:00:00,2019-08-04 17:00:00,1.4356666803359985,2 h above 0.5 kWh/h on a weekend,6.029800057411194,low
+A0794,5,floor,after-hours AC,rule,2018-07-19 18:00:00,2018-07-19 19:00:00,1.3895000219345093,1 h above 0.5 kWh/h on a workday,5.835900092124939,low
+A0795,6,floor,after-hours AC,rule,2019-08-24 11:00:00,2019-08-24 16:00:00,1.377500057220459,2 h above 0.5 kWh/h on a weekend,5.785500240325928,low
+A0796,6,floor,after-hours AC,rule,2019-07-30 18:00:00,2019-07-30 21:00:00,1.340000033378601,2 h above 0.5 kWh/h on a workday,5.6280001401901245,low
+A0797,7,floor,after-hours AC,rule,2019-06-05 18:00:00,2019-06-05 19:00:00,1.3261666297912598,1 h above 0.5 kWh/h on a workday,5.569899845123291,low
+A0798,3,floor,after-hours AC,rule,2019-01-19 11:00:00,2019-01-19 13:00:00,1.3071666955947876,2 h above 0.5 kWh/h on a weekend,5.490100121498108,low
+A0799,5,floor,after-hours AC,rule,2019-05-22 18:00:00,2019-05-22 19:00:00,1.2906665802001953,1 h above 0.5 kWh/h on a workday,5.420799636840821,low
+A0800,5,floor,after-hours AC,rule,2018-07-16 18:00:00,2018-07-16 19:00:00,1.2714999914169312,1 h above 0.5 kWh/h on a workday,5.340299963951111,low
+A0801,5,floor,after-hours AC,rule,2018-10-01 18:00:00,2018-10-01 19:00:00,1.2018333673477173,1 h above 0.5 kWh/h on a workday,5.047700142860413,low
+A0802,5,floor,after-hours AC,rule,2018-09-14 18:00:00,2018-09-14 19:00:00,1.1671667098999023,1 h above 0.5 kWh/h on a workday,4.90210018157959,low
+A0803,3,floor,after-hours AC,rule,2019-05-08 18:00:00,2019-05-08 19:00:00,1.1403332948684692,1 h above 0.5 kWh/h on a workday,4.789399838447571,low
+A0804,5,floor,after-hours AC,rule,2018-11-28 18:00:00,2018-11-28 19:00:00,1.128000020980835,1 h above 0.5 kWh/h on a workday,4.737600088119507,low
+A0805,6,floor,after-hours AC,rule,2018-08-03 18:00:00,2018-08-03 19:00:00,1.1274999380111694,1 h above 0.5 kWh/h on a workday,4.735499739646912,low
+A0806,6,floor,after-hours AC,rule,2019-04-19 06:00:00,2019-04-19 07:00:00,1.1176667213439941,1 h above 0.5 kWh/h on a workday,4.694200229644776,low
+A0807,6,floor,after-hours AC,rule,2019-07-06 16:00:00,2019-07-06 17:00:00,1.0855000019073486,1 h above 0.5 kWh/h on a weekend,4.559100008010865,low
+A0808,5,floor,after-hours AC,rule,2018-09-29 12:00:00,2018-09-29 13:00:00,1.0548334121704102,1 h above 0.5 kWh/h on a weekend,4.430300331115723,low
+A0809,3,floor,after-hours AC,rule,2018-08-13 10:00:00,2018-08-13 11:00:00,1.0535000562667847,1 h above 0.5 kWh/h on a holiday,4.424700236320496,low
+A0810,3,floor,after-hours AC,rule,2019-04-18 18:00:00,2019-04-18 19:00:00,1.0503333806991577,1 h above 0.5 kWh/h on a workday,4.411400198936462,low
+A0811,5,floor,after-hours AC,rule,2018-08-27 19:00:00,2018-08-27 20:00:00,1.027999997138977,1 h above 0.5 kWh/h on a workday,4.317599987983704,low
+A0812,7,floor,after-hours AC,rule,2019-05-19 07:00:00,2019-05-19 08:00:00,1.0231666564941406,1 h above 0.5 kWh/h on a weekend,4.297299957275391,low
+A0813,5,floor,after-hours AC,rule,2018-08-10 18:00:00,2018-08-10 19:00:00,1.0161666870117188,1 h above 0.5 kWh/h on a workday,4.267900085449219,low
+A0814,3,floor,after-hours AC,rule,2019-06-24 18:00:00,2019-06-24 19:00:00,0.9980000257492065,1 h above 0.5 kWh/h on a workday,4.191600108146668,low
+A0815,3,floor,after-hours AC,rule,2019-04-10 18:00:00,2019-04-10 19:00:00,0.981166660785675,1 h above 0.5 kWh/h on a workday,4.120899975299835,low
+A0816,5,floor,after-hours AC,rule,2018-07-31 18:00:00,2018-07-31 19:00:00,0.9778333306312561,1 h above 0.5 kWh/h on a workday,4.106899988651276,low
+A0817,6,floor,after-hours AC,rule,2019-04-04 18:00:00,2019-04-04 19:00:00,0.937166690826416,1 h above 0.5 kWh/h on a workday,3.9361001014709474,low
+A0818,5,floor,after-hours AC,rule,2018-08-02 18:00:00,2018-08-02 19:00:00,0.9228333234786987,1 h above 0.5 kWh/h on a workday,3.875899958610535,low
+A0819,3,floor,after-hours AC,rule,2019-04-19 18:00:00,2019-04-19 19:00:00,0.8813333511352539,1 h above 0.5 kWh/h on a workday,3.7016000747680664,low
+A0820,6,floor,after-hours AC,rule,2019-08-17 23:00:00,2019-08-18 00:00:00,0.846833348274231,1 h above 0.5 kWh/h on a weekend,3.55670006275177,low
+A0821,5,floor,after-hours AC,rule,2018-07-07 11:00:00,2018-07-07 12:00:00,0.8383333086967468,1 h above 0.5 kWh/h on a weekend,3.520999896526337,low
+A0822,3,floor,after-hours AC,rule,2019-11-06 18:00:00,2019-11-06 19:00:00,0.8353333473205566,1 h above 0.5 kWh/h on a workday,3.508400058746338,low
+A0823,5,floor,after-hours AC,rule,2019-08-31 13:00:00,2019-08-31 14:00:00,0.8271666765213013,1 h above 0.5 kWh/h on a weekend,3.4741000413894656,low
+A0824,3,floor,after-hours AC,rule,2019-03-13 18:00:00,2019-03-13 19:00:00,0.8183333277702332,1 h above 0.5 kWh/h on a workday,3.4369999766349792,low
+A0825,6,floor,after-hours AC,rule,2019-03-11 06:00:00,2019-03-11 07:00:00,0.8180000185966492,1 h above 0.5 kWh/h on a workday,3.4356000781059266,low
+A0826,3,floor,after-hours AC,rule,2019-04-30 18:00:00,2019-04-30 19:00:00,0.8115000128746033,1 h above 0.5 kWh/h on a workday,3.408300054073334,low
+A0827,3,floor,after-hours AC,rule,2018-12-28 18:00:00,2018-12-28 19:00:00,0.8056667447090149,1 h above 0.5 kWh/h on a workday,3.3838003277778625,low
+A0828,5,floor,after-hours AC,rule,2018-07-26 18:00:00,2018-07-26 19:00:00,0.800166666507721,1 h above 0.5 kWh/h on a workday,3.3606999993324282,low
+A0829,3,floor,after-hours AC,rule,2019-12-06 18:00:00,2019-12-06 19:00:00,0.7889999747276306,1 h above 0.5 kWh/h on a workday,3.3137998938560487,low
+A0830,5,floor,after-hours AC,rule,2018-08-22 18:00:00,2018-08-22 19:00:00,0.7673333287239075,1 h above 0.5 kWh/h on a workday,3.2227999806404117,low
+A0831,5,floor,after-hours AC,rule,2019-01-12 12:00:00,2019-01-12 13:00:00,0.7628333568572998,1 h above 0.5 kWh/h on a holiday,3.203900098800659,low
+A0832,5,floor,after-hours AC,rule,2018-08-20 18:00:00,2018-08-20 19:00:00,0.7579999566078186,1 h above 0.5 kWh/h on a workday,3.1835998177528384,low
+A0833,5,floor,after-hours AC,rule,2018-09-05 18:00:00,2018-09-05 19:00:00,0.7553333044052124,1 h above 0.5 kWh/h on a workday,3.172399878501892,low
+A0834,5,floor,after-hours AC,rule,2018-09-03 18:00:00,2018-09-03 19:00:00,0.7491666674613953,1 h above 0.5 kWh/h on a workday,3.1465000033378603,low
+A0835,6,floor,after-hours AC,rule,2018-11-17 15:00:00,2018-11-17 16:00:00,0.746833324432373,1 h above 0.5 kWh/h on a weekend,3.136699962615967,low
+A0836,5,floor,after-hours AC,rule,2018-09-18 18:00:00,2018-09-18 19:00:00,0.7423332929611206,1 h above 0.5 kWh/h on a workday,3.1177998304367067,low
+A0837,4,floor,after-hours AC,rule,2019-10-10 18:00:00,2019-10-10 19:00:00,0.7361666560173035,1 h above 0.5 kWh/h on a workday,3.0918999552726745,low
+A0838,3,floor,after-hours AC,rule,2018-07-14 10:00:00,2018-07-14 11:00:00,0.7310000061988831,1 h above 0.5 kWh/h on a weekend,3.070200026035309,low
+A0839,6,floor,after-hours AC,rule,2018-08-16 18:00:00,2018-08-16 19:00:00,0.7310000061988831,1 h above 0.5 kWh/h on a workday,3.070200026035309,low
+A0840,5,floor,after-hours AC,rule,2019-08-26 18:00:00,2019-08-26 19:00:00,0.7208333015441895,1 h above 0.5 kWh/h on a workday,3.027499866485596,low
+A0841,3,floor,after-hours AC,rule,2018-07-07 10:00:00,2018-07-07 11:00:00,0.7204999923706055,1 h above 0.5 kWh/h on a weekend,3.0260999679565432,low
+A0842,6,floor,after-hours AC,rule,2019-06-26 18:00:00,2019-06-26 19:00:00,0.7125000357627869,1 h above 0.5 kWh/h on a workday,2.9925001502037047,low
+A0843,5,floor,after-hours AC,rule,2018-12-01 08:00:00,2018-12-01 09:00:00,0.6781666278839111,1 h above 0.5 kWh/h on a weekend,2.848299837112427,low
+A0844,3,floor,after-hours AC,rule,2018-09-01 10:00:00,2018-09-01 11:00:00,0.6710000038146973,1 h above 0.5 kWh/h on a weekend,2.8182000160217284,low
+A0845,6,floor,after-hours AC,rule,2018-09-20 18:00:00,2018-09-20 19:00:00,0.6710000038146973,1 h above 0.5 kWh/h on a workday,2.8182000160217284,low
+A0846,4,floor,after-hours AC,rule,2019-04-30 06:00:00,2019-04-30 07:00:00,0.6636666655540466,1 h above 0.5 kWh/h on a workday,2.787399995326996,low
+A0847,3,floor,after-hours AC,rule,2019-11-05 18:00:00,2019-11-05 19:00:00,0.6606666445732117,1 h above 0.5 kWh/h on a workday,2.774799907207489,low
+A0848,6,floor,after-hours AC,rule,2019-06-25 18:00:00,2019-06-25 19:00:00,0.6583333611488342,1 h above 0.5 kWh/h on a workday,2.765000116825104,low
+A0849,4,floor,after-hours AC,rule,2019-10-07 18:00:00,2019-10-07 19:00:00,0.6451666355133057,1 h above 0.5 kWh/h on a workday,2.709699869155884,low
+A0850,6,floor,after-hours AC,rule,2019-03-14 18:00:00,2019-03-14 19:00:00,0.6421666741371155,1 h above 0.5 kWh/h on a workday,2.6971000313758853,low
+A0851,6,floor,after-hours AC,rule,2019-03-20 18:00:00,2019-03-20 19:00:00,0.6324999928474426,1 h above 0.5 kWh/h on a workday,2.6564999699592593,low
+A0852,3,floor,after-hours AC,rule,2018-12-08 11:00:00,2018-12-08 12:00:00,0.6145000457763672,1 h above 0.5 kWh/h on a weekend,2.580900192260742,low
+A0853,3,floor,after-hours AC,rule,2019-03-20 18:00:00,2019-03-20 19:00:00,0.612500011920929,1 h above 0.5 kWh/h on a workday,2.5725000500679016,low
+A0854,4,floor,after-hours AC,rule,2018-12-09 09:00:00,2018-12-09 10:00:00,0.5993333458900452,1 h above 0.5 kWh/h on a weekend,2.5172000527381897,low
+A0855,5,floor,after-hours AC,rule,2019-07-09 18:00:00,2019-07-09 19:00:00,0.5985000133514404,1 h above 0.5 kWh/h on a workday,2.51370005607605,low
+A0856,3,floor,after-hours AC,rule,2019-06-04 18:00:00,2019-06-04 19:00:00,0.5951666831970215,1 h above 0.5 kWh/h on a workday,2.4997000694274902,low
+A0857,3,floor,after-hours AC,rule,2019-06-11 18:00:00,2019-06-11 19:00:00,0.5948333144187927,1 h above 0.5 kWh/h on a workday,2.4982999205589294,low
+A0858,5,floor,after-hours AC,rule,2018-08-24 18:00:00,2018-08-24 19:00:00,0.593833327293396,1 h above 0.5 kWh/h on a workday,2.494099974632263,low
+A0859,3,floor,after-hours AC,rule,2019-08-22 18:00:00,2019-08-22 19:00:00,0.5776666402816772,1 h above 0.5 kWh/h on a workday,2.4261998891830445,low
+A0860,6,floor,after-hours AC,rule,2019-07-14 00:00:00,2019-07-14 01:00:00,0.5756666660308838,1 h above 0.5 kWh/h on a weekend,2.417799997329712,low
+A0861,6,floor,after-hours AC,rule,2018-10-22 06:00:00,2018-10-22 07:00:00,0.5730000138282776,1 h above 0.5 kWh/h on a workday,2.406600058078766,low
+A0862,4,floor,after-hours AC,rule,2018-12-10 12:00:00,2018-12-10 13:00:00,0.565833330154419,1 h above 0.5 kWh/h on a holiday,2.3764999866485597,low
+A0863,3,floor,after-hours AC,rule,2019-02-09 10:00:00,2019-02-09 11:00:00,0.565583348274231,1 h above 0.5 kWh/h on a weekend,2.3754500627517703,low
+A0864,6,floor,after-hours AC,rule,2018-09-18 18:00:00,2018-09-18 19:00:00,0.5534999966621399,1 h above 0.5 kWh/h on a workday,2.324699985980988,low
+A0865,5,floor,after-hours AC,rule,2018-09-25 18:00:00,2018-09-25 19:00:00,0.5476666688919067,1 h above 0.5 kWh/h on a workday,2.300200009346008,low
+A0866,6,floor,after-hours AC,rule,2018-12-21 18:00:00,2018-12-21 19:00:00,0.5454999804496765,1 h above 0.5 kWh/h on a workday,2.2910999178886415,low
+A0867,4,floor,after-hours AC,rule,2019-04-29 06:00:00,2019-04-29 07:00:00,0.5223333239555359,1 h above 0.5 kWh/h on a workday,2.193799960613251,low
+A0868,6,floor,after-hours AC,rule,2018-09-22 11:00:00,2018-09-22 12:00:00,0.5150833129882812,1 h above 0.5 kWh/h on a weekend,2.1633499145507815,low
+A0869,6,floor,after-hours AC,rule,2019-02-06 06:00:00,2019-02-06 07:00:00,0.503166675567627,1 h above 0.5 kWh/h on a workday,2.1133000373840334,low
+A0870,1,floor,upward drift (CUSUM),statistical,2018-07-06 00:00:00,2018-07-07 00:00:00,,sustained daily excess,,low
+A0871,1,floor,upward drift (CUSUM),statistical,2018-07-21 00:00:00,2018-07-22 00:00:00,,sustained daily excess,,low
+A0872,1,floor,upward drift (CUSUM),statistical,2018-07-26 00:00:00,2018-07-27 00:00:00,,sustained daily excess,,low
+A0873,1,floor,upward drift (CUSUM),statistical,2018-08-01 00:00:00,2018-08-02 00:00:00,,sustained daily excess,,low
+A0874,1,floor,upward drift (CUSUM),statistical,2018-08-05 00:00:00,2018-08-06 00:00:00,,sustained daily excess,,low
+A0875,1,floor,upward drift (CUSUM),statistical,2018-08-09 00:00:00,2018-08-10 00:00:00,,sustained daily excess,,low
+A0876,1,floor,upward drift (CUSUM),statistical,2018-08-12 00:00:00,2018-08-13 00:00:00,,sustained daily excess,,low
+A0877,1,floor,upward drift (CUSUM),statistical,2018-08-16 00:00:00,2018-08-17 00:00:00,,sustained daily excess,,low
+A0878,1,floor,upward drift (CUSUM),statistical,2018-08-21 00:00:00,2018-08-22 00:00:00,,sustained daily excess,,low
+A0879,1,floor,upward drift (CUSUM),statistical,2018-09-26 00:00:00,2018-09-27 00:00:00,,sustained daily excess,,low
+A0880,1,floor,upward drift (CUSUM),statistical,2018-11-02 00:00:00,2018-11-03 00:00:00,,sustained daily excess,,low
+A0881,1,floor,upward drift (CUSUM),statistical,2019-05-03 00:00:00,2019-05-04 00:00:00,,sustained daily excess,,low
+A0882,1,floor,upward drift (CUSUM),statistical,2019-05-09 00:00:00,2019-05-10 00:00:00,,sustained daily excess,,low
+A0883,1,floor,upward drift (CUSUM),statistical,2019-05-22 00:00:00,2019-05-23 00:00:00,,sustained daily excess,,low
+A0884,2,floor,upward drift (CUSUM),statistical,2018-07-05 00:00:00,2018-07-06 00:00:00,,sustained daily excess,,low
+A0885,2,floor,upward drift (CUSUM),statistical,2018-07-07 00:00:00,2018-07-08 00:00:00,,sustained daily excess,,low
+A0886,2,floor,upward drift (CUSUM),statistical,2018-07-10 00:00:00,2018-07-11 00:00:00,,sustained daily excess,,low
+A0887,2,floor,upward drift (CUSUM),statistical,2018-07-13 00:00:00,2018-07-14 00:00:00,,sustained daily excess,,low
+A0888,2,floor,upward drift (CUSUM),statistical,2018-07-18 00:00:00,2018-07-19 00:00:00,,sustained daily excess,,low
+A0889,2,floor,upward drift (CUSUM),statistical,2018-07-21 00:00:00,2018-07-22 00:00:00,,sustained daily excess,,low
+A0890,2,floor,upward drift (CUSUM),statistical,2018-08-04 00:00:00,2018-08-05 00:00:00,,sustained daily excess,,low
+A0891,2,floor,upward drift (CUSUM),statistical,2018-08-16 00:00:00,2018-08-17 00:00:00,,sustained daily excess,,low
+A0892,2,floor,upward drift (CUSUM),statistical,2018-09-18 00:00:00,2018-09-19 00:00:00,,sustained daily excess,,low
+A0893,2,floor,upward drift (CUSUM),statistical,2019-05-01 00:00:00,2019-05-02 00:00:00,,sustained daily excess,,low
+A0894,2,floor,upward drift (CUSUM),statistical,2019-05-09 00:00:00,2019-05-10 00:00:00,,sustained daily excess,,low
+A0895,2,floor,upward drift (CUSUM),statistical,2019-05-21 00:00:00,2019-05-22 00:00:00,,sustained daily excess,,low
+A0896,2,floor,upward drift (CUSUM),statistical,2019-05-29 00:00:00,2019-05-30 00:00:00,,sustained daily excess,,low
+A0897,2,floor,upward drift (CUSUM),statistical,2019-06-08 00:00:00,2019-06-09 00:00:00,,sustained daily excess,,low
+A0898,2,floor,upward drift (CUSUM),statistical,2019-06-15 00:00:00,2019-06-16 00:00:00,,sustained daily excess,,low
+A0899,2,floor,upward drift (CUSUM),statistical,2019-07-21 00:00:00,2019-07-22 00:00:00,,sustained daily excess,,low
+A0900,2,floor,upward drift (CUSUM),statistical,2019-08-02 00:00:00,2019-08-03 00:00:00,,sustained daily excess,,low
+A0901,2,floor,upward drift (CUSUM),statistical,2019-08-31 00:00:00,2019-09-01 00:00:00,,sustained daily excess,,low
+A0902,2,floor,upward drift (CUSUM),statistical,2019-09-14 00:00:00,2019-09-15 00:00:00,,sustained daily excess,,low
+A0903,2,floor,upward drift (CUSUM),statistical,2019-09-28 00:00:00,2019-09-29 00:00:00,,sustained daily excess,,low
+A0904,3,floor,upward drift (CUSUM),statistical,2018-08-02 00:00:00,2018-08-03 00:00:00,,sustained daily excess,,low
+A0905,3,floor,upward drift (CUSUM),statistical,2018-08-21 00:00:00,2018-08-22 00:00:00,,sustained daily excess,,low
+A0906,3,floor,upward drift (CUSUM),statistical,2018-09-08 00:00:00,2018-09-09 00:00:00,,sustained daily excess,,low
+A0907,3,floor,upward drift (CUSUM),statistical,2019-04-10 00:00:00,2019-04-11 00:00:00,,sustained daily excess,,low
+A0908,3,floor,upward drift (CUSUM),statistical,2019-04-17 00:00:00,2019-04-18 00:00:00,,sustained daily excess,,low
+A0909,3,floor,upward drift (CUSUM),statistical,2019-04-19 00:00:00,2019-04-20 00:00:00,,sustained daily excess,,low
+A0910,3,floor,upward drift (CUSUM),statistical,2019-04-23 00:00:00,2019-04-24 00:00:00,,sustained daily excess,,low
+A0911,3,floor,upward drift (CUSUM),statistical,2019-04-25 00:00:00,2019-04-26 00:00:00,,sustained daily excess,,low
+A0912,3,floor,upward drift (CUSUM),statistical,2019-04-27 00:00:00,2019-04-28 00:00:00,,sustained daily excess,,low
+A0913,3,floor,upward drift (CUSUM),statistical,2019-04-30 00:00:00,2019-05-01 00:00:00,,sustained daily excess,,low
+A0914,3,floor,upward drift (CUSUM),statistical,2019-05-02 00:00:00,2019-05-03 00:00:00,,sustained daily excess,,low
+A0915,3,floor,upward drift (CUSUM),statistical,2019-05-07 00:00:00,2019-05-08 00:00:00,,sustained daily excess,,low
+A0916,3,floor,upward drift (CUSUM),statistical,2019-05-09 00:00:00,2019-05-10 00:00:00,,sustained daily excess,,low
+A0917,3,floor,upward drift (CUSUM),statistical,2019-05-17 00:00:00,2019-05-18 00:00:00,,sustained daily excess,,low
+A0918,3,floor,upward drift (CUSUM),statistical,2019-05-21 00:00:00,2019-05-22 00:00:00,,sustained daily excess,,low
+A0919,3,floor,upward drift (CUSUM),statistical,2019-05-23 00:00:00,2019-05-24 00:00:00,,sustained daily excess,,low
+A0920,3,floor,upward drift (CUSUM),statistical,2019-06-04 00:00:00,2019-06-05 00:00:00,,sustained daily excess,,low
+A0921,3,floor,upward drift (CUSUM),statistical,2019-06-22 00:00:00,2019-06-23 00:00:00,,sustained daily excess,,low
+A0922,3,floor,upward drift (CUSUM),statistical,2019-06-27 00:00:00,2019-06-28 00:00:00,,sustained daily excess,,low
+A0923,3,floor,upward drift (CUSUM),statistical,2019-07-18 00:00:00,2019-07-19 00:00:00,,sustained daily excess,,low
+A0924,3,floor,upward drift (CUSUM),statistical,2019-08-02 00:00:00,2019-08-03 00:00:00,,sustained daily excess,,low
+A0925,3,floor,upward drift (CUSUM),statistical,2019-09-14 00:00:00,2019-09-15 00:00:00,,sustained daily excess,,low
+A0926,3,floor,upward drift (CUSUM),statistical,2019-09-15 00:00:00,2019-09-16 00:00:00,,sustained daily excess,,low
+A0927,3,floor,upward drift (CUSUM),statistical,2019-09-21 00:00:00,2019-09-22 00:00:00,,sustained daily excess,,low
+A0928,4,floor,upward drift (CUSUM),statistical,2018-07-07 00:00:00,2018-07-08 00:00:00,,sustained daily excess,,low
+A0929,4,floor,upward drift (CUSUM),statistical,2019-05-01 00:00:00,2019-05-02 00:00:00,,sustained daily excess,,low
+A0930,4,floor,upward drift (CUSUM),statistical,2019-05-04 00:00:00,2019-05-05 00:00:00,,sustained daily excess,,low
+A0931,4,floor,upward drift (CUSUM),statistical,2019-05-08 00:00:00,2019-05-09 00:00:00,,sustained daily excess,,low
+A0932,4,floor,upward drift (CUSUM),statistical,2019-05-10 00:00:00,2019-05-11 00:00:00,,sustained daily excess,,low
+A0933,4,floor,upward drift (CUSUM),statistical,2019-05-21 00:00:00,2019-05-22 00:00:00,,sustained daily excess,,low
+A0934,4,floor,upward drift (CUSUM),statistical,2019-05-25 00:00:00,2019-05-26 00:00:00,,sustained daily excess,,low
+A0935,4,floor,upward drift (CUSUM),statistical,2019-05-29 00:00:00,2019-05-30 00:00:00,,sustained daily excess,,low
+A0936,4,floor,upward drift (CUSUM),statistical,2019-06-04 00:00:00,2019-06-05 00:00:00,,sustained daily excess,,low
+A0937,4,floor,upward drift (CUSUM),statistical,2019-06-07 00:00:00,2019-06-08 00:00:00,,sustained daily excess,,low
+A0938,4,floor,upward drift (CUSUM),statistical,2019-06-21 00:00:00,2019-06-22 00:00:00,,sustained daily excess,,low
+A0939,4,floor,upward drift (CUSUM),statistical,2019-06-26 00:00:00,2019-06-27 00:00:00,,sustained daily excess,,low
+A0940,4,floor,upward drift (CUSUM),statistical,2019-07-15 00:00:00,2019-07-16 00:00:00,,sustained daily excess,,low
+A0941,4,floor,upward drift (CUSUM),statistical,2019-07-18 00:00:00,2019-07-19 00:00:00,,sustained daily excess,,low
+A0942,4,floor,upward drift (CUSUM),statistical,2019-07-20 00:00:00,2019-07-21 00:00:00,,sustained daily excess,,low
+A0943,4,floor,upward drift (CUSUM),statistical,2019-07-23 00:00:00,2019-07-24 00:00:00,,sustained daily excess,,low
+A0944,4,floor,upward drift (CUSUM),statistical,2019-07-26 00:00:00,2019-07-27 00:00:00,,sustained daily excess,,low
+A0945,4,floor,upward drift (CUSUM),statistical,2019-07-30 00:00:00,2019-07-31 00:00:00,,sustained daily excess,,low
+A0946,4,floor,upward drift (CUSUM),statistical,2019-08-02 00:00:00,2019-08-03 00:00:00,,sustained daily excess,,low
+A0947,4,floor,upward drift (CUSUM),statistical,2019-08-09 00:00:00,2019-08-10 00:00:00,,sustained daily excess,,low
+A0948,4,floor,upward drift (CUSUM),statistical,2019-08-14 00:00:00,2019-08-15 00:00:00,,sustained daily excess,,low
+A0949,4,floor,upward drift (CUSUM),statistical,2019-08-19 00:00:00,2019-08-20 00:00:00,,sustained daily excess,,low
+A0950,4,floor,upward drift (CUSUM),statistical,2019-08-24 00:00:00,2019-08-25 00:00:00,,sustained daily excess,,low
+A0951,4,floor,upward drift (CUSUM),statistical,2019-08-29 00:00:00,2019-08-30 00:00:00,,sustained daily excess,,low
+A0952,4,floor,upward drift (CUSUM),statistical,2019-09-07 00:00:00,2019-09-08 00:00:00,,sustained daily excess,,low
+A0953,4,floor,upward drift (CUSUM),statistical,2019-09-14 00:00:00,2019-09-15 00:00:00,,sustained daily excess,,low
+A0954,4,floor,upward drift (CUSUM),statistical,2019-10-19 00:00:00,2019-10-20 00:00:00,,sustained daily excess,,low
+A0955,5,floor,upward drift (CUSUM),statistical,2018-08-03 00:00:00,2018-08-04 00:00:00,,sustained daily excess,,low
+A0956,5,floor,upward drift (CUSUM),statistical,2019-04-17 00:00:00,2019-04-18 00:00:00,,sustained daily excess,,low
+A0957,5,floor,upward drift (CUSUM),statistical,2019-04-19 00:00:00,2019-04-20 00:00:00,,sustained daily excess,,low
+A0958,5,floor,upward drift (CUSUM),statistical,2019-04-24 00:00:00,2019-04-25 00:00:00,,sustained daily excess,,low
+A0959,5,floor,upward drift (CUSUM),statistical,2019-04-29 00:00:00,2019-04-30 00:00:00,,sustained daily excess,,low
+A0960,5,floor,upward drift (CUSUM),statistical,2019-05-02 00:00:00,2019-05-03 00:00:00,,sustained daily excess,,low
+A0961,5,floor,upward drift (CUSUM),statistical,2019-05-07 00:00:00,2019-05-08 00:00:00,,sustained daily excess,,low
+A0962,5,floor,upward drift (CUSUM),statistical,2019-05-09 00:00:00,2019-05-10 00:00:00,,sustained daily excess,,low
+A0963,5,floor,upward drift (CUSUM),statistical,2019-06-05 00:00:00,2019-06-06 00:00:00,,sustained daily excess,,low
+A0964,5,floor,upward drift (CUSUM),statistical,2019-06-24 00:00:00,2019-06-25 00:00:00,,sustained daily excess,,low
+A0965,5,floor,upward drift (CUSUM),statistical,2019-07-03 00:00:00,2019-07-04 00:00:00,,sustained daily excess,,low
+A0966,5,floor,upward drift (CUSUM),statistical,2019-07-15 00:00:00,2019-07-16 00:00:00,,sustained daily excess,,low
+A0967,5,floor,upward drift (CUSUM),statistical,2019-07-18 00:00:00,2019-07-19 00:00:00,,sustained daily excess,,low
+A0968,5,floor,upward drift (CUSUM),statistical,2019-07-20 00:00:00,2019-07-21 00:00:00,,sustained daily excess,,low
+A0969,5,floor,upward drift (CUSUM),statistical,2019-07-24 00:00:00,2019-07-25 00:00:00,,sustained daily excess,,low
+A0970,5,floor,upward drift (CUSUM),statistical,2019-07-30 00:00:00,2019-07-31 00:00:00,,sustained daily excess,,low
+A0971,5,floor,upward drift (CUSUM),statistical,2019-08-02 00:00:00,2019-08-03 00:00:00,,sustained daily excess,,low
+A0972,5,floor,upward drift (CUSUM),statistical,2019-08-14 00:00:00,2019-08-15 00:00:00,,sustained daily excess,,low
+A0973,5,floor,upward drift (CUSUM),statistical,2019-08-29 00:00:00,2019-08-30 00:00:00,,sustained daily excess,,low
+A0974,5,floor,upward drift (CUSUM),statistical,2019-09-14 00:00:00,2019-09-15 00:00:00,,sustained daily excess,,low
+A0975,5,floor,upward drift (CUSUM),statistical,2019-10-03 00:00:00,2019-10-04 00:00:00,,sustained daily excess,,low
+A0976,5,floor,upward drift (CUSUM),statistical,2019-10-16 00:00:00,2019-10-17 00:00:00,,sustained daily excess,,low
+A0977,5,floor,upward drift (CUSUM),statistical,2019-10-24 00:00:00,2019-10-25 00:00:00,,sustained daily excess,,low
+A0978,6,floor,upward drift (CUSUM),statistical,2018-08-04 00:00:00,2018-08-05 00:00:00,,sustained daily excess,,low
+A0979,6,floor,upward drift (CUSUM),statistical,2019-04-18 00:00:00,2019-04-19 00:00:00,,sustained daily excess,,low
+A0980,6,floor,upward drift (CUSUM),statistical,2019-04-25 00:00:00,2019-04-26 00:00:00,,sustained daily excess,,low
+A0981,6,floor,upward drift (CUSUM),statistical,2019-04-27 00:00:00,2019-04-28 00:00:00,,sustained daily excess,,low
+A0982,6,floor,upward drift (CUSUM),statistical,2019-05-02 00:00:00,2019-05-03 00:00:00,,sustained daily excess,,low
+A0983,6,floor,upward drift (CUSUM),statistical,2019-05-09 00:00:00,2019-05-10 00:00:00,,sustained daily excess,,low
+A0984,6,floor,upward drift (CUSUM),statistical,2019-05-17 00:00:00,2019-05-18 00:00:00,,sustained daily excess,,low
+A0985,6,floor,upward drift (CUSUM),statistical,2019-05-20 00:00:00,2019-05-21 00:00:00,,sustained daily excess,,low
+A0986,6,floor,upward drift (CUSUM),statistical,2019-05-28 00:00:00,2019-05-29 00:00:00,,sustained daily excess,,low
+A0987,6,floor,upward drift (CUSUM),statistical,2019-06-21 00:00:00,2019-06-22 00:00:00,,sustained daily excess,,low
+A0988,6,floor,upward drift (CUSUM),statistical,2019-06-26 00:00:00,2019-06-27 00:00:00,,sustained daily excess,,low
+A0989,6,floor,upward drift (CUSUM),statistical,2019-07-19 00:00:00,2019-07-20 00:00:00,,sustained daily excess,,low
+A0990,6,floor,upward drift (CUSUM),statistical,2019-07-25 00:00:00,2019-07-26 00:00:00,,sustained daily excess,,low
+A0991,6,floor,upward drift (CUSUM),statistical,2019-10-18 00:00:00,2019-10-19 00:00:00,,sustained daily excess,,low
+A0992,7,floor,upward drift (CUSUM),statistical,2018-07-07 00:00:00,2018-07-08 00:00:00,,sustained daily excess,,low
+A0993,7,floor,upward drift (CUSUM),statistical,2018-08-05 00:00:00,2018-08-06 00:00:00,,sustained daily excess,,low
+A0994,7,floor,upward drift (CUSUM),statistical,2018-08-19 00:00:00,2018-08-20 00:00:00,,sustained daily excess,,low
+A0995,7,floor,upward drift (CUSUM),statistical,2018-09-09 00:00:00,2018-09-10 00:00:00,,sustained daily excess,,low
+A0996,7,floor,upward drift (CUSUM),statistical,2018-09-16 00:00:00,2018-09-17 00:00:00,,sustained daily excess,,low
+A0997,7,floor,upward drift (CUSUM),statistical,2018-09-23 00:00:00,2018-09-24 00:00:00,,sustained daily excess,,low
+A0998,7,floor,upward drift (CUSUM),statistical,2018-09-30 00:00:00,2018-10-01 00:00:00,,sustained daily excess,,low
+A0999,7,floor,upward drift (CUSUM),statistical,2018-10-07 00:00:00,2018-10-08 00:00:00,,sustained daily excess,,low
+A1000,7,floor,upward drift (CUSUM),statistical,2018-10-14 00:00:00,2018-10-15 00:00:00,,sustained daily excess,,low
+A1001,7,floor,upward drift (CUSUM),statistical,2019-04-03 00:00:00,2019-04-04 00:00:00,,sustained daily excess,,low
+A1002,7,floor,upward drift (CUSUM),statistical,2019-04-10 00:00:00,2019-04-11 00:00:00,,sustained daily excess,,low
+A1003,7,floor,upward drift (CUSUM),statistical,2019-04-18 00:00:00,2019-04-19 00:00:00,,sustained daily excess,,low
+A1004,7,floor,upward drift (CUSUM),statistical,2019-04-22 00:00:00,2019-04-23 00:00:00,,sustained daily excess,,low
+A1005,7,floor,upward drift (CUSUM),statistical,2019-04-25 00:00:00,2019-04-26 00:00:00,,sustained daily excess,,low
+A1006,7,floor,upward drift (CUSUM),statistical,2019-05-01 00:00:00,2019-05-02 00:00:00,,sustained daily excess,,low
+A1007,7,floor,upward drift (CUSUM),statistical,2019-05-03 00:00:00,2019-05-04 00:00:00,,sustained daily excess,,low
+A1008,7,floor,upward drift (CUSUM),statistical,2019-05-04 00:00:00,2019-05-05 00:00:00,,sustained daily excess,,low
+A1009,7,floor,upward drift (CUSUM),statistical,2019-05-07 00:00:00,2019-05-08 00:00:00,,sustained daily excess,,low
+A1010,7,floor,upward drift (CUSUM),statistical,2019-05-09 00:00:00,2019-05-10 00:00:00,,sustained daily excess,,low
+A1011,7,floor,upward drift (CUSUM),statistical,2019-05-15 00:00:00,2019-05-16 00:00:00,,sustained daily excess,,low
+A1012,7,floor,upward drift (CUSUM),statistical,2019-05-18 00:00:00,2019-05-19 00:00:00,,sustained daily excess,,low
+A1013,7,floor,upward drift (CUSUM),statistical,2019-05-22 00:00:00,2019-05-23 00:00:00,,sustained daily excess,,low
+A1014,7,floor,upward drift (CUSUM),statistical,2019-05-28 00:00:00,2019-05-29 00:00:00,,sustained daily excess,,low
+A1015,7,floor,upward drift (CUSUM),statistical,2019-06-01 00:00:00,2019-06-02 00:00:00,,sustained daily excess,,low
+A1016,7,floor,upward drift (CUSUM),statistical,2019-06-29 00:00:00,2019-06-30 00:00:00,,sustained daily excess,,low
+A1017,7,floor,upward drift (CUSUM),statistical,2019-07-13 00:00:00,2019-07-14 00:00:00,,sustained daily excess,,low
+A1018,7,floor,upward drift (CUSUM),statistical,2019-07-20 00:00:00,2019-07-21 00:00:00,,sustained daily excess,,low
+A1019,7,floor,upward drift (CUSUM),statistical,2019-07-27 00:00:00,2019-07-28 00:00:00,,sustained daily excess,,low
+A1020,7,floor,upward drift (CUSUM),statistical,2019-08-03 00:00:00,2019-08-04 00:00:00,,sustained daily excess,,low
+A1021,7,floor,upward drift (CUSUM),statistical,2019-08-10 00:00:00,2019-08-11 00:00:00,,sustained daily excess,,low
+A1022,7,floor,upward drift (CUSUM),statistical,2019-08-18 00:00:00,2019-08-19 00:00:00,,sustained daily excess,,low
+A1023,7,floor,upward drift (CUSUM),statistical,2019-08-31 00:00:00,2019-09-01 00:00:00,,sustained daily excess,,low
+A1024,7,floor,upward drift (CUSUM),statistical,2019-09-13 00:00:00,2019-09-14 00:00:00,,sustained daily excess,,low
+A1025,1,z2,AC unit always-on,rule,2018-07-01 00:00:00,2019-12-31 23:00:00,,"z2_AC1(kW): runs 99% of night hours, 368,479 kWh over record",,low
+A1026,2,z2,AC unit always-on,rule,2018-07-01 00:00:00,2019-12-31 23:00:00,,"z2_AC1(kW): runs 100% of night hours, 77,046 kWh over record",,low
+A1027,2,z2,AC unit always-on,rule,2018-07-01 00:00:00,2019-12-31 23:00:00,,"z2_AC6(kW): runs 100% of night hours, 7,711 kWh over record",,low
+A1028,2,z2,AC unit dead,rule,2018-07-01 00:00:00,2019-12-31 23:00:00,,"z2_AC11(kW): runs 0% of night hours, 0 kWh over record",,low
+A1029,7,z1,AC unit dead,rule,2018-07-01 00:00:00,2019-12-31 23:00:00,,"z1_AC1(kW): runs 0% of night hours, 0 kWh over record",,low

@@ -68,9 +68,9 @@ def require_wired(floor: int) -> bool:
     st.warning(f"**Not wired yet.** {meta.get('note','')}")
     st.markdown(
         "The dashboard is floor-agnostic — every loader takes a floor number and "
-        "reads its channel list from the point registry. Wiring this floor means "
-        "adding its rows to `core/registry.py` and running `build_cache.py "
-        f"--floor {floor}`, not changing analysis code."
+        "reads its channel list from the point registry. This floor is already in "
+        "the registry and the cleaned dataset (see the analysis/ notebooks); wiring "
+        "it here means checking the pages render sensibly, not changing analysis code."
     )
     st.caption("Only Floor 5 is wired for this project.")
     return False

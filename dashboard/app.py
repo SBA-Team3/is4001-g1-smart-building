@@ -3,9 +3,9 @@ Floor 5 — facilities operations dashboard.
 
     streamlit run dashboard/app.py
 
-Build the cached artefacts first:
+Build the shared cleaned dataset first (from the repo root):
 
-    python3 dashboard/build_cache.py
+    python scripts/build_clean_data.py
 
 Audience is a facilities manager, not an analyst. The page order follows the
 order the questions actually get asked: can I trust the data, what is broken,
@@ -35,12 +35,12 @@ st.set_page_config(page_title="Floor 5 — FM operations", page_icon="🏢",
 st.sidebar.title("Floor 5 operations")
 
 if not D.cache_ready(5):
-    st.sidebar.error("Cache not built.")
-    st.title("Cache not built")
+    st.sidebar.error("Cleaned data not built.")
+    st.title("Cleaned data not built")
     st.markdown(
-        "The dashboard reads precomputed artefacts rather than the raw CSVs, "
-        "because minute-level fault detection over 790,560 rows cannot run on a "
-        "page load.\n\n```bash\npython3 dashboard/build_cache.py\n```"
+        "The dashboard reads the shared cleaned dataset in data/cleaned/ rather "
+        "than the raw CSVs, because minute-level fault detection over 790,560 rows "
+        "cannot run on a page load.\n\n```bash\npython scripts/build_clean_data.py\n```"
     )
     st.stop()
 
@@ -51,9 +51,8 @@ floor_labels = {
 floor = st.sidebar.selectbox(
     "Floor", list(floor_labels), format_func=floor_labels.get,
     index=list(floor_labels).index(5),
-    help="Only Floor 5 is wired. The others are placeholders — the data layer is "
-         "floor-agnostic, so wiring one means adding registry rows and rebuilding "
-         "its cache.")
+    help="Only Floor 5 is wired into these pages. Every floor is in the registry "
+         "and the cleaned dataset; the analysis/ notebooks cover all seven.")
 st.session_state["floor"] = floor
 
 as_of = st.sidebar.date_input(

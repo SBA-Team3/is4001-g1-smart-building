@@ -5,19 +5,22 @@ facilities manager rather than an analyst.
 
 ## Run it
 
+From the repo root:
+
 ```bash
-pip install -r ../requirements.txt
-python3 build_cache.py        # once, ~1 minute
-streamlit run app.py
+pip install -r requirements.txt && pip install -e .
+python scripts/build_clean_data.py     # once, ~2 minutes, all floors -> data/cleaned/
+streamlit run dashboard/app.py
 ```
 
-`build_cache.py` reads the raw CSVs in `../data/` and writes four parquet
-artefacts into `cache/` (gitignored). The dashboard never touches the raw files:
-minute-level fault detection over 790,560 rows × 26 channels cannot run on a
-page load.
+The dashboard reads the **shared cleaned dataset** in `data/cleaned/` — the same
+files every notebook uses — built by `src/sbanalytics/pipeline.py`. It never
+touches the raw files: minute-level fault detection over 790,560 rows × 26
+channels cannot run on a page load. (`python dashboard/build_cache.py` still
+works; it now just runs the shared pipeline.)
 
 ```bash
-python3 verify.py             # 29 ground-truth checks
+python -m pytest            # ground-truth checks (tests/), incl. the original verify.py set
 ```
 
 ## Why the pages are in this order
@@ -38,24 +41,20 @@ live sensor.
 
 ```
 app.py              navigation, global sidebar (floor, as-of date, tariff)
-build_cache.py      raw CSV -> parquet artefacts
-verify.py           ground-truth regression checks
+build_cache.py      runs the shared pipeline (scripts/build_clean_data.py)
+verify.py           runs the pytest suite in ../tests
 core/
-  registry.py       point registry + change-point registry — the source of truth
-  data.py           floor-agnostic loaders, as-of windows, psychrometrics
-  health.py         completeness, flatline, range, spike, peer consistency
-  comfort.py        exceedance hours and degree-hours vs a declared band
-  energy.py         EUI, end use, demand, baseload, after-hours
-  faults.py         FDD rules + G36 persistence/suppression + alarm self-audit
-  analysis.py       thermal calibration, setpoint sensitivity, M&V baseline
-  ui.py             cached loaders, trust band, chart theme
+  ui.py             cached loaders, trust band, chart theme (Streamlit-only)
+  registry.py, data.py, health.py, comfort.py, energy.py, faults.py, analysis.py
+                    aliases — the code now lives in ../src/sbanalytics/ so the
+                    notebooks use exactly the same registry and rules
 pages/              one file per page
 legacy/             the superseded 8-tab analyst prototype, for reference
 ```
 
 ## The registry is the important bit
 
-`core/registry.py` holds one row per physical point, carrying what the channel
+`src/sbanalytics/registry.py` holds one row per physical point, carrying what the channel
 *means*. Three metering traps live there as data rather than as `if zone ==
 "z1"` branches scattered through analysis code:
 
@@ -76,10 +75,14 @@ disabled with a reason.
 ## Adding another floor
 
 The data layer is floor-agnostic; every loader takes a floor number. Floors 3,
-4, 6 and 7 share Floor 5's exact 30-column schema.
+4 and 7 share Floor 5's column layout; F6 has its four-AC zone in z4, F1 and F2
+have their own layouts (all declared in `registry.LAYOUT`).
 
-1. Add the floor's rows to `core/registry.py`
-2. `python3 build_cache.py --floor N`
+Every floor is now in the registry and in `data/cleaned/`. To show one on the
+dashboard pages:
+
+1. Check its registry rows (`LAYOUT`, `ROLE_OVERRIDES` in `src/sbanalytics/registry.py`)
+2. Check each page renders sensibly for its zones
 3. Set `wired: True` in `registry.FLOORS`
 
 Nothing in the analysis code changes.
