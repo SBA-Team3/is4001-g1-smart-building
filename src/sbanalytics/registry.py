@@ -441,7 +441,7 @@ AC_ON_HOURS = [7, 8, 9, 10, 11, 13, 14, 15, 16]
 
 #: Measured AC schedule per floor: hours in which the floor's AC is on for at
 #: least half of workdays (`features.measure_ac_hours`, re-run in
-#: eda/00_data_quality_all_floors). F2 has no lunch shutdown. F1's AC never
+#: analysis/00a_data_quality §6). F2 has no lunch shutdown. F1's AC never
 #: switches off (z2_AC1 median 44 kW around the clock), so it has no schedule
 #: to read and gets the nominal 08-17 window. F5 keeps the dashboard's
 #: hand-validated list, which also counts the partial hour 7 (16.5% on).

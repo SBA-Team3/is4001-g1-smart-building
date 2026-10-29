@@ -37,7 +37,7 @@ CUSUM_K, CUSUM_H = 0.5, 5.0   # slack and decision interval, in robust-sd units
 #: F3 notebook's max(3.5 MAD, 5 kWh) rule, scaled to each floor.
 MIN_SCALE_FRAC = 0.05
 
-#: Weekend AC programmes the F3 notebook (eda/floor3_mik) found with its own rules.
+#: Weekend AC programmes Mik's F3 deep dive found (analysis/00c §F3) with its own rules.
 F3_KNOWN_WEEKEND_RUNS = ["2018-09-08", "2019-04-27", "2019-09-14", "2019-09-15", "2019-09-21"]
 
 
