@@ -237,3 +237,6 @@ sample_data/
 # The hourly/daily parquet files in data/cleaned/ are small and committed.
 data/cleaned/minute/
 dashboard/cache/
+
+# Claude Code local state and agent worktrees
+.claude/
