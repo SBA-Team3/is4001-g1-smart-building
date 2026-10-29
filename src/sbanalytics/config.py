@@ -24,9 +24,7 @@ DATA_RAW = REPO / "data" / "raw"
 DATA_EXTERNAL = REPO / "data" / "external"
 DATA_CLEANED = REPO / "data" / "cleaned"
 MINUTE_DIR = DATA_CLEANED / "minute"          # large, gitignored
-REPORTS = REPO / "reports"
-FIGURES = REPORTS / "figures"
-TABLES = REPORTS / "tables"
+DATA_DERIVED = REPO / "data" / "derived"       # tables one analysis notebook hands to the next
 
 WEATHER_CSV = DATA_EXTERNAL / "openmeteo_bangkok_hourly_2018-06-30_2019-12-31_UTC.csv"
 HOLIDAYS_CSV = DATA_EXTERNAL / "thai_holidays_2018_2019.csv"

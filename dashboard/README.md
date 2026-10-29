@@ -9,7 +9,7 @@ From the repo root:
 
 ```bash
 pip install -r requirements.txt && pip install -e .
-python scripts/build_clean_data.py     # once, ~2 minutes, all floors -> data/cleaned/
+python -m sbanalytics.pipeline         # once, ~2 minutes, all floors -> data/cleaned/
 streamlit run dashboard/app.py
 ```
 
@@ -17,10 +17,6 @@ The dashboard reads the **shared cleaned dataset** in `data/cleaned/` — the sa
 files every notebook uses — built by `src/sbanalytics/pipeline.py`. It never
 touches the raw files: minute-level fault detection over 790,560 rows × 26
 channels cannot run on a page load.
-
-```bash
-python -m pytest            # ground-truth checks (tests/)
-```
 
 ## Why the pages are in this order
 
@@ -40,12 +36,9 @@ live sensor.
 
 ```
 app.py              navigation, global sidebar (floor, as-of date, tariff)
-core/
-  ui.py             cached loaders, trust band, chart theme (Streamlit-only)
-  registry.py, data.py, health.py, comfort.py, energy.py, faults.py, analysis.py
-                    aliases — the code now lives in ../src/sbanalytics/ so the
-                    notebooks use exactly the same registry and rules
-pages/              one file per page
+ui.py               cached loaders, trust band, chart theme (Streamlit-only)
+pages/              one file per page; analytics come from ../src/sbanalytics/,
+                    the same code the analysis notebooks use
 ```
 
 ## The registry is the important bit
@@ -57,7 +50,7 @@ pages/              one file per page
 - **z1's real cooling load is on `AC4`, not `AC1`.** Only z1 has four AC
   channels. `z1_AC4` carries 65,525 kWh; AC1+AC2+AC3 together carry 225 kWh.
   Every other zone is on AC1, so a `*_AC1` aggregate silently drops 37 % of the
-  floor's cooling. `tests/test_floor5_facts.py` asserts against this.
+  floor's cooling.
 - **z3 has no AC meter** — it is a stairwell. It renders as "not metered", never
   as zero.
 - **The lux channel is not lux.** It maxes at 49–79 with integer resolution

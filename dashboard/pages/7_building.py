@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from core import data as D
-from core import energy as E
-from core import registry as R
-from core import ui
+from sbanalytics import data as D
+from sbanalytics import energy as E
+from sbanalytics import registry as R
+import ui
 
 c = ui.ctx()
 area = c["area"]
@@ -64,7 +64,7 @@ st.markdown(
     "task, not a refactor.\n\n"
     "Every floor is already in `src/sbanalytics/registry.py` (one row per "
     "physical point, with the role that says what it *means*) and in the "
-    "shared cleaned dataset built by `python scripts/build_clean_data.py`.\n\n"
+    "shared cleaned dataset built by `python -m sbanalytics.pipeline`.\n\n"
     "1. Check the floor's registry rows and that each page renders sensibly.\n"
     "2. Flip `wired` to `True` in `FLOORS`.\n\n"
     "**Floors 3, 4 and 7 share Floor 5's column layout**; F6 has its four-AC "

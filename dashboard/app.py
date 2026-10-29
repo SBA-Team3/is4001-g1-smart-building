@@ -5,7 +5,7 @@ Floor 5 — facilities operations dashboard.
 
 Build the shared cleaned dataset first (from the repo root):
 
-    python scripts/build_clean_data.py
+    python -m sbanalytics.pipeline
 
 Audience is a facilities manager, not an analyst. The page order follows the
 order the questions actually get asked: can I trust the data, what is broken,
@@ -20,10 +20,12 @@ import sys
 import pandas as pd
 import streamlit as st
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _HERE)
+sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "src"))   # works without `pip install -e .`
 
-from core import data as D          # noqa: E402
-from core import registry as R      # noqa: E402
+from sbanalytics import data as D          # noqa: E402
+from sbanalytics import registry as R      # noqa: E402
 
 st.set_page_config(page_title="Floor 5 — FM operations", page_icon="🏢",
                    layout="wide", initial_sidebar_state="expanded")
@@ -40,7 +42,7 @@ if not D.cache_ready(5):
     st.markdown(
         "The dashboard reads the shared cleaned dataset in data/cleaned/ rather "
         "than the raw CSVs, because minute-level fault detection over 790,560 rows "
-        "cannot run on a page load.\n\n```bash\npython scripts/build_clean_data.py\n```"
+        "cannot run on a page load.\n\n```bash\npython -m sbanalytics.pipeline\n```"
     )
     st.stop()
 

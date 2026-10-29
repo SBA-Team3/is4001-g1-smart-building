@@ -40,14 +40,7 @@ def setup() -> None:
         "lines.linewidth": 2.0, "lines.markersize": 6,
         "legend.frameon": False, "legend.fontsize": 9,
         "font.family": ["Segoe UI", "DejaVu Sans", "sans-serif"],
-        "savefig.bbox": "tight", "savefig.facecolor": SURFACE,
     })
-
-
-def save(fig, name: str) -> None:
-    from .config import FIGURES
-    FIGURES.mkdir(parents=True, exist_ok=True)
-    fig.savefig(FIGURES / f"{name}.png", dpi=150)
 
 
 def floor_legend(ax, floors, **kw):

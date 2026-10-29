@@ -3,7 +3,7 @@
 Built from `data/raw/` + `data/external/` by:
 
 ```bash
-python scripts/build_clean_data.py      # ~2 min, all 7 floors, deterministic
+python -m sbanalytics.pipeline          # ~2 min, all 7 floors, deterministic
 ```
 
 Do not edit these files by hand — change the rules in `src/sbanalytics/` and rebuild.
@@ -47,6 +47,6 @@ Load them with `sbanalytics.data` (e.g. `D.load_hourly(floor=None)` for the whol
 
 * **Indoor sensors (temp/RH/lux) are missing on every floor from ~12 Sep 2018 to 6 Mar 2019.** Comfort analysis is possible only for Jul–mid-Sep 2018 and Mar–Dec 2019.
 * **F6 ends on 2019-10-22 13:27** (truncated source file). Its later hours are NaN.
-* **F3 meters are offline 11 Oct – 21 Nov 2018, F4 29 Oct – 21 Nov 2018**; many AC meters are missing 23 Jan – 12 Feb 2019. See `reports/tables/outage_register.csv`.
-* **F1 is not an office floor** (evening-peaking, AC never off); see `eda/00_data_quality_all_floors.ipynb` §5.
+* **F3 meters are offline 11 Oct – 21 Nov 2018, F4 29 Oct – 21 Nov 2018**; many AC meters are missing 23 Jan – 12 Feb 2019.
+* **F1 is not an office floor** (evening-peaking, AC never off).
 * Dead / residual / constant meters are tagged by `role` in `column_registry.csv` (e.g. F2 `z2_AC11`, F7 `z1_AC1` are dead; on F3/F4/F5/F7 zone 1's real AC load is on `AC4`).

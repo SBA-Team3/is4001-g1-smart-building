@@ -1,6 +1,10 @@
 """
 raw CSVs -> data/cleaned/. One function, every floor, same rules.
 
+    python -m sbanalytics.pipeline              # all floors (~2 min)
+    python -m sbanalytics.pipeline --floor 5    # one floor (overwrites outputs with that floor only)
+    python -m sbanalytics.pipeline --no-minute  # skip the large minute parquet
+
 Outputs (all parquet unless noted):
 
     hourly_zone.parquet       floor-zone-hour: kWh by end use, sensor means,
@@ -104,3 +108,14 @@ def build(floors=C.FLOORS, write_minute: bool = True, verbose: bool = True) -> d
             measured = features.measure_ac_hours(h, f)
             print(f"floor {f}: measured AC hours {measured}  (registry: {R.ac_on_hours(f)})")
     return out
+
+
+if __name__ == "__main__":
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Rebuild data/cleaned/ from data/raw/.")
+    ap.add_argument("--floor", type=int, action="append", help="one floor (repeatable); default all")
+    ap.add_argument("--no-minute", action="store_true", help="skip the large minute parquet")
+    a = ap.parse_args()
+    build(tuple(a.floor) if a.floor else C.FLOORS, write_minute=not a.no_minute)
+    print(f"done -> {C.DATA_CLEANED}")

@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from core import data as D
-from core import health as HL
-from core import registry as R
-from core import ui
+from sbanalytics import data as D
+from sbanalytics import health as HL
+from sbanalytics import registry as R
+import ui
 
 c = ui.ctx()
 floor, as_of = c["floor"], c["as_of"]

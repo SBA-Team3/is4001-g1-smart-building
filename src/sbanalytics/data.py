@@ -1,6 +1,6 @@
 """
 Loaders for the cleaned dataset in data/cleaned/ (built by
-scripts/build_clean_data.py). Floor-agnostic: every function takes a floor.
+`python -m sbanalytics.pipeline`). Floor-agnostic: every function takes a floor.
 
 Every floor is in the cleaned data. The dashboard additionally gates its pages
 on registry.FLOORS[f]["wired"]; notebooks can load any floor.

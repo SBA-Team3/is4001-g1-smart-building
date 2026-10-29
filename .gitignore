@@ -233,8 +233,7 @@ sample_data/
 .idea/
 # Office lock files
 ~$*
-# Cleaned minute-level data is large (~115 MB); rebuild with scripts/build_clean_data.py.
+# Cleaned minute-level data is large (~115 MB); rebuild with `python -m sbanalytics.pipeline`.
 # The hourly/daily parquet files in data/cleaned/ are small and committed.
 data/cleaned/minute/
-reports/tables/forecast_backtest.parquet
 dashboard/cache/

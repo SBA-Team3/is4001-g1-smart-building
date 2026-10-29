@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from core import data as D
-from core import energy as E
-from core import registry as R
-from core import ui
+from sbanalytics import data as D
+from sbanalytics import energy as E
+from sbanalytics import registry as R
+import ui
 
 c = ui.ctx()
 floor, as_of, win, tariff, area = (c["floor"], c["as_of"], c["window"],

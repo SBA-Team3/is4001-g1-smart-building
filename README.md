@@ -35,8 +35,7 @@ In VS Code, pick the `.venv` interpreter as the notebook kernel (top-right of a 
 ### 4. Build the cleaned data (once, ~2 minutes)
 
 ```bash
-python scripts/build_clean_data.py
-python -m pytest                   # 46 checks on the pipeline and known facts
+python -m sbanalytics.pipeline
 ```
 
 The hourly and daily cleaned files are committed, so the notebooks also run without step 4. Only the minute-level files (`data/cleaned/minute/`, used for drill-downs and by the dashboard) need it.
@@ -50,14 +49,10 @@ is4001-g1-smart-building/
 ├── data/
 │   ├── raw/                 CU-BEMS CSVs, untouched (2018FloorN.csv, 2019FloorN.csv)
 │   ├── external/            weather (ERA5, UTC), Thai holidays, Chula academic calendar
-│   └── cleaned/             pipeline output — see data/cleaned/README.md
+│   ├── cleaned/             pipeline output — see data/cleaned/README.md
+│   └── derived/             tables one analysis notebook hands to the next (KPIs, baselines)
 ├── src/sbanalytics/         the shared code: one set of rules for everyone
-├── scripts/
-│   └── build_clean_data.py  raw -> cleaned, all floors
-├── eda/
-│   ├── 00_data_quality_all_floors.ipynb   coverage, outages, cleaning sign-off, clocks, meter roles
-│   ├── 01_building_overview.ipynb         end use, profiles, day types, comfort — all floors
-│   └── floor1_leyna.ipynb … floor7_sana.ipynb   each owner's floor deep dive
+│                            (python -m sbanalytics.pipeline builds data/cleaned/)
 ├── analysis/                the analytics plan, A → F (run in order)
 │   ├── 01_descriptive_kpis.ipynb      A  how does each floor normally behave?
 │   ├── 02_baseline_models.ipynb       B  what should it have used? (ASHRAE G14 baselines)
@@ -65,11 +60,7 @@ is4001-g1-smart-building/
 │   ├── 04_anomaly_detection.ipynb     D  what needs attention? (fault register)
 │   ├── 05_forecasting.ipynb           E  what is coming tomorrow?
 │   └── 06_recommendations.ipynb       F  what should facilities management do?
-├── reports/
-│   ├── figures/             every chart the notebooks save
-│   └── tables/              fault_register.csv, recommendations.csv, floor_kpis.csv, …
-├── dashboard/               Streamlit operations dashboard (Floor 5), reads data/cleaned/
-└── tests/                   pytest: pipeline invariants, Floor 5 ground truth, model unit tests
+└── dashboard/               Streamlit operations dashboard (Floor 5), reads data/cleaned/
 ```
 
 ### `src/sbanalytics` — what lives where
@@ -103,7 +94,7 @@ is4001-g1-smart-building/
 | Timestamps | Bangkok local time, no shift; weather converted UTC → local |
 | Calendar | holidays from the shared CSV; closures and worked holidays detected from load |
 
-Cleaning changes each floor's energy totals by less than 0.4%. Every changed minute is in `data/cleaned/cleaning_log.csv`. The rules are signed off in `eda/00_data_quality_all_floors.ipynb`.
+Cleaning changes each floor's energy totals by less than 0.4%. Every changed minute is in `data/cleaned/cleaning_log.csv`.
 
 ---
 
@@ -124,29 +115,27 @@ Cleaning changes each floor's energy totals by less than 0.4%. Every changed min
 - **Overcooling everywhere.** 68–83% of occupied, cooled hours on F2–F7 are below 23 °C; some zones average 18.5–20 °C.
 - **Baselines work.** The daily change-point model meets ASHRAE G14 out of sample on F2–F7; the hourly TOWT model on F2–F6.
 - **Year on year, weather-normalised**, Jul–Dec 2019 is within ±3.5% of the 2018-trained baseline on F2–F7. F1 used ~12% less.
-- **Anomalies.** The detector flags ~1% of hours on most floors and catches all 5 weekend AC runs found independently in the F3 notebook. F2 and F7 stand out with frequent full weekend AC programmes.
+- **Anomalies.** The detector flags ~1% of hours on most floors and catches all 5 weekend AC runs found independently in the Floor 3 deep dive. F2 and F7 stand out with frequent full weekend AC programmes.
 - **Forecasting** beats the seasonal-naive benchmark by 48–66% (MAE) on F2–F7 (17% on F1) — useful for peak warnings, secondary to B–D.
-- **Biggest lever: raising cooling setpoints by 2 °C** (≈ 51–59 MWh/yr on the office floors), then **locking AC schedules to the calendar** (weekend/holiday runs). Full table: `reports/tables/recommendations.csv`.
+- **Biggest lever: raising cooling setpoints by 2 °C** (≈ 51–59 MWh/yr on the office floors), then **locking AC schedules to the calendar** (weekend/holiday runs). Full table: `analysis/06_recommendations.ipynb`.
 - **Floor 1 is not an office floor** (evening-peaking, AC never off; a 7-hour clock offset cannot be ruled out). It is kept in totals but excluded from schedule-based measures.
 
 ---
 
 ## Floor owners
 
-| Floor | Owner | Notebook |
-|---|---|---|
-| Floor 1 | Leyna | `eda/floor1_leyna.ipynb` |
-| Floor 2 | Shree | `eda/floor2_shree.ipynb` |
-| Floor 3 | Mik | `eda/floor3_mik.ipynb` |
-| Floor 4 | Kenneth | `eda/floor4_kenneth.ipynb` |
-| Floor 5 | Terence | `eda/floor5_terence.ipynb` |
-| Floor 6 | Williams | `eda/floor6_williams.ipynb` |
-| Floor 7 | Sana | `eda/floor7_sana.ipynb` |
-
-The floor notebooks still read `data/raw/` with their own cleaning code. For numbers that must agree across floors, use `data/cleaned/` via `sbanalytics.data`.
+| Floor | Owner |
+|---|---|
+| Floor 1 | Leyna |
+| Floor 2 | Shree |
+| Floor 3 | Mik |
+| Floor 4 | Kenneth |
+| Floor 5 | Terence |
+| Floor 6 | Williams |
+| Floor 7 | Sana |
 
 ## Working together
 
-- Change **cleaning or definitions** only in `src/sbanalytics/`, then rebuild and run `pytest`. Never patch the data inside a notebook.
-- New analysis goes in `analysis/` (building-wide) or your floor notebook (deep dives), on a branch, via PR.
+- Change **cleaning or definitions** only in `src/sbanalytics/`, then rebuild with `python -m sbanalytics.pipeline`. Never patch the data inside a notebook.
+- New analysis goes in `analysis/`, on a branch, via PR. Notebooks run in order: 03 and 06 read what 01 and 02 write to `data/derived/`.
 - If you get stuck on setup, shout in the group chat before burning too much time on it.

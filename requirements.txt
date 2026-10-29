@@ -8,19 +8,10 @@ statsmodels>=0.14
 
 # Notebooks and charts
 matplotlib
-seaborn              # used by eda/floor4_kenneth.ipynb
 jupyter
-nbformat
-nbconvert
 
 # Dashboard
 streamlit
 altair
-
-# Tests
-pytest
-
-# eda/floor3_mik.ipynb (sunrise/sunset); holidays and requests are optional there
-astral
 
 # The shared package itself:  pip install -e .
