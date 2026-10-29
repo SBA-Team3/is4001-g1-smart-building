@@ -57,8 +57,7 @@ is4001-g1-smart-building/
 ├── eda/
 │   ├── 00_data_quality_all_floors.ipynb   coverage, outages, cleaning sign-off, clocks, meter roles
 │   ├── 01_building_overview.ipynb         end use, profiles, day types, comfort — all floors
-│   ├── floor1_leyna.ipynb … floor7_sana.ipynb   each owner's floor deep dive
-│   └── archive/             superseded notebooks (StarterKit, Mik's backup)
+│   └── floor1_leyna.ipynb … floor7_sana.ipynb   each owner's floor deep dive
 ├── analysis/                the analytics plan, A → F (run in order)
 │   ├── 01_descriptive_kpis.ipynb      A  how does each floor normally behave?
 │   ├── 02_baseline_models.ipynb       B  what should it have used? (ASHRAE G14 baselines)

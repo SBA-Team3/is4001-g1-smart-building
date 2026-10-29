@@ -237,6 +237,4 @@ sample_data/
 # The hourly/daily parquet files in data/cleaned/ are small and committed.
 data/cleaned/minute/
 reports/tables/forecast_backtest.parquet
-# legacy cache locations
 dashboard/cache/
-floor_5_Terence/cache/
