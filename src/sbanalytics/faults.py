@@ -43,12 +43,85 @@ ALARM_KPI = {
 }
 
 
+#: What a work order needs beyond the diagnosis: which trade gets it, what they
+#: do, and how anyone will know it worked. Verification text is filled from the
+#: registry conventions, so the check and the alarm use the same thresholds.
+PLAYBOOK: dict[str, dict] = {
+    "overcooling": {
+        "trade": "controls",
+        "action": "Raise the zone's cooling setpoint in 0.5-1 °C steps (towards 24-25 °C) and check the "
+                  "thermostat location and deadband; log the change so M&V can exclude the step day.",
+        "verify": "Share of cooled occupied hours below {comfort_lo:g} °C in {zone} under "
+                  "{overcooled_target_pct:.0f}% over the next {verify_weeks_comfort:.0f} weeks "
+                  "(now {share:.0f}%)."},
+    "after_hours_ac": {
+        "trade": "controls",
+        "action": "Check the BMS time schedule and holiday calendar for this zone, clear manual "
+                  "overrides, and require sign-off for weekend runs.",
+        "verify": "{zone} AC at or below {ac_on_kwh:g} kWh/h in every hour outside the schedule over the "
+                  "next {verify_weeks_schedule:.0f} weekends and holidays."},
+    "after_hours_light": {
+        "trade": "electrical",
+        "action": "Put the lighting contactor on the BMS time schedule or add occupancy sensing; confirm "
+                  "whether egress lighting must stay on.",
+        "verify": "Overnight lighting in {zone} below {night_light_ratio_pct:.0f}% of its occupied level "
+                  "for {verify_weeks_schedule:.0f} weeks."},
+    "dead_meter": {
+        "trade": "metering-IT",
+        "action": "Verify the meter/CT at the panel against a clamp reading; re-terminate or replace, then "
+                  "confirm the logger is not caching the last value.",
+        "verify": "No flatline flag and completeness at or above {completeness_target:.0f}% on every day "
+                  "for {verify_weeks_schedule:.0f} weeks."},
+    "point_offline": {
+        "trade": "metering-IT",
+        "action": "Check sensor power and Wi-Fi association, then the gateway; confirm the point is still "
+                  "on the scan list.",
+        "verify": "Point reporting at least {completeness_target:.0f}% of expected samples daily for "
+                  "{verify_weeks_schedule:.0f} weeks."},
+    "short_cycling": {
+        "trade": "HVAC",
+        "action": "Inspect the unit for short-cycling on pressure, then review control-loop gains and "
+                  "deadband; check whether zones cycle together (plant-side event).",
+        "verify": "No day with more than {short_cycle_per_day:.0f} on/off transitions over "
+                  "{verify_weeks_schedule:.0f} weeks."},
+    "humidity": {
+        "trade": "HVAC",
+        "action": "Check coil leaving-air condition and infiltration paths; review whether the coil can "
+                  "run colder at part load.",
+        "verify": "Humidity ratio above {humidity_ratio_max:g} kg/kg in under "
+                  "{humidity_alarm_share_pct:.0f}% of occupied hours for {verify_weeks_comfort:.0f} weeks."},
+    "step_change": {
+        "trade": "metering-IT",
+        "action": "Get the site-visit record for the date; confirm the CT/meter assignment; re-train the "
+                  "baseline after the change or treat the affected meters as one combined meter.",
+        "verify": "Site record obtained and the M&V baseline no longer straddles {date}."},
+}
+
+
+def _verify(rule: str, **kw) -> str:
+    conv = {k: v[0] for k, v in R.CONVENTIONS.items()}
+    return PLAYBOOK[rule]["verify"].format(**{**conv, **kw})
+
+
+def episodes(dates, gap_days: float | None = None) -> int:
+    """Separate runs of active days: a gap longer than `episode_gap_days` starts
+    a new one. This is the recurrence count on a work order."""
+    gap = R.conv("episode_gap_days") if gap_days is None else gap_days
+    d = pd.Series(pd.to_datetime(pd.Series(list(dates)).unique())).sort_values()
+    if not len(d):
+        return 0
+    return int((d.diff().dt.days.fillna(0) > gap).sum() + 1)
+
+
 def _rule(zone, rule, priority, title, detail, diagnoses, first, last,
-          kwh=0.0, evidence="", planned=False):
+          kwh=0.0, evidence="", planned=False, dates=None, key="", verify=None):
+    dates = list(pd.to_datetime(pd.Series(list(dates)).unique())) if dates is not None else []
     return {"zone": zone, "rule": rule, "priority": priority, "title": title,
             "detail": detail, "diagnoses": diagnoses, "first_seen": first,
             "last_seen": last, "kwh_impact": kwh, "evidence": evidence,
-            "planned": planned}
+            "planned": planned, "days_active": len(dates) if dates else np.nan,
+            "recurrence": episodes(dates) if dates else 1, "key": key,
+            "verification": verify or _verify(rule, zone=zone, share=np.nan, date="")}
 
 
 def _in_blackout(start, end) -> bool:
@@ -95,7 +168,8 @@ def overcooling(h: pd.DataFrame, start=None, end=None, floor: int = 5) -> list[d
             ["Setpoint set too low", "Control deadband too wide",
              "Thermostat sensor mislocated", "Zone oversized for its load"],
             cold.ts.min(), cold.ts.max(), cold.ac_kwh.sum(),
-            f"mean {cold.temp_c.mean():.1f} °C while cooling"))
+            f"mean {cold.temp_c.mean():.1f} °C while cooling", dates=cold.date,
+            verify=_verify("overcooling", zone=z, share=share)))
     return out
 
 
@@ -106,7 +180,7 @@ def after_hours_operation(h: pd.DataFrame, start=None, end=None,
     out = []
 
     off = d[(d.is_weekend | d.is_holiday | ~d.hour.isin(R.ac_on_hours(floor)))]
-    ac_off = off[off.ac_kwh > 0.5]
+    ac_off = off[off.ac_kwh > R.conv("ac_on_kwh")]
     for z, g in ac_off.groupby("zone"):
         by_day = g.groupby("date").ac_kwh.sum().sort_values(ascending=False)
         worst = by_day.index[0]
@@ -119,7 +193,7 @@ def after_hours_operation(h: pd.DataFrame, start=None, end=None,
             ["BMS schedule override left in place", "Holiday calendar not loaded",
              "Manual override at the panel", "Time schedule drift after a power cycle"],
             g.ts.min(), g.ts.max(), g.ac_kwh.sum(),
-            f"worst day {worst}"))
+            f"worst day {worst}", dates=g.date))
 
     night = d[(d.hour >= 20) | (d.hour <= 5)]
     for z, g in night.groupby("zone"):
@@ -129,8 +203,10 @@ def after_hours_operation(h: pd.DataFrame, start=None, end=None,
         if not len(day) or day.light_kwh.mean() <= 0:
             continue
         ratio = g.light_kwh.mean() / day.light_kwh.mean() * 100
-        if ratio < 10:
+        if ratio < R.conv("night_light_ratio_pct"):
             continue
+        lit = g.groupby("date").light_kwh.mean()
+        lit = lit[lit / day.light_kwh.mean() * 100 >= R.conv("night_light_ratio_pct")]
         out.append(_rule(
             z, "after_hours_light", MED if ratio > 25 else LOW,
             f"{z}: lighting running overnight",
@@ -141,18 +217,17 @@ def after_hours_operation(h: pd.DataFrame, start=None, end=None,
              "Lighting contactor not on the BMS time schedule",
              "Stairwell/egress lighting required to stay on"],
             g.ts.min(), g.ts.max(), g.light_kwh.sum(),
-            f"night/day ratio {ratio:.0f}%"))
+            f"night/day ratio {ratio:.0f}%", dates=lit.index))
     return out
 
 
 def dead_meters(H: pd.DataFrame, start=None, end=None, floor: int = 5) -> list[dict]:
     """Points reporting a constant, and points not reporting at all."""
     from . import health as HL
-    S = HL.score_point_days(H)
-    if start is not None:
-        S = S[S.day >= pd.Timestamp(start)]
+    S_all = HL.score_point_days(H)
     if end is not None:
-        S = S[S.day <= pd.Timestamp(end)]
+        S_all = S_all[S_all.day <= pd.Timestamp(end)]
+    S = S_all[S_all.day >= pd.Timestamp(start)] if start is not None else S_all
     out = []
 
     for (z, ch, col, role), g in S.groupby(["zone", "channel", "column", "role"]):
@@ -167,17 +242,22 @@ def dead_meters(H: pd.DataFrame, start=None, end=None, floor: int = 5) -> list[d
                 ["Meter or CT failed", "Data logger caching the last value",
                  "Channel not actually connected to a load",
                  "Load genuinely constant (verify at the panel)"],
-                g.day.min(), g.day.max(), 0.0, col))
+                g.day.min(), g.day.max(), 0.0, col,
+                dates=g[g.flag_flatline].day, key=str(col)))
 
     # Offline points are grouped per zone and per outage episode. One alarm per
     # channel per zone turns a single gateway failure into a dozen alarms.
-    off = S[S.received == 0]
+    # Episodes are found on the whole history up to `end`, then kept if they
+    # reach into the window: an outage that began before the window keeps its
+    # real start date, so its id and its days-open do not shift as the window moves.
+    gap = R.conv("episode_gap_days")
+    off = S_all[S_all.received == 0]
     for z, g in off.groupby("zone"):
         g = g.sort_values("day")
-        episode = (g.day.diff().dt.days.fillna(1) > 3).cumsum()
+        episode = (g.day.diff().dt.days.fillna(1) > gap).cumsum()
         for _, ep in g.groupby(episode):
             days = ep.day.nunique()
-            if days <= 3:
+            if days <= gap or (start is not None and ep.day.max() < pd.Timestamp(start)):
                 continue
             planned = _in_blackout(ep.day.min(), ep.day.max())
             chans = sorted(ep.channel.unique())
@@ -192,22 +272,24 @@ def dead_meters(H: pd.DataFrame, start=None, end=None, floor: int = 5) -> list[d
                 ["Scheduled maintenance window"] if planned else
                 ["Sensor lost Wi-Fi association", "Power to the sensor lost",
                  "Gateway or logger offline", "Point removed from the scan list"],
-                ep.day.min(), ep.day.max(), 0.0, ", ".join(chans), planned))
+                ep.day.min(), ep.day.max(), 0.0, ", ".join(chans), planned,
+                dates=ep.day, key=f"{ep.day.min():%Y%m%d}"))
     return out
 
 
 def short_cycling(h: pd.DataFrame, start=None, end=None, floor: int = 5,
-                  per_day: int = 12) -> list[dict]:
+                  per_day: int | None = None) -> list[dict]:
     """Excessive AC on/off transitions.
 
     Our computable analogue of G36 FC4 ("too many changes in operating state").
     A healthy day here is 2-4 transitions: on, lunch off, lunch on, off.
     """
+    per_day = R.conv("short_cycle_per_day") if per_day is None else per_day
     d = D.slice_hourly(h, start, end)
     d = d[~d.is_weekend & d.hour.isin(R.ac_on_hours(floor))].copy()
     if not len(d):
         return []
-    d["on"] = (d.ac_kwh > 0.5).astype(int)
+    d["on"] = (d.ac_kwh > R.conv("ac_on_kwh")).astype(int)
     out = []
     for z, g in d.groupby("zone"):
         if not R.has_channel(floor, z, "ac"):
@@ -226,7 +308,7 @@ def short_cycling(h: pd.DataFrame, start=None, end=None, floor: int = 5,
              "Thermostat deadband too narrow", "Compressor short-cycling on pressure",
              "Plant-side or control-network event (check whether zones cycle together)"],
             pd.Timestamp(bad.index.min()), pd.Timestamp(bad.index.max()), 0.0,
-            f"worst {int(bad.max())} transitions on {bad.idxmax()}"))
+            f"worst {int(bad.max())} transitions on {bad.idxmax()}", dates=bad.index))
     return out
 
 
@@ -254,7 +336,9 @@ def metering_step_change(h: pd.DataFrame, start=None, end=None,
             ["Meter or CT re-assigned during a site visit",
              "Control re-zoning", "Sensor replaced or recalibrated",
              "Setpoint programme changed"],
-            pd.Timestamp(c.date), pd.Timestamp(c.date), 0.0, c.date))
+            pd.Timestamp(c.date), pd.Timestamp(c.date), 0.0, c.date,
+            dates=[c.date], key=c.date.replace("-", ""),
+            verify=_verify("step_change", zone="", share=np.nan, date=c.date)))
     return out
 
 
@@ -265,7 +349,7 @@ def humidity_faults(h: pd.DataFrame, start=None, end=None,
     out = []
     wmax = R.conv("humidity_ratio_max")
     for _, r in he.iterrows():
-        if r.over_limit_pct < 20:
+        if r.over_limit_pct < R.conv("humidity_alarm_share_pct"):
             continue
         out.append(_rule(
             r.zone, "humidity", MED if r.over_limit_pct > 50 else LOW,
@@ -284,7 +368,16 @@ def humidity_faults(h: pd.DataFrame, start=None, end=None,
 # --------------------------------------------------------------------------- #
 
 def build_register(h: pd.DataFrame, H: pd.DataFrame, start=None, end=None,
-                   floor: int = 5, tariff: float | None = None) -> pd.DataFrame:
+                   floor: int = 5, tariff: float | None = None,
+                   as_of=None) -> pd.DataFrame:
+    """Every rule's output as one work-order-ready table.
+
+    Beyond the alarm itself each row carries what a CMMS hand-off needs: a
+    stable id (so a lifecycle state survives a reload), the trade, the action,
+    the verification check, days open, recurrence, and the cost of inaction —
+    attributable energy / active days x tariff, zero rather than guessed where a
+    rule has no defensible attribution.
+    """
     tariff = R.conv("tariff_thb") if tariff is None else tariff
     rules = (overcooling(h, start, end, floor)
              + after_hours_operation(h, start, end, floor)
@@ -296,12 +389,31 @@ def build_register(h: pd.DataFrame, H: pd.DataFrame, start=None, end=None,
         return pd.DataFrame()
 
     f = pd.DataFrame(rules)
+    f["floor"] = floor
     f["thb_impact"] = f.kwh_impact * tariff
+    span = (pd.to_datetime(f.last_seen) - pd.to_datetime(f.first_seen)).dt.days + 1
+    f["days_active"] = f.days_active.fillna(span).fillna(1).clip(lower=1)
+    f["cost_per_day_thb"] = np.where(f.kwh_impact > 0, f.kwh_impact / f.days_active * tariff, 0.0)
+    ref = pd.Timestamp(as_of if as_of is not None else end if end is not None else h.ts.max()).normalize()
+    f["days_open"] = (ref - pd.to_datetime(f.first_seen).dt.normalize()).dt.days
+    f["trade"] = f.rule.map(lambda r: PLAYBOOK[r]["trade"])
+    f["action"] = f.rule.map(lambda r: PLAYBOOK[r]["action"])
+    f["energy_attributed"] = f.kwh_impact > 0
     order = {HIGH: 0, MED: 1, LOW: 2}
     f["_o"] = f.priority.map(order)
-    f = f.sort_values(["_o", "thb_impact"], ascending=[True, False]).drop(columns="_o")
-    f.insert(0, "id", [f"F{i+1:03d}" for i in range(len(f))])
-    return f.reset_index(drop=True)
+    f = f.sort_values(["_o", "cost_per_day_thb", "thb_impact"],
+                      ascending=[True, False, False]).drop(columns="_o")
+    zone_key = f.zone.astype(str).str.replace(", ", "+", regex=False)
+    f.insert(0, "id", [f"F{floor}.{z}.{r}" + (f".{k}" if k else "")
+                       for z, r, k in zip(zone_key, f.rule, f.key)])
+    return f.drop(columns="key").reset_index(drop=True)
+
+
+def register_diff(prev: pd.DataFrame, cur: pd.DataFrame) -> dict:
+    """What changed between two registers: ids raised and ids cleared."""
+    p = set(prev.id) if len(prev) else set()
+    c = set(cur.id) if len(cur) else set()
+    return {"new": sorted(c - p), "cleared": sorted(p - c)}
 
 
 def alarm_audit(f: pd.DataFrame, days: int) -> dict:
@@ -312,7 +424,8 @@ def alarm_audit(f: pd.DataFrame, days: int) -> dict:
     benchmarks we would apply to a BMS.
     """
     if not len(f):
-        return {"total": 0, "per_day": 0.0, "mix": {}, "verdict": "No alarms raised."}
+        return {"total": 0, "per_day": 0.0, "mix": {}, "target": ALARM_KPI["target_mix"],
+                "deviation": {}, "standing": 0, "verdict": "No alarms raised."}
     mix = (f.priority.value_counts(normalize=True) * 100).to_dict()
     per_day = len(f) / max(days, 1)
     target = ALARM_KPI["target_mix"]

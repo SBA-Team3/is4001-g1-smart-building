@@ -323,8 +323,110 @@ CONVENTIONS = {
     "flatline_min": (60, "min", "Non-zero flatline; project convention"),
     "flatline_zero_hours": (24, "h", "Zero-run threshold, after Building Data Genome Project 2"),
     "spike_temp_c_per_min": (2.0, "degC/min", "Fires ~once a year on this floor"),
-    "co2_kg_per_kwh": (0.4999, "kgCO2/kWh", "Thailand grid factor, TGO 2022"),
+    "co2_kg_per_kwh": (0.4999, "kgCO2e/kWh", "Thailand grid emission factor, Thailand Greenhouse Gas "
+                       "Management Organization (TGO), 2022 publication — verify the current figure before reporting"),
+
+    # --- added for the v2 dashboard (portfolio, M&V, work orders, simulator) ---
+    "overcooled_target_pct": (40.0, "%", "Project proposal KPI: % of cooled occupied hours below 23 degC, "
+                              "68-83% on F2-F7 today, target below 40%"),
+    "overcooled_min_hours": (50, "h", "Minimum cooled occupied zone-hours before a zone enters an overcooled "
+                             "share (kpis.zone_comfort, notebook 01)"),
+    "ac_on_kwh": (0.5, "kWh/h", "Zone AC counted as running above this hourly energy — the threshold "
+                  "data.occupied and the fault rules already use"),
+    "demand_charge_thb_per_kw": (0.0, "THB/kW/month", "Default 0. MEA large general-service and TOU tariffs "
+                                 "carry a monthly demand charge — enter the contract rate. Peaks here are "
+                                 "hourly means, which understate 15-min billing demand"),
+    "episode_gap_days": (3, "days", "Active days more than this far apart start a new fault episode (the "
+                         "same rule faults.dead_meters uses to group offline points)"),
+    "verify_weeks_schedule": (2, "weeks", "Verification window for schedule/metering work orders — two "
+                              "full weekends"),
+    "verify_weeks_comfort": (4, "weeks", "Verification window for comfort work orders — one month of "
+                             "occupied hours"),
+    "night_light_ratio_pct": (10.0, "%", "Overnight lighting above this share of its occupied level raises "
+                              "an after-hours lighting fault (faults.after_hours_operation)"),
+    "short_cycle_per_day": (12, "transitions/day", "Healthy day is 2-4 AC on/off transitions; above 12 is "
+                            "a short-cycling fault (computable analogue of G36 FC4)"),
+    "humidity_alarm_share_pct": (20.0, "%", "Share of occupied hours above the ASHRAE 55 humidity ratio "
+                                 "before a humidity fault is raised"),
+    "mv_confidence_z": (1.645, "z", "90% two-sided confidence — the level IPMVP recommends for reporting "
+                        "savings uncertainty"),
+    "signature_outlier_z": (2.0, "sd", "Workday flagged on the energy signature when it sits more than 2 "
+                            "training-residual SDs above the change-point line"),
+    "pilot_alpha": (0.05, "", "Pilot power calculation: two-sided significance level"),
+    "pilot_power": (0.80, "", "Pilot power calculation: power (Methods page default)"),
+    "pilot_rho": (0.5, "", "Within-day correlation of hourly residuals (Methods page realistic default)"),
+    "estimator_ci_max_ratio": (5.0, "x", "A %/degC estimate is used only if negative and its CI is no wider "
+                               "than 5x its magnitude (notebook 06 reliability rule)"),
+    "lockout_low_frac": (0.5, "", "Low end of the weekend/holiday lockout saving = half the metered "
+                         "excess, because some runs are authorised (notebook 06)"),
+    "sens_tariff_pct": (20.0, "%", "Tornado chart: tariff varied +/-20% around the sidebar value — project "
+                        "assumption, roughly the spread between MEA TOU off-peak and on-peak blends"),
+    "sens_dT_c": (0.5, "degC", "Tornado chart: zone-temperature lift varied +/-0.5 degC"),
+    "sens_trim_h": (1, "h", "Tornado chart: schedule trim varied +/-1 hour"),
+    "health_good": (85.0, "/100", "Point health index at or above this is green on the trust band"),
+    "health_warn": (60.0, "/100", "Point health index below this is red on the trust band"),
+    "max_lift_c": (3.0, "degC", "Simulator range for the zone-temperature lift; beyond 3 degC the "
+                   "26 degC neutrality bound is exceeded on every floor"),
 }
+
+#: Methods that are rules rather than numbers. Shown beside CONVENTIONS on the
+#: Methods page, so no formula the dashboard applies is undeclared.
+METHODS: dict[str, tuple[str, str]] = {
+    "Overcooled share": (
+        "Cooled occupied zone-hours (workday, measured AC hours, temp_ok, AC > ac_on_kwh) below "
+        "comfort_lo; per zone, then weighted by each zone's AC kWh in the window. Zones with fewer "
+        "than overcooled_min_hours are left out.",
+        "Notebook 01 (floor_kpis.csv) — the 68-83% figure in the proposal"),
+    "tCO2e": ("kWh x co2_kg_per_kwh / 1000. Grid-average factor, not marginal.",
+              "TGO grid emission factor"),
+    "Cost of inaction (THB/day)": (
+        "Energy attributable to the fault / number of days the condition was active x tariff. Zero, "
+        "not estimated, where the rule has no defensible energy attribution. For overcooling the "
+        "attributable energy is all cooling delivered while the zone was below the band, an upper bound "
+        "on the avoidable share.",
+        "FDD prioritisation practice (SkySpark / Clockworks 'cost of inaction')"),
+    "Fault lifecycle": (
+        "New -> Acknowledged -> In progress -> Resolved, plus Muted. Stored per fault id with "
+        "timestamp and note in dashboard/cache/fault_states.csv (append-only; latest row wins).",
+        "CMMS work-order states; ISA-18.2 shelving for Muted"),
+    "Fault id": ("F<floor>.<zone>.<rule>[.<point or start date>] — stable across windows so a state "
+                 "survives a page reload; offline episodes carry their start date.", "Project convention"),
+    "Expected energy (M&V baseline)": (
+        "Daily 3-parameter cooling change-point model on mean outdoor temperature, fitted separately "
+        "for workdays and non-workdays (ASHRAE IMT). Floor 5 trains on 2019-03-07 to 2019-09-26 so the "
+        "window sits between the 2019-03-06 and 2019-09-27 change-points; other floors use Jul 2018 - "
+        "Jun 2019.", "ASHRAE Guideline 14, IPMVP Option C"),
+    "Expected-energy band": (
+        "+/- mv_confidence_z x sqrt(sum of daily residual variances x (1+rho)/(1-rho)), rho = lag-1 "
+        "autocorrelation of training residuals.", "ASHRAE Guideline 14 Annex B autocorrelation correction"),
+    "CUSUM": ("Cumulative sum of (actual - expected), restarted at every registered change-point that "
+              "blocks comparison, so it never accumulates across a configuration change.",
+              "ISO 50006 EnPI monitoring"),
+    "Combined savings": (
+        "Schedule trim and weekend lockout are metered and additive (disjoint hours). The setpoint "
+        "%/degC is applied to the occupied AC baseline after the trim is removed: "
+        "combined = S x (1 - T/B0) + T + L, for the low, mid and high case separately.",
+        "Interactive-effects rule in IPMVP Core Concepts"),
+    "IPMVP option": (
+        "Option B (retrofit isolation) for measures acting on zones with their own AC meter "
+        "(zone-temperature lift, schedule trim); Option C (whole facility) for floor-wide schedule "
+        "measures (weekend/holiday lockout) and the combined package.", "IPMVP Core Concepts 2022"),
+    "Minimum pilot length": (
+        "analysis.weeks_required at the baseline's CV(RMSE): hourly zone model for Option B (cooled "
+        "hours/day, rho = pilot_rho), daily floor model for Option C (one observation per workday).",
+        "ASHRAE Guideline 14 / standard two-sample power calculation"),
+}
+
+#: Floors that are not office floors: kept in building totals, excluded from
+#: schedule-based and overcooling rankings.
+NON_OFFICE_FLOORS = {1}
+
+#: Floors whose source file ends early. Nothing after this is data.
+FILE_END: dict[int, str] = {6: "2019-10-22 13:27"}
+
+
+def floor_file_end(floor: int) -> pd.Timestamp | None:
+    return pd.Timestamp(FILE_END[floor]) if floor in FILE_END else None
 
 #: The measured AC schedule. Derived from the meter, not assumed from office norms.
 #: Hours 7 and 16 are partial (16.5% and 45% of minutes ON) — flagged so they are
@@ -422,6 +524,40 @@ def registry_frame(floor: int = 5) -> pd.DataFrame:
         "note": p.note,
     } for p in POINTS.get(floor, [])]
     return pd.DataFrame(rows).sort_values(["zone", "channel"]).reset_index(drop=True)
+
+
+#: Project Haystack 4 marker tags and Brick class per (channel, role). The
+#: lux channel gets no illuminance tag on purpose: it is a scaled index.
+_TAGS = {
+    ("ac", None): ("elec-meter", "point his sensor elec power hvac", "brick:Electric_Power_Sensor"),
+    ("light", None): ("elec-meter", "point his sensor elec power lighting", "brick:Electric_Power_Sensor"),
+    ("plug", None): ("elec-meter", "point his sensor elec power plugLoad", "brick:Electric_Power_Sensor"),
+    ("temp", ROLE_ZONE_TEMP): ("zone-air-temp-sensor", "point his sensor zone air temp",
+                               "brick:Zone_Air_Temperature_Sensor"),
+    ("temp", ROLE_SUPPLY_TEMP): ("discharge-air-temp-sensor", "point his sensor discharge air temp",
+                                 "brick:Supply_Air_Temperature_Sensor"),
+    ("rh", None): ("zone-air-humidity-sensor", "point his sensor zone air humidity",
+                   "brick:Zone_Air_Humidity_Sensor"),
+    ("lux", None): ("light-level-index", "point his sensor zone luxIndex", "brick:Sensor"),
+}
+
+
+def haystack_frame(floors=None) -> pd.DataFrame:
+    """The point registry with Haystack / Brick tags, for export to a BMS or a
+    semantic model. Absent points are left out (nothing to tag); dead and
+    suspect meters keep their tags plus a `disabled` / `faulty` marker so a
+    consumer does not trend them as live."""
+    rows = []
+    for f in sorted(floors or POINTS):
+        for p in points(f):
+            proto, tags, brick = _TAGS.get((p.channel, p.role)) or _TAGS[(p.channel, None)]
+            extra = {ROLE_DEAD: " disabled", ROLE_SUSPECT_CONSTANT: " faulty",
+                     ROLE_RESIDUAL: " standby"}.get(p.role, "")
+            rows.append({"id": f"cubems.F{f}.{p.zone}.{p.column}", "dis": f"F{f} {p.zone} {p.column}",
+                         "siteRef": "cubems", "floorRef": f"cubems.F{f}", "spaceRef": f"cubems.F{f}.{p.zone}",
+                         "proto": proto, "tags": tags + extra, "unit": p.unit,
+                         "kind": "Number", "brick_class": brick, "role": p.role, "note": p.note})
+    return pd.DataFrame(rows)
 
 
 def change_point_frame() -> pd.DataFrame:

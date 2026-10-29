@@ -277,6 +277,13 @@ def fit_baselines(h: pd.DataFrame, zones=None, floor: int = 5):
     return fitted, pd.DataFrame(rows)
 
 
+def zone_baseline_cv(perf: pd.DataFrame, model: str = "GBM") -> float:
+    """Mean out-of-sample CV(RMSE) of the zone baselines — the noise a pilot has
+    to beat (used for the Option B pilot length)."""
+    t = perf[(perf.model == model) & perf.split.str.startswith("test")]
+    return float(t.cv_rmse.mean()) if len(t) else np.nan
+
+
 def combined_meter_check(h: pd.DataFrame, pair=("z2", "z4"),
                          split: str = "2019-09-27", floor: int = 5) -> dict:
     """Evidence that the 2019-09-27 step is a re-apportionment, not a demand change.

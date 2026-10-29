@@ -1,4 +1,6 @@
-"""Opportunities — what a change would actually save, and how sure we are."""
+"""Opportunities & simulator — the proposal's Intervention Simulator and Energy &
+Cost Impact Summary, on top of the three engine tabs (setpoint, thermal model,
+schedule trim) that size each lever."""
 
 from __future__ import annotations
 
@@ -9,7 +11,9 @@ import streamlit as st
 
 from sbanalytics import analysis as A
 from sbanalytics import data as D
+from sbanalytics import mv as M
 from sbanalytics import registry as R
+from sbanalytics import scenario as SC
 import ui
 
 c = ui.ctx()
@@ -30,13 +34,160 @@ def _reg(floor: int):
     return A.run_regression(D.load_hourly(floor), floor=floor)
 
 
-st.title("Opportunities")
-st.caption("The analytical work, reduced to the part an FM can act on. Full "
-           "method, uncertainty and limitations on the Methods page.")
+@st.cache_resource(show_spinner="Fitting zone baselines for the M&V plan…")
+def _zone_cv(floor: int) -> float:
+    _, perf = A.fit_baselines(D.load_hourly(floor), floor=floor)
+    return A.zone_baseline_cv(perf)
+
+
+@st.cache_resource(show_spinner="Fitting the floor baseline…")
+def _floor_model(floor: int) -> dict:
+    return M.daily_model(D.load_hourly(floor), floor, "ac_kwh")
+
+
+@st.cache_resource(show_spinner="Measuring weekend and holiday AC…")
+def _lockout(floor: int) -> dict:
+    return SC.lockout_measure(D.load_hourly(floor), floor)
+
+
+st.title("Opportunities & simulator")
+st.caption("Build a package of operational changes, see what it saves as a range, what it does "
+           "to comfort, and how you would prove it. The engine tabs further down show how each "
+           "lever is sized.")
 
 phys = _physics(floor, True)
 reg = _reg(floor)
 est = A.estimator_range(phys, reg)
+
+# --------------------------------------------------------------------------- #
+# scenario builder
+# --------------------------------------------------------------------------- #
+st.subheader("Intervention simulator")
+cz = R.comfort_zones(floor)
+cap = float(R.conv("max_lift_c"))
+max_trim = SC.max_trim(h, floor)
+
+with st.container(border=True):
+    i1, i2, i3 = st.columns([3, 2, 2])
+    with i1:
+        per_zone = st.toggle("Set the lift per zone", value=False)
+        if per_zone:
+            d_temp = {z: st.slider(f"{ui.zone_label(floor, z)} lift (°C)", 0.0, cap, 2.0, 0.25,
+                                   key=f"lift_{z}") for z in cz}
+        else:
+            lift = st.slider("Zone-temperature lift ΔT (°C), all comfort zones", 0.0, cap, 2.0, 0.25,
+                             help="There is no setpoint channel, so a setpoint raise is modelled as "
+                                  "a shift of each zone's observed temperature distribution.")
+            d_temp = {z: lift for z in cz}
+    with i2:
+        trim_n = st.slider("Schedule trim (hours off the end of the day)", 0, max_trim, 0, 1,
+                           help="Switches cooling off for the last n cooled hours. Ending the day "
+                                "early needs no recovery, so the metered energy is the saving.")
+        lockout = st.toggle("Weekend / holiday lockout", value=False,
+                            help="Tie AC start/stop to the holiday calendar; weekend runs need "
+                                 "sign-off.")
+    with i3:
+        t_loc = st.number_input("Tariff (฿/kWh)", 0.0, 20.0, float(tariff), 0.1)
+        ef_loc = st.number_input("Emission factor (kgCO₂e/kWh)", 0.0, 1.5, float(c["ef"]), 0.01,
+                                 format="%.4f")
+    j = st.columns(3)
+    cost = {"lift": j[0].number_input("Cost: lift (฿)", 0.0, 1e7, 0.0, 1000.0,
+                                      help="0 for an operational change made at the BMS."),
+            "trim": j[1].number_input("Cost: schedule trim (฿)", 0.0, 1e7, 0.0, 1000.0),
+            "lockout": j[2].number_input("Cost: lockout (฿)", 0.0, 1e7, 0.0, 1000.0)}
+
+res = SC.simulate(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
+                  cost=cost, tariff=t_loc, ef=ef_loc,
+                  parts={"lockout": _lockout(floor)} if lockout else None)
+tbl, comb, cf = res["table"], res["combined"], res["comfort"]
+target = R.conv("overcooled_target_pct")
+
+k = st.columns(4)
+k[0].metric("Package saving", f"{comb['low']:,.0f}–{comb['high']:,.0f} kWh/yr",
+            help=f"Mid {comb['mid']:,.0f} kWh/yr. Low and high come from the two estimators "
+                 "(and metered gross/net); never one number.")
+k[1].metric("Cost saved", f"฿{comb['low'] * t_loc:,.0f}–{comb['high'] * t_loc:,.0f}/yr",
+            delta=f"mid ฿{comb['mid'] * t_loc:,.0f}", delta_color="off")
+k[2].metric("Emissions avoided", f"{comb['mid'] * ef_loc / 1000:,.1f} tCO₂e/yr",
+            help="Mid case × emission factor.")
+k[3].metric(f"Cooled hours below {R.conv('comfort_lo'):g} °C",
+            f"{cf['below_now']:.0f}% → {cf['below_after']:.0f}%",
+            delta=f"{cf['below_after'] - target:+.0f} pp vs {target:.0f}% target",
+            delta_color="inverse",
+            help="Whole-record cooled occupied hours on comfort zones, AC-kWh-weighted (the "
+                 "portfolio definition), after shifting each zone's temperatures by its lift.")
+
+st.dataframe(
+    tbl, width="stretch", hide_index=True,
+    column_config={
+        **{col: st.column_config.NumberColumn(format="%,.0f") for col in tbl.columns
+           if col.startswith(("kWh", "฿", "cost"))},
+        "tCO₂e/yr mid": st.column_config.NumberColumn(format="%.1f"),
+        "payback yr": st.column_config.NumberColumn(format="%.1f",
+                                                    help="Cost ÷ mid ฿/yr. 0 = no capital cost."),
+        "comfort after": st.column_config.TextColumn(width="medium"),
+    })
+warm = cf["above_after"]
+(st.warning if warm > cf["above_now"] else st.info)(
+    f"**Comfort trade-off.** The lift takes cooled hours below {R.conv('comfort_lo'):g} °C from "
+    f"{cf['below_now']:.0f}% to {cf['below_after']:.0f}% (target {target:.0f}%), and hours above "
+    f"{R.conv('comfort_hi'):g} °C from {cf['above_now']:.0f}% to {warm:.0f}%. The projection shifts "
+    "the observed distribution; it does not narrow it — a wide distribution needs control-loop "
+    "retuning, which is a commissioning job, not a setpoint change.")
+st.caption(f"**How the package is combined.** {R.METHODS['Combined savings'][0]} Scope: the lift "
+           f"and the trim act on the comfort-sensored zones ({', '.join(cz)}) the estimators were "
+           "calibrated on; the lockout is floor-wide.")
+
+# --- M&V plan --------------------------------------------------------------- #
+st.markdown("#### M&V plan")
+fm = _floor_model(floor)
+floor_cv = float(fm["metrics"].query("split == 'test'").cv_rmse.iloc[0])
+floor_ac = M.annual_kwh(fm)
+plan = SC.mv_plan(floor, res, _zone_cv(floor), floor_cv, lockout, trim_n, floor_ac)
+if not len(plan):
+    st.info("Select at least one measure to see its M&V plan.")
+for _, p in plan.iterrows():
+    with st.container(border=True):
+        a, b, cc_ = st.columns([3, 2, 2])
+        a.markdown(f"**{p.measure}** · IPMVP Option {p['IPMVP option']}  \n"
+                   f"<small>Boundary: {p['measurement boundary']}</small>", unsafe_allow_html=True)
+        b.metric("Minimum pilot", f"{ui.fmt_weeks(p['minimum pilot (weeks)'])} weeks",
+                 help=f"Expected saving {p['expected saving %']:.1f}% at the baseline's "
+                      f"CV(RMSE) {p['CV(RMSE) %']:.1f}%, α={R.conv('pilot_alpha'):g}, "
+                      f"power {R.conv('pilot_power'):g}. Four weeks can detect "
+                      f"{p['detectable in 4 weeks %']:.1f}%.")
+        cc_.metric("Expected saving", f"{p['expected saving %']:.1f}%",
+                   help="Of the measurement boundary's annual energy.")
+        st.caption(f"Baseline period **{p['baseline period']}** · model: {p['baseline model']} · "
+                   f"CV(RMSE) {p['CV(RMSE) %']:.1f}%  \n**Verification:** {p.verification}  \n"
+                   f"**Exclusions:** {p.exclusions}")
+
+# --- sensitivity ------------------------------------------------------------ #
+st.markdown("#### Which assumption moves the answer most")
+tor = SC.tornado(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
+                 tariff=t_loc, max_trim=max_trim)
+if comb["mid"] > 0:
+    tl = tor.melt(id_vars=["assumption", "base_thb", "swing"], value_vars=["low_thb", "high_thb"],
+                  var_name="end", value_name="thb")
+    order = tor.assumption.tolist()
+    bars = alt.Chart(tor).mark_bar(color=ui.ACTUAL, opacity=0.7).encode(
+        y=alt.Y("assumption:N", sort=order, title=None),
+        x=alt.X("low_thb:Q", title="combined mid saving (฿/yr)"), x2="high_thb:Q",
+        tooltip=["assumption", alt.Tooltip("low_thb:Q", format=",.0f"),
+                 alt.Tooltip("high_thb:Q", format=",.0f")])
+    base_rule = alt.Chart(pd.DataFrame({"x": [comb["mid"] * t_loc]})).mark_rule(
+        color=ui.BAD, strokeWidth=2).encode(x="x:Q")
+    st.altair_chart(ui.chart(bars + base_rule, height=40 * len(tor) + 40), width="stretch")
+    st.caption(f"Each bar moves one assumption across its declared range (Methods page: "
+               f"tariff ±{R.conv('sens_tariff_pct'):.0f}%, lift ±{R.conv('sens_dT_c'):g} °C, trim "
+               f"±{R.conv('sens_trim_h'):g} h, %/°C between the physics and regression estimates) "
+               "and holds the rest. Red line: the package's mid case. The widest bar is the "
+               "assumption worth pinning down before committing.")
+else:
+    st.info("The package saves nothing yet — set a lift, a trim or the lockout.")
+
+st.divider()
+st.subheader("Engine: how each lever is sized")
 
 tab_sp, tab_phys, tab_sched = st.tabs(
     ["Setpoint", "Where the load goes", "Schedule trim"])
@@ -193,7 +344,7 @@ with tab_sched:
                "adds is the recovery charge.")
 
     hp = A.hour_profile(h, floor=floor)
-    on_hours = [int(x) for x in hp.index if hp.loc[x, "frac_off"] < 0.5]
+    on_hours = SC.on_hours(h, floor)
     st.markdown("Cooling currently runs in: " + ", ".join(f"`{x:02d}:00`" for x in on_hours))
 
     cc = st.columns([3, 1])
@@ -210,7 +361,7 @@ with tab_sched:
                     delta=f"{net - gross:,.0f} recovery")
         k[2].metric("Cost saved (net)", f"฿{net * tariff:,.0f}/yr")
         k[3].metric("Temp at end of gap", f"{tr.end_temp_c.mean():.1f} °C",
-                    help="From the calibrated drift rate. Above 26 °C is a "
+                    help=f"From the calibrated drift rate. Above {R.conv('comfort_hi'):g} °C is a "
                          "complaint risk.")
 
         st.dataframe(

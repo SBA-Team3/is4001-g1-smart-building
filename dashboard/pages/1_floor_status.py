@@ -11,6 +11,9 @@ from sbanalytics import comfort as C
 from sbanalytics import data as D
 from sbanalytics import energy as E
 from sbanalytics import faults as F
+from sbanalytics import health as HL
+from sbanalytics import kpis as K
+from sbanalytics import mv as M
 from sbanalytics import registry as R
 import ui
 
@@ -23,6 +26,11 @@ h = ui.hourly(floor)
 H = ui.health(floor)
 start, end = D.window(as_of, win)
 
+
+@st.cache_resource(show_spinner="Fitting the weather-normalised baseline…")
+def _model(floor: int) -> dict:
+    return M.daily_model(D.load_hourly(floor), floor, "ac_kwh")
+
 st.title(f"Floor {floor} — status")
 st.caption(f"As of **{as_of.date()}** · trailing window **{win} day(s)** "
            f"({start.date()} – {end.date()})")
@@ -31,17 +39,79 @@ st.caption(f"As of **{as_of.date()}** · trailing window **{win} day(s)** "
 st.subheader("Can I trust today's data?")
 phi = ui.trust_band(floor, as_of)
 ui.status_notes(as_of, floor)
+ui.file_end_note(floor, as_of)
+
+# --- 2. the proposal's two KPIs --------------------------------------------- #
+st.divider()
+st.subheader("Against target")
+target = R.conv("overcooled_target_pct")
+m0 = as_of.replace(day=1)
+p0 = (m0 - pd.Timedelta(days=1)).replace(day=1)
+
+
+def _oc(s_, e_):
+    o = K.overcooled_share(K.cooled_occupied(D.slice_hourly(h, s_, e_)), by=())
+    return float(o.share_below.iloc[0] * 100) if len(o) else np.nan
+
+
+oc_now, oc_prev = _oc(m0, as_of), _oc(p0, m0 - pd.Timedelta(days=1))
+ex = M.month_excess(_model(floor), as_of, c["tariff"])
+t, l_ = ex["this"], ex["last"]
+k = st.columns(3)
+k[0].metric(f"Cooled hours below {R.conv('comfort_lo'):g} °C, month to date",
+            f"{oc_now:.0f}%" if np.isfinite(oc_now) else "no sensor data",
+            delta=f"{oc_now - target:+.0f} pp vs {target:.0f}% target" if np.isfinite(oc_now) else None,
+            delta_color="inverse",
+            help="Proposal KPI 1: share of cooled, occupied zone-hours below the band on comfort "
+                 "zones, weighted by zone AC energy. "
+                 + (f"Last month {oc_prev:.0f}%." if np.isfinite(oc_prev) else "No data last month."))
+per_day = lambda x: x["excess"] / x["days"] if x["days"] else np.nan
+k[1].metric("Excess cooling, month to date",
+            f"{t['excess']:+,.0f} kWh" if t["days"] else "no data",
+            delta=f"฿{t['thb']:+,.0f} vs expected" if t["days"] else None, delta_color="inverse",
+            help=f"Proposal KPI 2: actual − weather/calendar-normalised expected AC energy, "
+                 f"{t['start'].date()} – {t['end'].date()} ({t['days']} usable days). Actual "
+                 f"{t['actual']:,.0f} kWh vs expected {t['expected']:,.0f} kWh. Target: lower every "
+                 "month.")
+guard = ui.comparison_guard(l_["start"], t["end"]) if t["days"] and l_["days"] else []
+if guard or not (t["days"] and l_["days"]):
+    k[2].metric("vs last month (per day)", "—",
+                help="Disabled: the two months straddle a change-point, or one has no usable days.")
+else:
+    k[2].metric("vs last month (per day)", f"{per_day(t):+,.0f} kWh/day",
+                delta=f"{per_day(t) - per_day(l_):+,.0f} vs {per_day(l_):+,.0f} last month",
+                delta_color="inverse",
+                help="Per usable day, so a part month compares fairly with a full one.")
+if t["in_train"]:
+    st.caption("This month is inside the baseline's training window, where excess is close to "
+               "zero by construction — read it as a check that the model fits, not a result.")
+
+# --- 3. since yesterday ----------------------------------------------------- #
+y_start, y_end = D.window(as_of - pd.Timedelta(days=1), win)
+reg_y = F.build_register(h, H, start=y_start, end=y_end, floor=floor, tariff=c["tariff"])
+reg_t = F.build_register(h, H, start=start, end=end, floor=floor, tariff=c["tariff"])
+diff = F.register_diff(reg_y, reg_t)
+lost = HL.went_offline(H, as_of)
+st.markdown("**Since yesterday**")
+sy = st.columns(3)
+sy[0].metric("New faults", len(diff["new"]))
+sy[1].metric("Cleared faults", len(diff["cleared"]))
+sy[2].metric("Points went offline", len(lost))
+detail = ([f"new: `{x}`" for x in diff["new"]] + [f"cleared: `{x}`" for x in diff["cleared"]]
+          + [f"offline: `{x}`" for x in lost.column])
+if detail:
+    st.caption(" · ".join(detail))
 
 st.divider()
 
-# --- 2. headline ------------------------------------------------------------ #
+# --- 4. headline ------------------------------------------------------------ #
 st.subheader("How is the floor running?")
 
 day_tot = E.floor_totals(h, as_of, as_of)
 base = E.same_weekday_baseline(h, as_of)
 dem = E.demand_stats(h, start, end)
 zc = C.zone_comfort(h, start=start, end=end)
-reg = F.build_register(h, H, start=start, end=end, tariff=c["tariff"])
+reg = reg_t
 
 k = st.columns(5)
 k[0].metric("Energy today", f"{day_tot['total']:,.0f} kWh",
@@ -64,7 +134,7 @@ k[4].metric("Open faults", len(reg),
             delta=f"{int((reg.priority == F.HIGH).sum())} high" if len(reg) else None,
             delta_color="inverse")
 
-# --- 3. zone triage --------------------------------------------------------- #
+# --- 5. zone triage --------------------------------------------------------- #
 st.divider()
 st.subheader("Zone triage")
 st.caption("Sorted by severity: overcooling degree-hours weighted above "
@@ -108,7 +178,7 @@ st.caption("Blank cells are points that do not exist, not zeros. z3 is a "
            "stairwell with no cooling and no sensors; z1's temperature sensor "
            "sits in a supply-air path, so it has no valid room-comfort figure.")
 
-# --- 4. top faults ---------------------------------------------------------- #
+# --- 6. top faults ---------------------------------------------------------- #
 st.divider()
 st.subheader("What needs attention")
 
@@ -123,12 +193,12 @@ else:
             cc[1].markdown(
                 f"<div style='text-align:right'><span style='color:{colr};"
                 f"font-weight:600'>{r.priority.upper()}</span><br>"
-                f"{'฿%s/period' % format(r.thb_impact, ',.0f') if r.thb_impact else ''}"
+                f"{'฿%s/day' % format(r.cost_per_day_thb, ',.0f') if r.cost_per_day_thb else ''}"
                 f"</div>", unsafe_allow_html=True)
     st.page_link("pages/5_faults.py", label=f"All {len(reg)} faults →",
                  icon=":material/warning:")
 
-# --- 5. the week ------------------------------------------------------------ #
+# --- 7. the month ----------------------------------------------------------- #
 st.divider()
 st.subheader("The last 30 days")
 dl = E.daily(h, as_of - pd.Timedelta(days=29), as_of)

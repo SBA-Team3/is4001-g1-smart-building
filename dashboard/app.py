@@ -1,5 +1,5 @@
 """
-Floor 5 — facilities operations dashboard.
+CU-BEMS building — facilities operations dashboard.
 
     streamlit run dashboard/app.py
 
@@ -7,9 +7,13 @@ Build the shared cleaned dataset first (from the repo root):
 
     python -m sbanalytics.pipeline
 
-Audience is a facilities manager, not an analyst. The page order follows the
-order the questions actually get asked: can I trust the data, what is broken,
-how is the floor performing, and only then what could we change.
+Audience is the university FM team first, then finance and leadership. The
+navigation is grouped by who asks the question: the overview for whoever opens
+it first, operations for the technicians and supervisors, energy management for
+the energy manager and finance, and the reference page for anyone who needs to
+check a number. Within each group the order is the order the questions get
+asked: can I trust the data, what is broken, how are we performing, and only
+then what could we change.
 """
 
 from __future__ import annotations
@@ -27,14 +31,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "src"))   # works withou
 from sbanalytics import data as D          # noqa: E402
 from sbanalytics import registry as R      # noqa: E402
 
-st.set_page_config(page_title="Floor 5 — FM operations", page_icon="🏢",
+st.set_page_config(page_title="CU-BEMS — FM operations", page_icon="🏢",
                    layout="wide", initial_sidebar_state="expanded")
 
 # --------------------------------------------------------------------------- #
 # global sidebar — set once, read by every page through ui.ctx()
 # --------------------------------------------------------------------------- #
 
-st.sidebar.title("Floor 5 operations")
+st.sidebar.title("Building operations")
 
 if not D.cache_ready(5):
     st.sidebar.error("Cleaned data not built.")
@@ -53,8 +57,8 @@ floor_labels = {
 floor = st.sidebar.selectbox(
     "Floor", list(floor_labels), format_func=floor_labels.get,
     index=list(floor_labels).index(5),
-    help="Only Floor 5 is wired into these pages. Every floor is in the registry "
-         "and the cleaned dataset; the analysis/ notebooks cover all seven.")
+    help="The operational pages show wired floors only. The Portfolio overview "
+         "reads every floor; the analysis/ notebooks cover all seven.")
 st.session_state["floor"] = floor
 
 as_of = st.sidebar.date_input(
@@ -73,6 +77,12 @@ with st.sidebar.expander("Assumptions", expanded=False):
     st.session_state["area"] = st.number_input(
         "Floor area (m²)", 100.0, 5000.0, float(R.conv("floor_area_m2")), 10.0,
         help="11,700 m² total ÷ 7 floors. The paper gives no per-floor split.")
+    st.session_state["ef"] = st.number_input(
+        "Grid emission factor (kgCO₂e/kWh)", 0.0, 1.5, float(R.conv("co2_kg_per_kwh")), 0.01,
+        format="%.4f", help=R.CONVENTIONS["co2_kg_per_kwh"][2])
+    st.session_state["demand_charge"] = st.number_input(
+        "Demand charge (฿/kW/month)", 0.0, 1000.0, float(R.conv("demand_charge_thb_per_kw")), 10.0,
+        help=R.CONVENTIONS["demand_charge_thb_per_kw"][2])
     st.caption("Full list with sources on the Methods page.")
 
 # Data-quality warnings for the chosen date, always visible.
@@ -92,20 +102,28 @@ st.sidebar.caption(
 # navigation
 # --------------------------------------------------------------------------- #
 
+# Grouped by persona -> question. Overview: "where do I send the team?" (FM
+# lead, leadership). Operations: "what is broken and can I trust it?"
+# (supervisors, technicians). Energy management: "are we on target and what
+# would a change save?" (energy manager, finance). Reference: "where does this
+# number come from?"
 P = "pages"
 nav = st.navigation({
-    "Operations": [
-        st.Page(f"{P}/1_floor_status.py", title="Floor status", icon=":material/dashboard:", default=True),
-        st.Page(f"{P}/2_sensor_health.py", title="Sensor & data health", icon=":material/sensors:"),
-        st.Page(f"{P}/3_zones.py", title="Zones", icon=":material/grid_view:"),
-        st.Page(f"{P}/5_faults.py", title="Faults & actions", icon=":material/warning:"),
+    "Overview": [
+        st.Page(f"{P}/0_portfolio.py", title="Portfolio overview", icon=":material/apartment:",
+                default=True),
+        st.Page(f"{P}/1_floor_status.py", title="Floor status", icon=":material/dashboard:"),
     ],
-    "Performance": [
-        st.Page(f"{P}/4_energy.py", title="Energy", icon=":material/bolt:"),
-        st.Page(f"{P}/6_opportunities.py", title="Opportunities", icon=":material/savings:"),
+    "Operations": [
+        st.Page(f"{P}/5_faults.py", title="Faults & work orders", icon=":material/build:"),
+        st.Page(f"{P}/3_zones.py", title="Zones & comfort", icon=":material/grid_view:"),
+        st.Page(f"{P}/2_sensor_health.py", title="Sensor & data health", icon=":material/sensors:"),
+    ],
+    "Energy management": [
+        st.Page(f"{P}/4_energy.py", title="Energy performance", icon=":material/bolt:"),
+        st.Page(f"{P}/6_opportunities.py", title="Opportunities & simulator", icon=":material/savings:"),
     ],
     "Reference": [
-        st.Page(f"{P}/7_building.py", title="Building overview", icon=":material/apartment:"),
         st.Page(f"{P}/8_methods.py", title="Methods & assumptions", icon=":material/science:"),
     ],
 })

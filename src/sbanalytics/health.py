@@ -173,6 +173,17 @@ def last_good(H: pd.DataFrame, as_of, floor: int = 5) -> pd.DataFrame:
     return g.rename(columns={"day": "last_good_day"}).sort_values("days_stale", ascending=False)
 
 
+def went_offline(H: pd.DataFrame, as_of) -> pd.DataFrame:
+    """Points that reported something the day before as_of and nothing on as_of —
+    the "since yesterday" line an operator reads first."""
+    d = pd.Timestamp(as_of).normalize()
+    today = H[H.day == d].set_index("column").received
+    prev = H[H.day == d - pd.Timedelta(days=1)].set_index("column").received
+    cols = today.index.intersection(prev.index)
+    lost = [c for c in cols if today[c] == 0 and prev[c] > 0]
+    return H[(H.day == d) & H.column.isin(lost)][["zone", "channel", "column"]]
+
+
 # --------------------------------------------------------------------------- #
 # cross-sensor consistency — the strongest check available without a reference
 # --------------------------------------------------------------------------- #

@@ -10,6 +10,7 @@ import streamlit as st
 from sbanalytics import analysis as A
 from sbanalytics import data as D
 from sbanalytics import registry as R
+from sbanalytics import workorders as W
 import ui
 
 c = ui.ctx()
@@ -20,9 +21,9 @@ st.title("Methods & assumptions")
 st.caption("Every threshold this dashboard applies, where it comes from, what "
            "we corrected, and what we cannot compute.")
 
-t_assume, t_reg, t_corr, t_base, t_pilot, t_excl = st.tabs(
-    ["Declared conventions", "Point registry", "Corrections", "M&V baseline",
-     "Pilot design", "What we cannot compute"])
+t_assume, t_practice, t_reg, t_corr, t_base, t_pilot, t_excl = st.tabs(
+    ["Declared conventions", "Industry practice", "Point registry", "Corrections",
+     "M&V baseline", "Pilot design", "What we cannot compute"])
 
 # --------------------------------------------------------------------------- #
 with t_assume:
@@ -34,6 +35,21 @@ with t_assume:
         for k, v in R.CONVENTIONS.items()])
     st.dataframe(conv, width="stretch", hide_index=True,
                  column_config={"basis": st.column_config.TextColumn(width="large")})
+
+    st.subheader("Declared methods")
+    st.caption("Rules rather than numbers: how each derived figure on the dashboard is computed.")
+    st.dataframe(pd.DataFrame([{"method": k, "definition": v[0], "source": v[1]}
+                               for k, v in R.METHODS.items()]),
+                 width="stretch", hide_index=True,
+                 column_config={"definition": st.column_config.TextColumn(width="large")})
+    st.markdown(
+        "**Fault lifecycle states** — " + " → ".join(W.STATES[:4]) + f", plus {W.STATES[4]}. "
+        "Open = " + ", ".join(sorted(W.OPEN_STATES)) + ".\n\n"
+        "**IPMVP option by measure** — zone-temperature lift and schedule trim: Option B "
+        "(the comfort zones have their own AC meters); weekend/holiday lockout and the "
+        "combined package: Option C (whole-floor AC). The lockout is verified by direct "
+        "metering, because a weekend run is too small against a daily model's noise to "
+        "detect statistically.")
 
     st.subheader("The measured schedule")
     st.markdown(
@@ -70,6 +86,44 @@ with t_assume:
     )
 
 # --------------------------------------------------------------------------- #
+with t_practice:
+    st.subheader("Industry practice this dashboard follows")
+    st.markdown(
+        "The views follow the patterns commercial building-analytics platforms (Johnson "
+        "Controls OpenBlue, Honeywell Forge, Siemens Building X / Desigo CC, Schneider "
+        "EcoStruxure Building Advisor, SkySpark / KGS Clockworks) give a facilities team — "
+        "within what zone-level power and three environmental channels can honestly support.\n\n"
+        "| Pattern | Where | What we do |\n|---|---|---|\n"
+        "| **ISO 50001 / 50006 EnPIs and CUSUM** | Energy performance | Actual vs a "
+        "weather/calendar-normalised baseline, monthly and weekly; CUSUM of the difference, "
+        "restarted at each registered change-point |\n"
+        "| **IPMVP / ASHRAE Guideline 14 M&V** | Energy performance, simulator | Daily change-point "
+        "baseline with CV(RMSE) and NMBE against G14 limits; 90% uncertainty band with the "
+        "autocorrelation correction; IPMVP Option B/C per measure; minimum pilot length |\n"
+        "| **ASHRAE Guideline 36 alarm delays and fault diagnoses** | Faults | AlarmDelay and "
+        "ModeDelay persistence, state-based suppression, possible diagnoses on every fault |\n"
+        "| **ISA-18.2 alarm rationalisation** | Faults | Self-audit of alarm rate, priority mix "
+        "and standing alarms; muting as shelving with a note |\n"
+        "| **FDD prioritisation by cost of inaction** | Faults | ฿/day = attributable energy ÷ "
+        "active days × tariff; zero where there is no defensible attribution |\n"
+        "| **CMMS work-order hand-off** | Faults | Lifecycle states, trade, action, "
+        "verification check, CSV export in import order |\n"
+        "| **Portfolio league and heat map** | Portfolio overview | One row per floor, "
+        "normalised KPIs, floor × month overcooling map, generated next step per floor |\n")
+    st.subheader("Deliberately absent")
+    st.markdown(
+        "- **Plant / chiller optimisation** (kW/ton, COP, chilled-water reset) — there is no "
+        "plant, chiller, flow or chilled-water channel.\n"
+        "- **AHU fault detection** (G36 FC1–FC15) — no supply, mixed, return or outdoor air "
+        "temperature, no static pressure, no valve or damper position.\n"
+        "- **Occupancy-based control and space utilisation** — no occupancy channel.\n"
+        "- **Indoor air quality** (CO₂, ventilation compliance) — no CO₂ or airflow channel.\n"
+        "- **Automated supervisory control** (writing setpoints or schedules back to the BMS) — "
+        "this is a read-only historical dataset with no setpoint channel; every 'setpoint "
+        "lift' here is modelled as a shift in observed zone temperature, and every action is "
+        "a work order for a person.")
+
+# --------------------------------------------------------------------------- #
 with t_reg:
     st.subheader("Point registry")
     st.markdown(
@@ -80,6 +134,15 @@ with t_reg:
     )
     st.dataframe(R.registry_frame(floor), width="stretch", hide_index=True,
                  column_config={"note": st.column_config.TextColumn(width="large")})
+    tags = R.haystack_frame()
+    st.download_button(
+        "Export tagged point list — all floors (CSV)", tags.to_csv(index=False).encode("utf-8"),
+        file_name="cubems_points_haystack_brick.csv", mime="text/csv", icon=":material/download:",
+        help="One row per existing point with Project Haystack 4 marker tags and a Brick class. "
+             "z1's supply-air sensor is tagged discharge air; the lux channel gets a custom "
+             "luxIndex tag, never illuminance; dead and frozen meters carry disabled / faulty.")
+    st.caption(f"{len(tags)} points tagged across {tags.floorRef.nunique()} floors. Points that do "
+               "not exist (z3's AC on Floor 5, sensors on Floor 1) are not in the export.")
 
     st.error(
         "**Three traps this registry exists to prevent.**\n\n"
@@ -221,10 +284,10 @@ with t_pilot:
         cc = st.columns(4)
         cv = cc[0].slider("Baseline CV(RMSE) %", 10.0, 60.0, default_cv, 0.5)
         step = cc[1].slider("Setpoint step (°C)", 0.5, 3.0, 1.0, 0.5)
-        rho = cc[2].slider("Within-day correlation ρ", 0.0, 0.9, 0.5, 0.05,
+        rho = cc[2].slider("Within-day correlation ρ", 0.0, 0.9, float(R.conv("pilot_rho")), 0.05,
                            help="Hours inside one day are not independent. ρ=0 is "
                                 "the optimistic textbook case; 0.5 is realistic.")
-        power = cc[3].slider("Power", 0.5, 0.95, 0.80, 0.05)
+        power = cc[3].slider("Power", 0.5, 0.95, float(R.conv("pilot_power")), 0.05)
 
         phys = A.fit_physics(h, floor=floor)
         reg = A.run_regression(h, floor=floor)
@@ -233,8 +296,8 @@ with t_pilot:
             if (est.role == "working figure").any() else -5.0
         expected = abs(pct * step)
         hpd = len(R.AC_ON_HOURS)
-        need = A.weeks_required(cv, expected, hpd, 5, 0.05, power, rho)
-        mds4 = A.detectable_saving(cv, 4, hpd, 5, 0.05, power, rho)
+        need = A.weeks_required(cv, expected, hpd, 5, R.conv("pilot_alpha"), power, rho)
+        mds4 = A.detectable_saving(cv, 4, hpd, 5, R.conv("pilot_alpha"), power, rho)
 
         k = st.columns(4)
         k[0].metric("Expected saving from the step", f"{expected:.1f}%")
@@ -246,7 +309,7 @@ with t_pilot:
         k[3].metric("Cooling hours per day", hpd)
 
         W = pd.DataFrame({"weeks": np.arange(1, 53)})
-        W["mds"] = [A.detectable_saving(cv, w, hpd, 5, 0.05, power, rho)
+        W["mds"] = [A.detectable_saving(cv, w, hpd, 5, R.conv("pilot_alpha"), power, rho)
                     for w in W.weeks]
         st.altair_chart(
             alt.layer(

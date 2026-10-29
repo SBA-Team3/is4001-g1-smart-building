@@ -44,6 +44,56 @@ def floor_kpis(fh: pd.DataFrame, fd: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("floor")
 
 
+def cooled_occupied(h: pd.DataFrame) -> pd.DataFrame:
+    """Workday, in-schedule, sensor-valid zone-hours with the AC running, on comfort zones.
+
+    The population every overcooled share is computed over — the notebooks, the
+    portfolio page and the simulator all read it from here so the 68-83% figure
+    means the same thing everywhere.
+    """
+    floors = [int(f) for f in h.floor.unique()]
+    zones = {f"{f}.{z}" for f in floors for z in R.comfort_zones(f)}
+    hours = {f * 100 + hr for f in floors for hr in R.ac_on_hours(f)}
+    ok_zone = (h.floor.astype(str) + "." + h.zone).isin(zones)
+    on_hour = (h.floor.astype(int) * 100 + h.hour).isin(hours)
+    return h[ok_zone & h.is_workday & on_hour & h.temp_ok & (h.ac_kwh > R.conv("ac_on_kwh"))]
+
+
+def overcooled_share(d: pd.DataFrame, by=("floor",), shift: dict | float = 0.0,
+                     lo: float | None = None, hi: float | None = None,
+                     min_hours: int | None = None) -> pd.DataFrame:
+    """AC-kWh-weighted share of cooled occupied hours below `lo` (and above `hi`).
+
+    `d` is already `cooled_occupied`. Zone shares are weighted by the zone's AC
+    energy, as notebook 01 does, so a big cold zone counts for more than a small
+    one. `shift` (degC, scalar or {zone: degC}) moves temperatures before
+    counting — the simulator's zone-temperature lift.
+    """
+    lo = R.conv("comfort_lo") if lo is None else lo
+    hi = R.conv("comfort_hi") if hi is None else hi
+    min_hours = R.conv("overcooled_min_hours") if min_hours is None else min_hours
+    if not len(d):
+        return pd.DataFrame(columns=[*by, "share_below", "share_above", "hours", "ac_kwh"])
+    if not by:                                   # one pooled figure
+        return overcooled_share(d.assign(_all=0), ("_all",), shift, lo, hi,
+                                min_hours).drop(columns="_all")
+    s = d.zone.map(shift).fillna(0.0) if isinstance(shift, dict) else shift
+    t = d.temp_c + s
+    keys = [*by, "zone"] if "zone" not in by else list(by)
+    z = d.assign(below=t < lo, above=t > hi).groupby(keys).agg(
+        hours=("below", "size"), below=("below", "mean"), above=("above", "mean"),
+        ac_kwh=("ac_kwh", "sum")).reset_index()
+    z = z[z.hours >= min_hours]
+    if list(keys) == list(by):
+        return z.rename(columns={"below": "share_below", "above": "share_above"})
+    w = z.assign(wb=z.below * z.ac_kwh, wa=z.above * z.ac_kwh).groupby(list(by))
+    out = pd.DataFrame({"share_below": w.wb.sum() / w.ac_kwh.sum(),
+                        "share_above": w.wa.sum() / w.ac_kwh.sum(),
+                        "hours": w.hours.sum(), "ac_kwh": w.ac_kwh.sum(),
+                        "zones": w.size()})
+    return out.reset_index()
+
+
 def zone_comfort(h: pd.DataFrame, lo: float | None = None, hi: float | None = None,
                  rh_hi: float | None = None) -> pd.DataFrame:
     """Occupied, AC-on, sensor-valid zone-hours: overcooling and overheating shares."""
@@ -51,11 +101,8 @@ def zone_comfort(h: pd.DataFrame, lo: float | None = None, hi: float | None = No
     hi = R.conv("comfort_hi") if hi is None else hi
     rh_hi = R.conv("rh_hi") if rh_hi is None else rh_hi
     rows = []
-    for (f, z), g in h.groupby(["floor", "zone"]):
-        if z not in R.comfort_zones(int(f)):
-            continue
-        d = g[g.is_workday & g.hour.isin(R.ac_on_hours(int(f))) & g.temp_ok & (g.ac_kwh > 0.5)]
-        if len(d) < 50:
+    for (f, z), d in cooled_occupied(h).groupby(["floor", "zone"]):
+        if len(d) < R.conv("overcooled_min_hours"):
             continue
         rows.append({"floor": f, "zone": z, "hours": len(d), "mean_temp_c": d.temp_c.mean(),
                      "share_below_lo": (d.temp_c < lo).mean(), "share_above_hi": (d.temp_c > hi).mean(),

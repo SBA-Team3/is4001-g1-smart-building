@@ -183,7 +183,7 @@ with tab_points:
         st.metric("Temperature point-days flagged frozen", int(t.flag_flatline.sum()))
         st.metric("Longest flat run while cooling runs",
                   f"{int(t.max_flat_occupied.max())} min",
-                  help="Threshold is 60 min.")
+                  help=f"Threshold is {HL.FLATLINE_MIN['temp']} min.")
         st.markdown(
             "Flatline thresholds differ by channel because the physics differs. A "
             "zone temperature cannot hold ±0.01 °C for an hour *while cooling is "

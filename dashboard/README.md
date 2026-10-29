@@ -1,7 +1,9 @@
-# Floor 5 — facilities operations dashboard
+# CU-BEMS building — facilities operations dashboard
 
-A BMS-style operations dashboard for Floor 5 of the CU-BEMS building, built for a
-facilities manager rather than an analyst.
+A BMS-style operations dashboard for the CU-BEMS building, built for the
+university FM team (Office of Physical Resources Management) rather than an
+analyst. The Portfolio overview reads all seven floors; the operational pages
+are wired for Floor 5.
 
 ## Run it
 
@@ -20,26 +22,83 @@ channels cannot run on a page load.
 
 ## Why the pages are in this order
 
-A facilities manager opening a dashboard asks three questions, in this order:
+The navigation is grouped by **who asks the question**, the pattern commercial
+platforms (OpenBlue, Forge, Building X, EcoStruxure Building Advisor,
+SkySpark/Clockworks) use:
 
-1. **Can I trust what I'm looking at?** → *Floor status* trust band, *Sensor &
-   data health*
-2. **What is wrong, and what do I do about it?** → *Zones*, *Faults & actions*
-3. **How is the floor performing?** → *Energy*, *Opportunities*
+| Group | Page | Persona | Question |
+|---|---|---|---|
+| **Overview** | Portfolio overview *(default)* | FM lead, leadership | Where do I send the team? Are we on the 40% overcooling target? |
+| | Floor status | Floor supervisor | Can I trust today's data, and what changed since yesterday? |
+| **Operations** | Faults & work orders | Supervisor, technicians | What is broken, what does it cost per day, who fixes it, how do we know it's fixed? |
+| | Zones & comfort | Supervisor | Which zones are too cold, and by how much? |
+| | Sensor & data health | Controls / metering-IT | Which points are down, stale or lying? |
+| **Energy management** | Energy performance | Energy manager, finance | Are we using more than the weather explains? When did it drift? |
+| | Opportunities & simulator | Energy manager, finance, leadership | What would a package of changes save, in ฿ and tCO₂e, what does it do to comfort, and how would we prove it? |
+| **Reference** | Methods & assumptions | Anyone checking a number | Where does this come from? |
 
-Data health sits above everything else because the documented failure mode of
-rule-based building FDD is that a rule cannot tell its input has gone stale. A
-comfort figure computed on a dead sensor looks exactly like one computed on a
-live sensor.
+Within each page the order is still: **can I trust it → what is wrong → how are
+we performing → what could we change.** Data health sits above everything else
+on the operational pages because the documented failure mode of rule-based
+building FDD is that a rule cannot tell its input has gone stale.
+
+### What each reworked page shows
+
+- **Portfolio overview** — KPI strip (building kWh, ฿, tCO₂e, % of cooled
+  occupied hours below 23 °C vs the 40% target, data completeness); floor league
+  (partial EUI, AC share, overcooled share as a progress bar, after-hours AC,
+  weather-normalised deviation, completeness, a generated status note); one
+  generated "what to look at" sentence per floor; floor × month overcooling heat
+  map; monthly energy by floor. Floor 1 is in the totals, last and greyed in the
+  league, and out of every overcooling or schedule ranking. Floor 6 carries its
+  file-end flag everywhere it appears.
+- **Floor status** — trust band first, then the proposal's two KPIs (this
+  month's overcooled share vs 40%; excess cooling kWh/฿ vs the normalised
+  expectation, this month vs last, blocked across a change-point), then a
+  "since yesterday" strip (new / cleared faults, points that went offline).
+- **Faults & work orders** — each fault has a stable id, cost of inaction
+  (฿/day), days open, recurrence, trade, action and a verification check;
+  lifecycle New → Acknowledged → In progress → Resolved (+ Muted) saved to
+  `dashboard/cache/fault_states.csv`; CSV export for a CMMS; the ISA-18.2
+  self-audit and the "what we cannot detect" list are kept.
+- **Energy performance** — actual vs expected (monthly/weekly, 90% band),
+  G14 CV(RMSE)/NMBE with pass/fail, CUSUM restarted at each change-point,
+  energy signature with the change-point lines and the drill-down list of
+  workdays far above them, peak demand (daily trend, top-10 hours with outdoor
+  temperature, demand charge); then the existing EUI, end use, carpet, load
+  duration and off-hours sections.
+- **Opportunities & simulator** — scenario builder (zone-temperature lift per
+  zone or all, end-of-day trim, weekend/holiday lockout, cost per measure,
+  tariff, emission factor) → one row per measure plus a combined row: kWh/yr
+  low–mid–high, ฿/yr, tCO₂e/yr, payback, comfort after, confidence; an IPMVP
+  M&V card per measure; a tornado chart. The setpoint / thermal-model /
+  schedule-trim tabs below are the engine.
 
 ## Structure
 
 ```
-app.py              navigation, global sidebar (floor, as-of date, tariff)
+app.py              navigation (persona groups), global sidebar (floor, as-of
+                    date, tariff, emission factor, demand charge)
 ui.py               cached loaders, trust band, chart theme (Streamlit-only)
 pages/              one file per page; analytics come from ../src/sbanalytics/,
                     the same code the analysis notebooks use
+cache/              local state (fault_states.csv) — gitignored
 ```
+
+New analytics modules (pure pandas, no Streamlit):
+
+| Module | What it does |
+|---|---|
+| `portfolio` | building KPIs, floor league, floor × month overcooling, meter-outage episodes, per-floor levers and the generated "what to look at" sentence |
+| `mv` | daily change-point baseline per floor (F5 trains between its change-points), G14 summary, monthly/weekly roll-up with uncertainty band, segmented CUSUM, energy signature, peak demand |
+| `scenario` | intervention simulator: lift / trim / lockout, combined without double counting, comfort after, IPMVP plan, tornado |
+| `workorders` | fault lifecycle store (append-only CSV) and CMMS export |
+| `faults` (extended) | stable ids, cost of inaction, days open, recurrence, trade, action, verification (`PLAYBOOK`) |
+| `kpis` (extended) | `cooled_occupied` + `overcooled_share` — the one definition of the 68–83% KPI |
+
+Smoke test: `python3 tests/test_dashboard_smoke.py` renders every page on
+2019-06-14, 2018-11-15 (sensor gap), 2019-09-27 (change-point) and 2019-12-31,
+and checks the Portfolio's F1 / F6 annotations.
 
 ## The registry is the important bit
 
@@ -61,7 +120,7 @@ A second registry holds *change-points* — dates across which the data is not
 comparable with itself. Any period-over-period comparison spanning one is
 disabled with a reason.
 
-## Adding another floor
+## Adding another floor (operational pages)
 
 The data layer is floor-agnostic; every loader takes a floor number. Floors 3,
 4 and 7 share Floor 5's column layout; F6 has its four-AC zone in z4, F1 and F2
@@ -89,6 +148,27 @@ ones:
 | Evaluation window | 5-min rolling mean | ASHRAE G36 §5.16.14.6 |
 | EUI benchmark | 170 good / 225 typical | Bangkok office study, n=41 |
 | Humidity limit | 0.012 kg/kg | ASHRAE 55 |
+
+Added for v2 (all in `R.CONVENTIONS`, with sources, on the Methods page):
+
+| Parameter | Value | Basis |
+|---|---|---|
+| Overcooling target | < 40% of cooled occupied hours below 23 °C | Project proposal KPI |
+| Grid emission factor | 0.4999 kgCO₂e/kWh | Thailand GHG Management Organization (TGO) — verify current figure |
+| Demand charge | 0 ฿/kW/month (adjustable) | MEA large-customer tariffs carry one; enter the contract rate |
+| Cost of inaction | attributable kWh ÷ active days × tariff | FDD prioritisation practice; zero where no defensible attribution |
+| Fault episode gap | 3 days | Same rule that groups offline points |
+| Verification windows | 2 weeks (schedule/metering), 4 weeks (comfort) | Project convention |
+| M&V band | ±1.645 σ (90%), G14 autocorrelation correction | IPMVP / ASHRAE G14 |
+| Energy-signature outlier | > 2 training SDs above the line | Project convention |
+| Pilot power | α 0.05, power 0.8, ρ 0.5 | Methods-page defaults |
+| Lockout low case | 50% of metered weekend/holiday excess | Notebook 06 |
+| Tornado ranges | tariff ±20%, lift ±0.5 °C, trim ±1 h | Project assumption |
+
+Rules (in `R.METHODS`): overcooled share = AC-kWh-weighted cooled occupied
+hours (notebook 01); combined savings = S × (1 − T/B0) + T + L per case;
+IPMVP Option B for zone-metered measures, C for floor-wide; CUSUM restarts at
+each blocking change-point; fault lifecycle states.
 
 Deliberately **not** used: the term "Unmet Load Hours" (it is defined relative to
 a setpoint, which this building does not expose) and the ASHRAE 55 adaptive
