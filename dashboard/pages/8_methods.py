@@ -21,6 +21,27 @@ st.title("Methods & assumptions")
 st.caption("Every threshold this dashboard applies, where it comes from, what "
            "we corrected, and what we cannot compute.")
 
+def _gaps(f: int) -> str:
+    """This floor's per-zone exclusions, from the registry."""
+    rows = []
+    for z in R.ZONES[f]:
+        if not R.has_channel(f, z, "ac"):
+            rows.append(f"- All cooling metrics for **{z}** — no AC meter"
+                        + (" (stairwell)" if ui.is_stairwell(f, z) else "") + ".")
+        tp = R.point_for(f, z, "temp")
+        if tp is not None and tp.role == R.ROLE_SUPPLY_TEMP:
+            rows.append(f"- All room-comfort metrics for **{z}** — supply-air sensor path.")
+    if not R.sensored_zones(f):
+        rows.append("- Every comfort metric — this floor has no environmental sensors.")
+    frozen = sorted({p.zone for p in R.points(f, "plug", roles={R.ROLE_SUSPECT_CONSTANT})})
+    if frozen:
+        rows.append(f"- Plug-load analysis for **{', '.join(frozen)}** — those meters are frozen.")
+    dead = [p.column for p in R.points(f, roles={R.ROLE_DEAD}) if p.column]
+    if dead:
+        rows.append(f"- Anything from {', '.join(f'`{d}`' for d in dead)} — dead meter.")
+    return ("\n".join(rows) or "- None declared in the registry.") + "\n\n"
+
+
 t_assume, t_practice, t_reg, t_corr, t_base, t_pilot, t_excl = st.tabs(
     ["Declared conventions", "Industry practice", "Point registry", "Corrections",
      "M&V baseline", "Pilot design", "What we cannot compute"])
@@ -144,25 +165,42 @@ with t_reg:
     st.caption(f"{len(tags)} points tagged across {tags.floorRef.nunique()} floors. Points that do "
                "not exist (z3's AC on Floor 5, sensors on Floor 1) are not in the export.")
 
-    st.error(
-        "**Three traps this registry exists to prevent.**\n\n"
-        "1. **z1's real cooling load is on AC4, not AC1.** Only z1 has four AC "
-        "channels. `z1_AC4` carries 65,525 kWh; AC1+AC2+AC3 together carry "
-        "225 kWh (0.34%). Every other zone's load is on AC1. Aggregating "
-        "`*_AC1` across zones would silently drop 39% of the floor's cooling.\n"
-        "2. **z3 has no AC meter** — it is a stairwell. A zero in a kW column "
-        "that actually means 'no meter' is the classic FM dashboard lie.\n"
-        "3. **The lux channel is not lux.** It maxes at 49–79 with integer "
-        "resolution across all four zones, where a daylit office is 300–2,000. "
-        "It is a scaled index or a mis-scaled register, usable as a relative "
-        "signal only, and never labelled as illuminance."
-    )
+    if floor != 5:
+        multi = {z: [p.column for p in R.points(floor, "ac", z)] for z in R.ZONES[floor]}
+        multi = {z: c for z, c in multi.items() if len(c) > 1}
+        prim = {z: [p.column for p in R.points(floor, "ac", z, roles={R.ROLE_PRIMARY})]
+                for z in multi}
+        no_ac = [z for z in R.ZONES[floor] if not R.has_channel(floor, z, "ac")]
+        st.error(
+            f"**The traps on Floor {floor}, as the registry declares them.**\n\n"
+            + "".join(f"- **{z} has {len(c)} AC channels**; the load is on "
+                      f"{', '.join(f'`{x}`' for x in prim[z]) or 'none'}. The rest are "
+                      "residual or dead, so a `*_AC1` aggregate would miss it.\n"
+                      for z, c in multi.items())
+            + (f"- **{', '.join(no_ac)}: no AC meter.** Shown as 'not metered', never zero.\n"
+               if no_ac else "")
+            + "- **The lux channel is not lux** — a scaled index, relative signal only.\n\n"
+            "Floor 5's version of this box, with the kWh evidence, is on the Floor 5 view.")
+    if floor == 5:
+        st.error(
+            "**Three traps this registry exists to prevent.**\n\n"
+            "1. **z1's real cooling load is on AC4, not AC1.** Only z1 has four AC "
+            "channels. `z1_AC4` carries 65,525 kWh; AC1+AC2+AC3 together carry "
+            "225 kWh (0.34%). Every other zone's load is on AC1. Aggregating "
+            "`*_AC1` across zones would silently drop 39% of the floor's cooling.\n"
+            "2. **z3 has no AC meter** — it is a stairwell. A zero in a kW column "
+            "that actually means 'no meter' is the classic FM dashboard lie.\n"
+            "3. **The lux channel is not lux.** It maxes at 49–79 with integer "
+            "resolution across all four zones, where a daylit office is 300–2,000. "
+            "It is a scaled index or a mis-scaled register, usable as a relative "
+            "signal only, and never labelled as illuminance."
+        )
 
     st.subheader("Change-points")
     st.markdown("Dates across which the data is not comparable with itself. Any "
                 "period-over-period comparison spanning one of these is disabled "
                 "with a reason rather than silently shown.")
-    st.dataframe(R.change_point_frame(), width="stretch", hide_index=True,
+    st.dataframe(R.change_point_frame(floor), width="stretch", hide_index=True,
                  column_config={"detail": st.column_config.TextColumn(width="large")})
 
 # --------------------------------------------------------------------------- #
@@ -175,9 +213,12 @@ with t_corr:
         "were physics."
     )
 
+    if floor != 5:
+        st.info("These corrections are to the Floor 5 notebook, so the figures "
+                "below are computed on Floor 5 whichever floor is selected.")
     st.markdown("#### 1. The z4 'level shift' is a z2↔z4 transfer, on 27 Sep 2019")
-    if h is not None:
-        chk = A.combined_meter_check(h)
+    if D.cache_ready(5):
+        chk = A.combined_meter_check(ui.hourly(5), floor=5)
         if chk:
             k = st.columns(4)
             k[0].metric("z2 mean load", f"{chk['after']['z2']:.2f} kW",
@@ -264,10 +305,15 @@ with t_base:
         ok = gbm_test[gbm_test.meets_g14 == "yes"].zone.tolist()
         st.info(
             f"**Meets G14 on the test period: {', '.join(ok) if ok else 'none'}.** "
-            "z4 does not, and the reason is now stated rather than unexplained — "
-            "its meter changed on 27 Sep 2019, so a model trained before that "
-            "date cannot predict it afterwards. The 2018 holdout fails for every "
-            "zone, which is the 2.1–2.9 °C level break showing up as model error."
+            + ("z4 does not, and the reason is now stated rather than unexplained — "
+               "its meter changed on 27 Sep 2019, so a model trained before that "
+               "date cannot predict it afterwards. The 2018 holdout fails for every "
+               "zone, which is the 2.1–2.9 °C level break showing up as model error."
+               if floor == 5 else
+               "The zone models use Floor 5's Mar–Sep 2019 window on every floor. "
+               "A zone that fails here has no declared change-point to explain it, "
+               "so check it against the 00a §7 meter-transfer scan before trusting "
+               "its zone-level savings.")
         )
 
 # --------------------------------------------------------------------------- #
@@ -371,9 +417,7 @@ with t_excl:
         "variation. We report relative peer offset and label it inconclusive.\n"
         "- CO₂ / IAQ compliance (ASHRAE 62.1, EN 16798 categories).\n\n"
         "#### Because of this floor's specific gaps\n"
-        "- All cooling metrics for **z3** — no AC meter (stairwell).\n"
-        "- All room-comfort metrics for **z1** — supply-air sensor path.\n"
-        "- Plug-load analysis for **z2, z3 and z5** — those meters are frozen.\n\n"
+        + _gaps(floor) +
         "#### Available only through an external join\n"
         "- CU-BEMS has **no outdoor weather channel**. Every weather-normalised "
         "figure here depends on ERA5 reanalysis for central Bangkok joined in "

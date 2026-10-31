@@ -74,9 +74,12 @@ freq = cc[1].radio("Roll-up", ["Monthly", "Weekly"], horizontal=True)
 model = _model(floor, target)
 tr0, tr1 = model["train"]
 cc[2].caption(f"Trained on **{tr0} → {tr1}**, tested on **{model['test'][0]} → "
-              f"{model['test'][1]}**. On Floor 5 the window sits between the 2019-03-06 and "
-              "2019-09-27 change-points, so the baseline never learns across a configuration "
-              "change.")
+              f"{model['test'][1]}**. "
+              + ("On Floor 5 the window sits between the 2019-03-06 and 2019-09-27 "
+                 "change-points, so the baseline never learns across a configuration change."
+                 if floor == 5 else
+                 "The notebooks' 12-month window; this floor has no declared blocking "
+                 "change-point inside it."))
 
 g = M.g14_summary(model)
 gc = st.columns(len(g) + 1)
@@ -236,7 +239,7 @@ with left:
     st.metric("Partial EUI", f"{ei['eui']:.0f} kWh/m²/yr",
               help=f"{ei['kwh_year']:,.0f} kWh/yr ÷ {area:,.0f} m².")
     bench = pd.DataFrame({
-        "label": ["Floor 5 (partial)", "Bangkok good practice", "Bangkok typical"],
+        "label": [f"Floor {floor} (partial)", "Bangkok good practice", "Bangkok typical"],
         "value": [ei["eui"], ei["good"], ei["typical"]],
         "kind": ["measured", "benchmark", "benchmark"]})
     st.altair_chart(
@@ -273,8 +276,12 @@ with right:
                 legend=alt.Legend(orient="top", title=None)),
             tooltip=["zone", "end_use", alt.Tooltip("kWh:Q", format=",.0f")],
         ).properties(height=260), width="stretch")
-    st.caption("z3 has no AC bar because it has no AC meter — it is a stairwell. "
-               "A zero there would be a lie.")
+    no_ac = [z for z in R.ZONES[floor] if not R.has_channel(floor, z, "ac")]
+    if no_ac:
+        st.caption(f"{', '.join(no_ac)} {'has' if len(no_ac) == 1 else 'have'} no AC bar "
+                   "because there is no AC meter"
+                   + (" — z3 is a stairwell" if floor == 5 else "")
+                   + ". A zero there would be a lie.")
 
 # --------------------------------------------------------------------------- #
 st.divider()
@@ -363,14 +370,15 @@ with b2:
         [["point", "after-hours kWh", "total kWh", "after-hours %"]].round(1),
         width="stretch", hide_index=True)
 
-st.info(
-    "**Two findings the cooling analysis missed entirely, because it excluded "
-    "the stairwell and looked only at AC.** `z3_Plug` draws a flat 0.27 kW "
-    "round the clock — 98% of its occupied level overnight, and 41% of its "
-    "annual energy falls outside working hours. It is also a frozen meter (see "
-    "Sensor health), so the right first action is to verify it at the panel "
-    "rather than chase the load. Stairwell lighting starts at 06:00, nearly two "
-    "hours before cooling, and runs until 19:00, two hours after it stops. z4's "
-    "lighting runs at 0.48 kW through the weekend — about five times any other "
-    "zone."
-)
+if floor == 5:
+    st.info(
+        "**Two findings the cooling analysis missed entirely, because it excluded "
+        "the stairwell and looked only at AC.** `z3_Plug` draws a flat 0.27 kW "
+        "round the clock — 98% of its occupied level overnight, and 41% of its "
+        "annual energy falls outside working hours. It is also a frozen meter (see "
+        "Sensor health), so the right first action is to verify it at the panel "
+        "rather than chase the load. Stairwell lighting starts at 06:00, nearly two "
+        "hours before cooling, and runs until 19:00, two hours after it stops. z4's "
+        "lighting runs at 0.48 kW through the weekend — about five times any other "
+        "zone."
+    )

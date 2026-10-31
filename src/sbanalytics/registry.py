@@ -221,12 +221,13 @@ POINTS: dict[int, list[Point]] = {
 #: validated for it; every floor is in the registry and the cleaned dataset.
 FLOORS: dict[int, dict] = {
     1: {"wired": False, "zones": 4, "note": "No sensors at all; lighting-dominated, load peaks at night — not an office profile."},
-    2: {"wired": False, "zones": 4, "note": "Different schema — 36 columns, 14 AC units in z2; z2_AC11 is dead."},
-    3: {"wired": False, "zones": 5, "note": "All meters offline 11 Oct - 21 Nov 2018."},
-    4: {"wired": False, "zones": 5, "note": "All meters offline 29 Oct - 21 Nov 2018; z1_AC1-3 offline Feb-May 2019."},
+    2: {"wired": False, "zones": 4, "note": "Different schema — 36 columns, 14 AC units in z2; z2_AC11 is dead. "
+                                         "No lunch shutdown, so the 12:00 thermal-model calibration has no AC-off hour."},
+    3: {"wired": True,  "zones": 5, "note": "All meters offline 11 Oct - 21 Nov 2018."},
+    4: {"wired": True,  "zones": 5, "note": "All meters offline 29 Oct - 21 Nov 2018; z1_AC1-3 offline Feb-May 2019."},
     5: {"wired": True,  "zones": 5, "note": "Wired."},
-    6: {"wired": False, "zones": 5, "note": "Source file is a truncated download: ends 2019-10-22 13:27, last row corrupt."},
-    7: {"wired": False, "zones": 5, "note": "z1_AC1 is dead; z1's load is on AC4."},
+    6: {"wired": True,  "zones": 5, "note": "Source file is a truncated download: ends 2019-10-22 13:27, last row corrupt."},
+    7: {"wired": True,  "zones": 5, "note": "z1_AC1 is dead; z1's load is on AC4."},
 }
 
 ZONES: dict[int, list[str]] = {f: list(lay["zones"]) for f, lay in LAYOUT.items()}
@@ -280,6 +281,12 @@ CHANGE_POINTS: list[ChangePoint] = [
         "45- and 69-day outages. This is a CT re-assignment or control re-zoning "
         "during a site visit, not a change in z4's cooling demand.",
         "critical", True, ("z2", "z4")),
+    ChangePoint(
+        "2019-03-06", "Indoor sensors reinstalled after the blackout",
+        "Every floor's sensors return on 6 Mar 2019 (00a §2). On F5 the floor then reads "
+        "2-3 degC colder; on this floor that has not been checked, so a 2018-vs-2019 "
+        "comfort comparison may be measuring the reinstall rather than the building.",
+        "warn", False, (), floors=(2, 3, 4, 6, 7)),
 ]
 
 #: The building-wide sensor maintenance window (firmware update, per the dataset
@@ -287,15 +294,22 @@ CHANGE_POINTS: list[ChangePoint] = [
 #: dominated by a known planned outage.
 BLACKOUT = ("2018-09-12 11:09", "2019-03-06 14:30")
 
-#: Known per-zone sensor outages outside the blackout, for the health page.
+#: Known outages outside the blackout, for the sidebar and the health page:
+#: (floors, zone, start, end, kind, note). F5's rows are to the minute from the
+#: floor notebook; the others are day-level, from the point-day health table
+#: (`portfolio.meter_outages` and a scan of zero-received AC days).
 KNOWN_OUTAGES = [
-    ("z2", "2019-07-20 07:36", "2019-09-27 14:15", "sensors", "69.3 days — no indoor temperature for Aug and most of Sep 2019"),
-    ("z1", "2019-08-13 13:39", "2019-09-27 14:26", "sensors", "45.0 days"),
-    ("*",  "2019-01-23 09:41", "2019-02-12 15:13", "ac", "20.2 days — all four AC channels to the minute, one logger"),
-    ("z4", "2019-04-10 02:55", "2019-04-26 14:47", "sensors", "16.5 days"),
-    ("z2", "2019-05-12 01:19", "2019-05-27 12:29", "sensors", "15.5 days"),
-    ("z2", "2019-05-14 06:54", "2019-05-27 12:33", "light+plug", "13.2 days"),
-    ("z4", "2019-12-13 17:12", "2019-12-19 11:35", "sensors", "5.8 days"),
+    ((5,), "z2", "2019-07-20 07:36", "2019-09-27 14:15", "sensors", "69.3 days — no indoor temperature for Aug and most of Sep 2019"),
+    ((5,), "z1", "2019-08-13 13:39", "2019-09-27 14:26", "sensors", "45.0 days"),
+    ((5,), "*",  "2019-01-23 09:41", "2019-02-12 15:13", "ac", "20.2 days — all four primary AC channels to the minute, one logger"),
+    ((3, 7), "*", "2019-01-24", "2019-02-11", "ac", "Every primary AC channel; the same Jan-Feb 2019 logger gap as F5"),
+    ((2,), "*", "2019-01-24", "2019-02-11", "ac", "z1_AC1, z2_AC1 and z4_AC1; z2's other 13 units kept reporting"),
+    ((3,), "*", "2018-10-11", "2018-11-21", "all meters", "All energy meters offline (full days 12 Oct - 20 Nov 2018)"),
+    ((4,), "*", "2018-10-29", "2018-11-21", "all meters", "All energy meters offline (full days 30 Oct - 20 Nov 2018)"),
+    ((5,), "z4", "2019-04-10 02:55", "2019-04-26 14:47", "sensors", "16.5 days"),
+    ((5,), "z2", "2019-05-12 01:19", "2019-05-27 12:29", "sensors", "15.5 days"),
+    ((5,), "z2", "2019-05-14 06:54", "2019-05-27 12:33", "light+plug", "13.2 days"),
+    ((5,), "z4", "2019-12-13 17:12", "2019-12-19 11:35", "sensors", "5.8 days"),
 ]
 
 
@@ -511,6 +525,12 @@ def point_for(floor: int, zone: str, channel: str) -> Point | None:
     return ps[0] if ps else None
 
 
+def point_for_any(floor: int, zone: str, channel: str) -> Point | None:
+    """Like point_for, but also returns ROLE_ABSENT placeholders (their notes say why)."""
+    ps = points(floor, channel, zone, existing_only=False)
+    return ps[0] if ps else None
+
+
 def wired_floors() -> list[int]:
     return [f for f, meta in FLOORS.items() if meta["wired"]]
 
@@ -560,13 +580,15 @@ def haystack_frame(floors=None) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def change_point_frame() -> pd.DataFrame:
+def change_point_frame(floor: int | None = None) -> pd.DataFrame:
     return pd.DataFrame([{
+        "floor": ", ".join(f"F{f}" for f in c.floors),
         "date": c.date, "event": c.title, "severity": c.severity,
         "zones": ", ".join(c.zones) if c.zones else "all",
         "blocks year-on-year": "yes" if c.blocks_comparison else "no",
         "detail": c.detail,
-    } for c in CHANGE_POINTS])
+    } for c in CHANGE_POINTS if floor is None or floor in c.floors],
+        columns=["floor", "date", "event", "severity", "zones", "blocks year-on-year", "detail"])
 
 
 def crosses_change_point(start, end, floor: int | None = None) -> list[ChangePoint]:

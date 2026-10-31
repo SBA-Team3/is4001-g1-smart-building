@@ -73,7 +73,7 @@ k[1].metric("Excess cooling, month to date",
                  f"{t['start'].date()} – {t['end'].date()} ({t['days']} usable days). Actual "
                  f"{t['actual']:,.0f} kWh vs expected {t['expected']:,.0f} kWh. Target: lower every "
                  "month.")
-guard = ui.comparison_guard(l_["start"], t["end"]) if t["days"] and l_["days"] else []
+guard = ui.comparison_guard(l_["start"], t["end"], floor) if t["days"] and l_["days"] else []
 if guard or not (t["days"] and l_["days"]):
     k[2].metric("vs last month (per day)", "—",
                 help="Disabled: the two months straddle a change-point, or one has no usable days.")
@@ -160,8 +160,7 @@ for z in R.ZONES[floor]:
         "cold h %": (cm.loc[z, "cold_pct"] if z in cm.index else np.nan) if comfort_valid else np.nan,
         "exceedance °C·h": (cm.loc[z, "edh"] if z in cm.index else np.nan) if comfort_valid else np.nan,
         "faults": sum(v for kk, v in nfaults.items() if z in str(kk)),
-        "note": ("stairwell — no cooling or sensors" if not has_ac else
-                 "supply-air sensor — comfort not valid" if not comfort_valid else ""),
+        "note": ui.zone_note(floor, z),
     }
     rows.append(r)
 
@@ -174,9 +173,10 @@ st.dataframe(
         "cold h %": st.column_config.ProgressColumn(
             "cold h %", min_value=0, max_value=100, format="%.0f"),
     })
-st.caption("Blank cells are points that do not exist, not zeros. z3 is a "
-           "stairwell with no cooling and no sensors; z1's temperature sensor "
-           "sits in a supply-air path, so it has no valid room-comfort figure.")
+st.caption("Blank cells are points that do not exist, not zeros — the note "
+           "column says which. " + ("On this floor z3 is a stairwell with no cooling "
+           "and no sensors; z1's temperature sensor sits in a supply-air path, so it "
+           "has no valid room-comfort figure." if floor == 5 else ""))
 
 # --- 6. top faults ---------------------------------------------------------- #
 st.divider()

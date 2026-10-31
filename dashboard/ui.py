@@ -153,9 +153,9 @@ def status_notes(as_of, floor: int = 5) -> None:
         fn(f"**{note['title']}** — {note['detail']}")
 
 
-def comparison_guard(start, end) -> list:
+def comparison_guard(start, end, floor: int) -> list:
     """Block a period-over-period comparison that straddles a change-point."""
-    cps = [c for c in R.crosses_change_point(start, end) if c.blocks_comparison]
+    cps = [c for c in R.crosses_change_point(start, end, floor) if c.blocks_comparison]
     for c in cps:
         st.error(f"**Comparison disabled — {c.title} ({c.date}).** {c.detail}")
     return cps
@@ -174,10 +174,35 @@ def money(v, tariff):
     return f"฿{v * tariff:,.0f}"
 
 
+def is_stairwell(floor: int, zone: str) -> bool:
+    """Only where the registry says so (F5 z3) — elsewhere a zone without an AC
+    meter is just that, and calling it a stairwell would be a guess."""
+    p = R.point_for_any(floor, zone, "ac")
+    return bool(p and p.note.lower().startswith("stairwell"))
+
+
+def zone_note(floor: int, zone: str) -> str:
+    """The caveat an operator needs next to a zone, from the registry."""
+    if is_stairwell(floor, zone):
+        return "stairwell — no cooling or sensors"
+    has_ac, tp = R.has_channel(floor, zone, "ac"), R.point_for(floor, zone, "temp")
+    if not has_ac and tp is None:
+        return "no AC meter, no sensor"
+    if not has_ac:
+        return "no AC meter"
+    if tp is None:
+        return "no sensor — comfort not measured"
+    if tp.role == R.ROLE_SUPPLY_TEMP:
+        return "supply-air sensor — comfort not valid"
+    return ""
+
+
 def zone_label(floor: int, zone: str) -> str:
     """Zone name with the caveat an operator needs to see next to it."""
-    if not R.has_channel(floor, zone, "ac"):
+    if is_stairwell(floor, zone):
         return f"{zone} · stairwell, no cooling"
+    if not R.has_channel(floor, zone, "ac"):
+        return f"{zone} · no AC meter"
     p = R.point_for(floor, zone, "temp")
     if p and p.role == R.ROLE_SUPPLY_TEMP:
         return f"{zone} · supply-air sensor"

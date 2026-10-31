@@ -165,9 +165,10 @@ zsel = st.selectbox("Zone", R.ZONES[floor],
 tp = R.point_for(floor, zsel, "temp")
 
 if not R.has_channel(floor, zsel, "ac"):
-    st.info(f"**{zsel} is a stairwell.** It has no cooling and no environmental "
-            "sensors — only lighting and plug metering. It is excluded from "
-            "every comfort and cooling metric rather than shown as zero.")
+    what = "is a stairwell" if ui.is_stairwell(floor, zsel) else "has no AC meter"
+    st.info(f"**{zsel} {what}.** It has no metered cooling"
+            + ("" if R.has_channel(floor, zsel, "temp") else " and no environmental sensor")
+            + ". It is excluded from every cooling metric rather than shown as zero.")
 elif tp and tp.role == R.ROLE_SUPPLY_TEMP:
     st.warning(
         f"**{zsel}'s temperature sensor sits in a supply-air path.** It measures "

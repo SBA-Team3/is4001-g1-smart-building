@@ -325,7 +325,7 @@ def metering_step_change(h: pd.DataFrame, start=None, end=None,
     lo = pd.Timestamp(start) if start is not None else None
     hi = pd.Timestamp(end) if end is not None else None
     for c in R.CHANGE_POINTS:
-        if c.severity != "critical":
+        if c.severity != "critical" or floor not in c.floors:
             continue
         cd = pd.Timestamp(c.date)
         if (lo is not None and cd < lo) or (hi is not None and cd > hi):

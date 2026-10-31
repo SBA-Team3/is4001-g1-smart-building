@@ -109,10 +109,13 @@ with tab_map:
             width="stretch")
         st.caption(
             "Red bands from mid-Sep 2018 to Mar 2019 are the planned sensor "
-            "maintenance. The separate red block on z1/z2 in Aug–Sep 2019 is a "
-            "real 45- and 69-day outage that the notebook never accounted for — "
-            "z2 has no indoor temperature at all for August 2019, the peak "
-            "cooling month.")
+            "maintenance."
+            + (" The separate red block on z1/z2 in Aug–Sep 2019 is a "
+               "real 45- and 69-day outage that the notebook never accounted for — "
+               "z2 has no indoor temperature at all for August 2019, the peak "
+               "cooling month." if floor == 5 else
+               " Any other red block is an outage on this floor; the sidebar names "
+               "the known ones."))
 
     st.divider()
     st.markdown("**Monthly completeness by point**")
@@ -138,8 +141,8 @@ with tab_points:
     excl = st.toggle("Exclude the planned maintenance window from the denominator",
                      value=True,
                      help="With it included every zone looks equally broken by one "
-                          "known planned outage. Excluding it shows z2 is still "
-                          "only ~75% complete, which is the number to act on.")
+                          "known planned outage. Excluding it shows which points are "
+                          "still incomplete, which is the number to act on.")
     ct = HL.completeness_table(H, exclude_blackout=excl)
     ct["verdict"] = ct.apply(HL.verdict, axis=1)
 
@@ -227,15 +230,16 @@ with tab_cross:
                   [["zone", "abs humidity g/m³", "dew point °C", "temp °C", "RH %",
                     "vs median"]].round(2),
                 width="stretch", hide_index=True)
-            st.success(
-                "**An independent confirmation that z1 is not measuring room air.** "
-                "Temperature legitimately differs between zones; moisture content "
-                "largely does not, because they share an air path. z1's absolute "
-                "humidity sits ~1.4 g/m³ below the floor median and its dew point "
-                "~2.2 °C below — the signature of air that has just crossed a "
-                "cooling coil and been dehumidified. This reaches the same verdict "
-                "as the temperature argument without using temperature at all."
-            )
+            if floor == 5:
+                st.success(
+                    "**An independent confirmation that z1 is not measuring room air.** "
+                    "Temperature legitimately differs between zones; moisture content "
+                    "largely does not, because they share an air path. z1's absolute "
+                    "humidity sits ~1.4 g/m³ below the floor median and its dew point "
+                    "~2.2 °C below — the signature of air that has just crossed a "
+                    "cooling coil and been dehumidified. This reaches the same verdict "
+                    "as the temperature argument without using temperature at all."
+                )
 
     with right:
         st.markdown("##### Temperature offset from peer median")
@@ -261,13 +265,17 @@ with tab_cross:
                 "ASHRAE G36 way of combining two instruments' error bands. "
                 "Months with fewer than 40 valid hours are omitted.")
             st.warning(
-                "**This is a stable offset, not calibration drift — and we will "
-                "not call it drift.** z5 runs persistently ~1 °C above the peer "
-                "median and z4 below it, but the offsets do not grow. With 18 "
-                "months, no reference sensor, a 2–3 °C step change across the "
-                "2019 maintenance window and two long z2 outages, true drift "
-                "cannot be separated from a spatial difference. Reporting it as "
-                "drift would be a claim the data cannot support."
+                ("**This is a stable offset, not calibration drift — and we will "
+                 "not call it drift.** z5 runs persistently ~1 °C above the peer "
+                 "median and z4 below it, but the offsets do not grow. With 18 "
+                 "months, no reference sensor, a 2–3 °C step change across the "
+                 "2019 maintenance window and two long z2 outages, true drift "
+                 "cannot be separated from a spatial difference." if floor == 5 else
+                 "**Read a persistent offset as a spatial difference, not drift.** "
+                 "With 18 months, no reference sensor and the 2019 sensor reinstall "
+                 "inside the record, true drift cannot be separated from one zone "
+                 "simply running warmer or colder than its peers.")
+                + " Reporting it as drift would be a claim the data cannot support."
             )
 
 

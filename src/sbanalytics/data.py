@@ -167,14 +167,23 @@ def data_status(as_of, floor: int = 5) -> list[dict]:
     d = pd.Timestamp(as_of).normalize()
     out = []
 
+    fe = R.floor_file_end(floor)
+    if fe is not None and d >= fe.normalize():
+        out.append({"level": "error", "title": "Past the end of this floor's file",
+                    "detail": f"The source file for Floor {floor} ends {fe:%Y-%m-%d %H:%M}. "
+                              f"Nothing after that is data, so blank charts here mean no file, "
+                              f"not an outage."})
+
     lo, hi = (pd.Timestamp(x) for x in R.BLACKOUT)
-    if lo.normalize() <= d <= hi.normalize():
+    if R.sensored_zones(floor) and lo.normalize() <= d <= hi.normalize():
         out.append({"level": "error", "title": "Inside the sensor blackout",
                     "detail": f"No indoor sensor data anywhere on the floor between "
                               f"{lo.date()} and {hi.date()} (planned firmware "
                               f"maintenance). Energy metering is unaffected."})
 
-    for zone, s, e, kind, note in R.KNOWN_OUTAGES:
+    for floors, zone, s, e, kind, note in R.KNOWN_OUTAGES:
+        if floor not in floors:
+            continue
         s, e = pd.Timestamp(s), pd.Timestamp(e)
         if s.normalize() <= d <= e.normalize():
             who = "all zones" if zone == "*" else zone
@@ -182,6 +191,8 @@ def data_status(as_of, floor: int = 5) -> list[dict]:
                         "detail": f"{note} ({s.date()} to {e.date()})."})
 
     for c in R.CHANGE_POINTS:
+        if floor not in c.floors:
+            continue
         cd = pd.Timestamp(c.date)
         if abs((d - cd).days) <= 7:
             out.append({"level": "warning" if c.severity != "critical" else "error",

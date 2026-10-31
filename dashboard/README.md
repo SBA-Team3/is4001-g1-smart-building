@@ -3,7 +3,9 @@
 A BMS-style operations dashboard for the CU-BEMS building, built for the
 university FM team (Office of Physical Resources Management) rather than an
 analyst. The Portfolio overview reads all seven floors; the operational pages
-are wired for Floor 5.
+are wired for Floors 3–7. Floor 5 carries the hand-validated findings (the
+z2↔z4 transfer, the supply-air sensor, the stairwell); on the other floors those
+passages are replaced by what the registry declares for that floor.
 
 ## Run it
 
@@ -126,14 +128,25 @@ The data layer is floor-agnostic; every loader takes a floor number. Floors 3,
 4 and 7 share Floor 5's column layout; F6 has its four-AC zone in z4, F1 and F2
 have their own layouts (all declared in `registry.LAYOUT`).
 
-Every floor is now in the registry and in `data/cleaned/`. To show one on the
-dashboard pages:
+Every floor is in the registry and in `data/cleaned/`. Floors 3, 4, 6 and 7 are
+wired; 1 and 2 are not. To wire one:
 
 1. Check its registry rows (`LAYOUT`, `ROLE_OVERRIDES` in `src/sbanalytics/registry.py`)
-2. Check each page renders sensibly for its zones
-3. Set `wired: True` in `registry.FLOORS`
+2. Tag its outages and change-points with the floor (`KNOWN_OUTAGES`, `CHANGE_POINTS.floors`) —
+   untagged history is Floor 5's and must not leak
+3. Check each page renders sensibly for its zones, and that the thermal model is identified
+   (Opportunities → thermal-model tab)
+4. Set `wired: True` in `registry.FLOORS` and run the smoke test, which covers every wired floor
 
-Nothing in the analysis code changes.
+What is still open:
+
+| Floor | Status |
+|---|---|
+| F1 | Not wired: no sensors, so Sensor health, Opportunities and Methods fail; not an office floor anyway. |
+| F2 | Not wired: renders, but has no lunch shutdown, so the thermal model has no AC-off hour, and its 14-unit z2 needs its own triage view. |
+| F4, F7 | Wired. The physics fit is not identified (1/C CI reaches zero), so the setpoint estimate is the regression alone and the page says so. |
+| F6 | Wired. Unconfirmed z1/z5 meter-transfer candidate in Jun 2019 (00a §7), not yet in `CHANGE_POINTS`. |
+| F2–F4, F6, F7 | The 2019-03-06 sensor reinstall is declared as a *warning*, not a blocking change-point: nobody has checked whether these floors also ran colder afterwards, as F5 did. |
 
 ## Standards and conventions
 

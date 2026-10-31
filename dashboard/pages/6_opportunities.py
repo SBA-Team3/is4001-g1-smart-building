@@ -203,6 +203,14 @@ with tab_sp:
         help="The spread between these is method disagreement, not sampling "
              "noise. No larger sample would shrink it.")
     row = est[est.estimator == which].iloc[0]
+    if not phys.get("pooled") and len(est):
+        st.warning("**One estimator only.** The physics model is not identified on this "
+                   "floor (see the thermal-model tab), so there is no lower bound and no "
+                   "midpoint. This is the regression, which overstates the saving by "
+                   "absorbing occupancy.")
+    elif phys.get("unidentified"):
+        st.caption("Physics fit not identified for "
+                   f"{', '.join(phys['unidentified'])}; those zones use the pooled fit.")
     d_temp = cc[1].slider("Raise setpoint by (°C)", 0.0, 4.0, 1.5, 0.25)
     realisation = cc[2].slider("Realisation factor", 0.3, 1.0, 1.0, 0.05,
                                help="Share of the modelled saving you expect to "
@@ -259,7 +267,12 @@ with tab_phys:
                "two estimates disagree.")
 
     if not phys.get("pooled"):
-        st.error("Not enough AC-off hours to calibrate.")
+        st.error("Not enough AC-off hours to calibrate." if phys["n"] < 50 else
+                 f"**The thermal model is not identified on Floor {floor}.** Across "
+                 f"{phys['n']:,} lunch-hour zone-days the capacitance coefficient's "
+                 "confidence interval reaches zero, so C — and with it UA — is "
+                 "unbounded. The setpoint estimate above uses the regression alone, "
+                 "which is the confounded upper bound: read it as indicative.")
     else:
         p = phys["pooled"]
         dec = A.load_decomposition(h, phys, floor=floor)
@@ -318,8 +331,10 @@ with tab_phys:
                 "\n\nCrucially, indoor temperature never appears on the "
                 "right-hand side as a *cause* of energy — so unlike a regression "
                 "of load on temperature, this cannot be confounded by occupancy. "
-                "It also agrees in sign across all three zones, where the "
-                "regression gives z5 the wrong sign entirely."
+                + ("It also agrees in sign across all three zones, where the "
+                   "regression gives z5 the wrong sign entirely." if floor == 5 else
+                   "Where the regression and the physics disagree in sign for a zone, "
+                   "occupancy is the likely reason.")
             )
             L = phys["frame"]
             st.altair_chart(

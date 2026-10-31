@@ -90,7 +90,7 @@ def fit_physics(h: pd.DataFrame, zones=None, use_solar: bool = True,
     """
     L = lunch_frame(h, zones, floor=floor)
     out = {"n": len(L), "frame": L, "per_zone": {}, "pooled": None,
-           "model": None, "use_solar": use_solar}
+           "model": None, "use_solar": use_solar, "unidentified": []}
     if len(L) < 50:
         return out
 
@@ -105,7 +105,10 @@ def fit_physics(h: pd.DataFrame, zones=None, use_solar: bool = True,
     load = occ.ac_kwh.mean()
 
     def pack(inv_c, ua_c, inv_ci, ua_ci, mean_load):
-        if inv_c <= 0 or not np.isfinite(mean_load) or mean_load <= 0:
+        # 1/C must be positive across its whole CI. If the interval reaches zero
+        # the capacitance is unbounded, and so is UA = C * coef: on F4 z1 and
+        # F7 z4 that produced -13 and -29 %/degC with lower bounds near -1e9 %.
+        if inv_c <= 0 or inv_ci[0] <= 0 or not np.isfinite(mean_load) or mean_load <= 0:
             return None
         C = 1.0 / inv_c
         UA = C * ua_c
@@ -120,6 +123,8 @@ def fit_physics(h: pd.DataFrame, zones=None, use_solar: bool = True,
 
     out["pooled"] = pack(m.params["int_kwh"], m.params["drive"],
                          tuple(ci.loc["int_kwh"]), tuple(ci.loc["drive"]), load)
+    if out["pooled"] is None:
+        out["unidentified"].append("pooled")
 
     for z, g in L.groupby("zone"):
         if len(g) < 40:
@@ -133,6 +138,8 @@ def fit_physics(h: pd.DataFrame, zones=None, use_solar: bool = True,
         if p:
             p["n"], p["r2"] = len(g), mz.rsquared
             out["per_zone"][z] = p
+        else:
+            out["unidentified"].append(z)
     return out
 
 
