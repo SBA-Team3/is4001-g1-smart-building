@@ -200,17 +200,20 @@ def after_hours_operation(h: pd.DataFrame, start=None, end=None,
         if not R.has_channel(floor, z, "light"):
             continue
         day = d[(d.zone == z) & (~d.is_weekend) & d.hour.isin(R.ac_on_hours(floor))]
-        if not len(day) or day.light_kwh.mean() <= 0:
+        day_mean, night_mean = day.light_kwh.mean(), g.light_kwh.mean()
+        # Written as "not (x > y)" so a meter outage (all NaN) skips the zone:
+        # NaN fails every comparison, and "NaN <= 0" alone would let it through.
+        if not (day_mean > 0 and night_mean >= 0):
             continue
-        ratio = g.light_kwh.mean() / day.light_kwh.mean() * 100
-        if ratio < R.conv("night_light_ratio_pct"):
+        ratio = night_mean / day_mean * 100
+        if not ratio >= R.conv("night_light_ratio_pct"):
             continue
         lit = g.groupby("date").light_kwh.mean()
-        lit = lit[lit / day.light_kwh.mean() * 100 >= R.conv("night_light_ratio_pct")]
+        lit = lit[lit / day_mean * 100 >= R.conv("night_light_ratio_pct")]
         out.append(_rule(
             z, "after_hours_light", MED if ratio > 25 else LOW,
             f"{z}: lighting running overnight",
-            f"Overnight lighting averages {g.light_kwh.mean():.2f} kW, "
+            f"Overnight lighting averages {night_mean:.2f} kW, "
             f"{ratio:.0f}% of its occupied level — {g.light_kwh.sum():,.0f} kWh "
             f"over the period.",
             ["No occupancy sensing on this circuit", "Cleaning or security schedule",
@@ -349,7 +352,7 @@ def humidity_faults(h: pd.DataFrame, start=None, end=None,
     out = []
     wmax = R.conv("humidity_ratio_max")
     for _, r in he.iterrows():
-        if r.over_limit_pct < R.conv("humidity_alarm_share_pct"):
+        if not r.over_limit_pct >= R.conv("humidity_alarm_share_pct"):   # NaN-safe
             continue
         out.append(_rule(
             r.zone, "humidity", MED if r.over_limit_pct > 50 else LOW,
@@ -375,7 +378,7 @@ def build_register(h: pd.DataFrame, H: pd.DataFrame, start=None, end=None,
     Beyond the alarm itself each row carries what a CMMS hand-off needs: a
     stable id (so a lifecycle state survives a reload), the trade, the action,
     the verification check, days open, recurrence, and the cost of inaction —
-    attributable energy / active days x tariff, zero rather than guessed where a
+    attributable energy / calendar days since first seen x tariff, zero rather than guessed where a
     rule has no defensible attribution.
     """
     tariff = R.conv("tariff_thb") if tariff is None else tariff
@@ -393,9 +396,12 @@ def build_register(h: pd.DataFrame, H: pd.DataFrame, start=None, end=None,
     f["thb_impact"] = f.kwh_impact * tariff
     span = (pd.to_datetime(f.last_seen) - pd.to_datetime(f.first_seen)).dt.days + 1
     f["days_active"] = f.days_active.fillna(span).fillna(1).clip(lower=1)
-    f["cost_per_day_thb"] = np.where(f.kwh_impact > 0, f.kwh_impact / f.days_active * tariff, 0.0)
     ref = pd.Timestamp(as_of if as_of is not None else end if end is not None else h.ts.max()).normalize()
     f["days_open"] = (ref - pd.to_datetime(f.first_seen).dt.normalize()).dt.days
+    # Spread over calendar days since first seen, not active days: a one-off
+    # holiday run of 72 kWh is not 72 kWh lost every day it stays open.
+    exposure = (f.days_open + 1).fillna(f.days_active).clip(lower=1)
+    f["cost_per_day_thb"] = np.where(f.kwh_impact > 0, f.kwh_impact / exposure * tariff, 0.0)
     f["trade"] = f.rule.map(lambda r: PLAYBOOK[r]["trade"])
     f["action"] = f.rule.map(lambda r: PLAYBOOK[r]["action"])
     f["energy_attributed"] = f.kwh_impact > 0

@@ -48,9 +48,10 @@ ei = E.eui(h, area, floor)
 dem = E.demand_stats(h, s, e)
 
 k = st.columns(5)
-k[0].metric("Energy", f"{tot['total']:,.0f} kWh")
-k[1].metric("Cost", f"฿{tot['total'] * tariff:,.0f}")
-k[2].metric("AC share", f"{tot['ac_share']:.0f}%")
+metered = np.isfinite(tot["total"])
+k[0].metric("Energy", f"{tot['total']:,.0f} kWh" if metered else "no data")
+k[1].metric("Cost", f"฿{tot['total'] * tariff:,.0f}" if metered else "—")
+k[2].metric("AC share", f"{tot['ac_share']:.0f}%" if np.isfinite(tot["ac_share"]) else "—")
 k[3].metric("Peak demand", f"{dem.get('peak_kw', np.nan):,.0f} kW" if dem else "—",
             help=f"at {dem['peak_at']}" if dem else None)
 k[4].metric("Load factor", f"{dem.get('load_factor', np.nan):.2f}" if dem else "—",
@@ -129,8 +130,8 @@ if len(ru):
                "adjustment before it counts as a saving or a loss. Red dashed lines: "
                "change-points and the sensor gap.")
     with st.expander("Table"):
-        st.dataframe(ru[["date", "days", "actual", "expected", "lo", "hi", "deviation",
-                         "deviation_pct", "significant", "config"]].round(1),
+        st.dataframe(ui.round_numeric(ru[["date", "days", "actual", "expected", "lo", "hi",
+                                          "deviation", "deviation_pct", "significant", "config"]]),
                      width="stretch", hide_index=True)
 else:
     st.info("No usable days in this period.")
@@ -158,7 +159,7 @@ if len(cu):
         cur = seg[seg.segment == seg.segment.iloc[-1]]
         k2 = st.columns(3)
         k2[0].metric("Net vs expected, current stretch", f"{cur.cusum.iloc[-1]:+,.0f} kWh",
-                     delta=f"฿{cur.cusum.iloc[-1] * tariff:+,.0f}", delta_color="inverse",
+                     delta=ui.signed_thb(cur.cusum.iloc[-1] * tariff), delta_color="inverse",
                      help=f"From {cur.date.min().date()} to {cur.date.max().date()}, within "
                           "one configuration.")
         k2[1].metric("Days in stretch", f"{len(cur)}",
@@ -196,9 +197,9 @@ if len(pts):
     st.markdown(f"**Workdays well above the line** — more than "
                 f"{R.conv('signature_outlier_z'):g} training SDs: {len(ol)} day(s)")
     if len(ol):
-        st.dataframe(ol.assign(**{"฿ excess": ol.resid * tariff})[
+        st.dataframe(ui.round_numeric(ol.assign(**{"฿ excess": ol.resid * tariff})[
             ["date", "out_temp", "actual", "expected", "resid", "฿ excess"]].rename(
-                columns={"out_temp": "outdoor °C", "resid": "excess kWh"}).round(1).head(20),
+                columns={"out_temp": "outdoor °C", "resid": "excess kWh"})).head(20),
             width="stretch", hide_index=True)
         st.caption("The drill-down list: check the carpet plot below and the fault register "
                    "for these dates (late finishes, overrides, events).")
@@ -216,8 +217,8 @@ if len(dp):
     pc = st.columns([3, 2])
     with pc[0]:
         st.markdown("**Top 10 demand hours**")
-        st.dataframe(M.top_peaks(h, s, e).rename(columns={
-            "out_temp": "outdoor °C", "out_rh": "outdoor RH %", "day_type": "day"}).round(1),
+        st.dataframe(ui.round_numeric(M.top_peaks(h, s, e).rename(columns={
+            "out_temp": "outdoor °C", "out_rh": "outdoor RH %", "day_type": "day"})),
             width="stretch", hide_index=True)
     with pc[1]:
         dc = M.demand_cost(h, s, e, charge)

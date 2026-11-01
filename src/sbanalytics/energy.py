@@ -34,9 +34,10 @@ def end_use(h: pd.DataFrame, start=None, end=None, zones=None,
 
 def floor_totals(h: pd.DataFrame, start=None, end=None, floor: int = 5) -> dict:
     d = D.slice_hourly(h, start, end)
-    tot = {c: d[c].sum() for c in END_USES}
-    tot["total"] = sum(tot.values())
-    tot["ac_share"] = tot["ac_kwh"] / tot["total"] * 100 if tot["total"] else np.nan
+    # min_count=1: nothing received is NaN, never a silent 0 (e.g. a meter outage).
+    tot = {c: d[c].sum(min_count=1) for c in END_USES}
+    tot["total"] = pd.Series(tot).sum(min_count=1)
+    tot["ac_share"] = tot["ac_kwh"] / tot["total"] * 100 if tot["total"] > 0 else np.nan
     tot["days"] = d.date.nunique()
     return tot
 
@@ -58,7 +59,7 @@ def eui(h: pd.DataFrame, area_m2: float, floor: int = 5) -> dict:
 def floor_demand(h: pd.DataFrame, start=None, end=None) -> pd.Series:
     """Whole-floor hourly demand (kW, since a kWh in one hour is a mean kW)."""
     d = D.slice_hourly(h, start, end)
-    return d.groupby("ts")[END_USES].sum(min_count=1).sum(axis=1)
+    return d.groupby("ts")[END_USES].sum(min_count=1).sum(axis=1, min_count=1)
 
 
 def demand_stats(h: pd.DataFrame, start=None, end=None) -> dict:

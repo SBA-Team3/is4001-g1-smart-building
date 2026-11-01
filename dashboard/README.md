@@ -169,7 +169,7 @@ Added for v2 (all in `R.CONVENTIONS`, with sources, on the Methods page):
 | Overcooling target | < 40% of cooled occupied hours below 23 °C | Project proposal KPI |
 | Grid emission factor | 0.4999 kgCO₂e/kWh | Thailand GHG Management Organization (TGO) — verify current figure |
 | Demand charge | 0 ฿/kW/month (adjustable) | MEA large-customer tariffs carry one; enter the contract rate |
-| Cost of inaction | attributable kWh ÷ active days × tariff | FDD prioritisation practice; zero where no defensible attribution |
+| Cost of inaction | attributable kWh ÷ calendar days since first seen × tariff | FDD prioritisation practice; zero where no defensible attribution |
 | Fault episode gap | 3 days | Same rule that groups offline points |
 | Verification windows | 2 weeks (schedule/metering), 4 weeks (comfort) | Project convention |
 | M&V band | ±1.645 σ (90%), G14 autocorrelation correction | IPMVP / ASHRAE G14 |

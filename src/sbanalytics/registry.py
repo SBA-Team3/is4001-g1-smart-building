@@ -394,7 +394,8 @@ METHODS: dict[str, tuple[str, str]] = {
     "tCO2e": ("kWh x co2_kg_per_kwh / 1000. Grid-average factor, not marginal.",
               "TGO grid emission factor"),
     "Cost of inaction (THB/day)": (
-        "Energy attributable to the fault / number of days the condition was active x tariff. Zero, "
+        "Energy attributable to the fault / calendar days from first seen to the as-of date x tariff "
+        "(not active days, which would turn a one-off event into a daily loss). Zero, "
         "not estimated, where the rule has no defensible energy attribution. For overcooling the "
         "attributable energy is all cooling delivered while the zone was below the band, an upper bound "
         "on the avoidable share.",

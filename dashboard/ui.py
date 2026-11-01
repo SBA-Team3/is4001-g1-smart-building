@@ -13,6 +13,7 @@ from sbanalytics import data as D
 from sbanalytics import health as HL
 from sbanalytics import registry as R
 from sbanalytics import viz
+from sbanalytics import workorders as W
 
 NOT_METERED = "—  not metered"
 
@@ -172,6 +173,43 @@ def kwh(v, digits=0):
 
 def money(v, tariff):
     return f"฿{v * tariff:,.0f}"
+
+
+def round_numeric(df: pd.DataFrame, digits: int = 1) -> pd.DataFrame:
+    """Round the number columns only (pandas 3 warns on .round over dates)."""
+    return df.round({c: digits for c in df.select_dtypes("number").columns})
+
+
+FAULTS_PERIOD_KEY = "faults_period"
+
+
+def with_states(reg: pd.DataFrame, show_planned: bool = False) -> pd.DataFrame:
+    """A fault register as the FM team sees it: planned-maintenance items hidden,
+    saved lifecycle states and session mutes applied (`state`, `is_open`). Every
+    page that counts open faults goes through here, so the counts agree."""
+    if not len(reg):
+        return reg
+    if not show_planned:
+        reg = reg[~reg.planned]
+    reg = W.apply_states(reg, FAULT_STATES)
+    if len(reg):
+        sm = reg.id.isin(st.session_state.get("muted", set()))
+        reg.loc[sm, "state"], reg.loc[sm, "is_open"] = "Muted", False
+    return reg
+
+
+def faults_link(n_open: int) -> None:
+    """'All N open faults →', opening the Faults page on the same trailing
+    window the count came from (its own default is 30 days)."""
+    if st.button(f"All {n_open} open faults →", icon=":material/warning:", type="tertiary"):
+        st.session_state[FAULTS_PERIOD_KEY] = "Trailing window"
+        st.switch_page("pages/5_faults.py")
+
+
+def signed_thb(v) -> str:
+    """'-฿2,047' / '+฿310'. The sign must come first: st.metric reads the
+    delta's direction from a leading '-', so '฿-2,047' would show as a rise."""
+    return f"{'-' if v < 0 else '+'}฿{abs(v):,.0f}"
 
 
 def is_stairwell(floor: int, zone: str) -> bool:

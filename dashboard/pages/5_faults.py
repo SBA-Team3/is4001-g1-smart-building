@@ -27,8 +27,10 @@ st.caption("Each fault carries its cost of inaction, the trade that owns it, the
            "are saved locally and survive a reload.")
 
 cc = st.columns([2, 2, 2, 3])
+# Keyed so Floor status's "All N open faults" link can open this page on its window.
+st.session_state.setdefault(ui.FAULTS_PERIOD_KEY, "Last 30 days")
 period = cc[0].selectbox("Period", ["Trailing window", "Last 30 days",
-                                    "Last 90 days", "Whole record"], index=1)
+                                    "Last 90 days", "Whole record"], key=ui.FAULTS_PERIOD_KEY)
 view = cc[1].selectbox("Show", ["Open", "All", "Resolved", "Muted"], index=0)
 show_planned = cc[2].toggle("Planned-maintenance items", value=False,
                             help="The 2018–19 sensor gap was a scheduled "
@@ -46,13 +48,7 @@ if "muted" not in st.session_state:
     st.session_state["muted"] = set()
 
 reg = F.build_register(h, H, start=s, end=e, floor=floor, tariff=tariff, as_of=as_of)
-if not show_planned and len(reg):
-    reg = reg[~reg.planned]
-reg = W.apply_states(reg, ui.FAULT_STATES)
-if len(reg):
-    # Session mutes (the original behaviour) still work, on top of saved states.
-    sm = reg.id.isin(st.session_state["muted"])
-    reg.loc[sm, "state"], reg.loc[sm, "is_open"] = "Muted", False
+reg = ui.with_states(reg, show_planned)   # session mutes still work, on top of saved states
 
 # --------------------------------------------------------------------------- #
 if not len(reg):
@@ -66,7 +62,7 @@ k[0].metric("Open faults", len(active),
             delta_color="inverse")
 k[1].metric("At stake", f"฿{active.cost_per_day_thb.sum():,.0f}/day",
             help="Sum of the cost of inaction across open faults: energy attributable to each "
-                 "fault ÷ days it was active × tariff. Rules with no defensible energy "
+                 "fault ÷ calendar days since it was first seen × tariff. Rules with no defensible energy "
                  "attribution count zero rather than a guess.")
 k[2].metric("Average days open", f"{active.days_open.mean():.0f}" if len(active) else "—",
             help=f"From first seen in the period to {as_of.date()}.")

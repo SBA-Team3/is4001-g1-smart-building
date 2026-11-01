@@ -126,7 +126,7 @@ with t_practice:
         "| **ISA-18.2 alarm rationalisation** | Faults | Self-audit of alarm rate, priority mix "
         "and standing alarms; muting as shelving with a note |\n"
         "| **FDD prioritisation by cost of inaction** | Faults | ฿/day = attributable energy ÷ "
-        "active days × tariff; zero where there is no defensible attribution |\n"
+        "calendar days since first seen × tariff; zero where there is no defensible attribution |\n"
         "| **CMMS work-order hand-off** | Faults | Lifecycle states, trade, action, "
         "verification check, CSV export in import order |\n"
         "| **Portfolio league and heat map** | Portfolio overview | One row per floor, "

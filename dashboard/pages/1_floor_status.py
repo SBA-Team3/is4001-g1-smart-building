@@ -68,7 +68,7 @@ k[0].metric(f"Cooled hours below {R.conv('comfort_lo'):g} °C, month to date",
 per_day = lambda x: x["excess"] / x["days"] if x["days"] else np.nan
 k[1].metric("Excess cooling, month to date",
             f"{t['excess']:+,.0f} kWh" if t["days"] else "no data",
-            delta=f"฿{t['thb']:+,.0f} vs expected" if t["days"] else None, delta_color="inverse",
+            delta=f"{ui.signed_thb(t['thb'])} vs expected" if t["days"] else None, delta_color="inverse",
             help=f"Proposal KPI 2: actual − weather/calendar-normalised expected AC energy, "
                  f"{t['start'].date()} – {t['end'].date()} ({t['days']} usable days). Actual "
                  f"{t['actual']:,.0f} kWh vs expected {t['expected']:,.0f} kWh. Target: lower every "
@@ -89,7 +89,8 @@ if t["in_train"]:
 # --- 3. since yesterday ----------------------------------------------------- #
 y_start, y_end = D.window(as_of - pd.Timedelta(days=1), win)
 reg_y = F.build_register(h, H, start=y_start, end=y_end, floor=floor, tariff=c["tariff"])
-reg_t = F.build_register(h, H, start=start, end=end, floor=floor, tariff=c["tariff"])
+reg_t = F.build_register(h, H, start=start, end=end, floor=floor, tariff=c["tariff"],
+                         as_of=as_of)
 diff = F.register_diff(reg_y, reg_t)
 lost = HL.went_offline(H, as_of)
 st.markdown("**Since yesterday**")
@@ -111,13 +112,18 @@ day_tot = E.floor_totals(h, as_of, as_of)
 base = E.same_weekday_baseline(h, as_of)
 dem = E.demand_stats(h, start, end)
 zc = C.zone_comfort(h, start=start, end=end)
-reg = reg_t
+# Open faults counted exactly as the Faults page counts them (no planned items,
+# nothing already resolved or muted), so the link below lands on the same number.
+reg = ui.with_states(reg_t)
+reg = reg[reg.is_open] if len(reg) else reg
 
 k = st.columns(5)
-k[0].metric("Energy today", f"{day_tot['total']:,.0f} kWh",
+today_metered = np.isfinite(day_tot["total"])
+k[0].metric("Energy today", f"{day_tot['total']:,.0f} kWh" if today_metered else "no data",
             delta=(f"{base['delta_pct']:+.0f}% vs same weekday"
-                   if base.get("delta_pct") is not None and np.isfinite(base.get("delta_pct", np.nan))
-                   else "no baseline"),
+                   if today_metered and base.get("delta_pct") is not None
+                   and np.isfinite(base.get("delta_pct", np.nan))
+                   else "no baseline" if today_metered else None),
             delta_color="inverse",
             help="Compared with the mean of the same weekday over the previous "
                  "4 weeks. Deliberately not year-on-year: the floor ran 2–3 °C "
@@ -183,7 +189,7 @@ st.divider()
 st.subheader("What needs attention")
 
 if not len(reg):
-    st.success("No faults raised in this window.")
+    st.success("No open faults in this window.")
 else:
     for _, r in reg.head(3).iterrows():
         colr = {"high": ui.BAD, "medium": ui.WARN, "low": ui.OK}[r.priority]
@@ -195,14 +201,15 @@ else:
                 f"font-weight:600'>{r.priority.upper()}</span><br>"
                 f"{'฿%s/day' % format(r.cost_per_day_thb, ',.0f') if r.cost_per_day_thb else ''}"
                 f"</div>", unsafe_allow_html=True)
-    st.page_link("pages/5_faults.py", label=f"All {len(reg)} faults →",
-                 icon=":material/warning:")
+    ui.faults_link(len(reg))
 
 # --- 7. the month ----------------------------------------------------------- #
 st.divider()
 st.subheader("The last 30 days")
 dl = E.daily(h, as_of - pd.Timedelta(days=29), as_of)
-if len(dl):
+if not len(dl) or dl[E.END_USES].isna().all().all():
+    st.info("No metered energy in these 30 days — the meters were offline.")
+else:
     m = dl.melt(id_vars=["date", "is_weekend"], value_vars=E.END_USES,
                 var_name="end_use", value_name="kWh")
     m["end_use"] = m.end_use.str.replace("_kwh", "", regex=False)

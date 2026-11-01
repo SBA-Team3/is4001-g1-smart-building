@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import re
 import sys
 import tempfile
 import time
@@ -102,6 +103,29 @@ def test_floor_specific_notes():
     assert "Past the end of this floor's file" in txt, "F6 file end not flagged"
 
 
+def _metric(at: AppTest, label: str) -> str:
+    return next(str(m.value) for m in at.metric if m.label == label)
+
+
+def test_outage_reads_as_no_data():
+    """F3's meters are all offline on 2018-11-15: no zeros, no faults raised on NaN."""
+    at = _render("pages/1_floor_status.py", dt.date(2018, 11, 15), 3)
+    txt = _text(at)
+    assert not re.search(r"\bnan\b", txt), "a fault or caption was built from NaN"
+    assert _metric(at, "Energy today") == "no data", "outage day shows a number, not 'no data'"
+    assert _metric(at, "Peak demand") == "—", "outage window shows a peak demand"
+
+
+def test_open_fault_counts_agree():
+    """Floor status's open-fault count is what the Faults page shows on the same window."""
+    for floor, as_of in ((5, dt.date(2019, 11, 14)), (3, dt.date(2018, 11, 15))):
+        n_status = _metric(_render("pages/1_floor_status.py", as_of, floor), "Open faults")
+        at = _render("pages/5_faults.py", as_of, floor)
+        at.selectbox(key="faults_period").set_value("Trailing window").run()
+        n_faults = _metric(at, "Open faults") if at.metric else "0"
+        assert n_status == n_faults, f"F{floor} @ {as_of}: status {n_status} vs faults {n_faults}"
+
+
 def test_portfolio_flags_f1_and_f6():
     for as_of in DATES:
         at = _render("pages/0_portfolio.py", as_of)
@@ -127,7 +151,9 @@ if __name__ == "__main__":
                       f"{time.time() - t:5.1f}s" + (f"  {errs}" if errs else ""), flush=True)
     for name, fn in [("portfolio F1 / F6 annotations", test_portfolio_flags_f1_and_f6),
                      ("no floor inherits F5's history", test_no_floor_inherits_floor5_history),
-                     ("F3 outage / F6 file-end notes", test_floor_specific_notes)]:
+                     ("F3 outage / F6 file-end notes", test_floor_specific_notes),
+                     ("outage reads as no data", test_outage_reads_as_no_data),
+                     ("open-fault counts agree", test_open_fault_counts_agree)]:
         n_run += 1
         try:
             fn()
