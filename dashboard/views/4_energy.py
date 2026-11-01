@@ -21,7 +21,8 @@ if not ui.require_wired(floor):
     st.stop()
 
 h = ui.hourly(floor)
-st.title("Energy performance")
+ui.page_header(f"Energy management · Floor {floor}", "Energy performance",
+               "Are we using more than the weather explains, and when did it drift?")
 
 
 @st.cache_resource(show_spinner="Fitting the weather-normalised baseline…")
@@ -49,14 +50,14 @@ dem = E.demand_stats(h, s, e)
 
 k = st.columns(5)
 metered = np.isfinite(tot["total"])
-k[0].metric("Energy", f"{tot['total']:,.0f} kWh" if metered else "no data")
-k[1].metric("Cost", f"฿{tot['total'] * tariff:,.0f}" if metered else "—")
-k[2].metric("AC share", f"{tot['ac_share']:.0f}%" if np.isfinite(tot["ac_share"]) else "—")
+k[0].metric("Energy", f"{tot['total']:,.0f} kWh" if metered else "no data", border=True)
+k[1].metric("Cost", f"฿{tot['total'] * tariff:,.0f}" if metered else "—", border=True)
+k[2].metric("AC share", f"{tot['ac_share']:.0f}%" if np.isfinite(tot["ac_share"]) else "—", border=True)
 k[3].metric("Peak demand", f"{dem.get('peak_kw', np.nan):,.0f} kW" if dem else "—",
-            help=f"at {dem['peak_at']}" if dem else None)
+            help=f"at {dem['peak_at']}" if dem else None, border=True)
 k[4].metric("Load factor", f"{dem.get('load_factor', np.nan):.2f}" if dem else "—",
             help="Mean ÷ peak demand. Low means a peaky profile — here a "
-                 "consequence of a tightly scheduled 9-hour cooling day.")
+                 "consequence of a tightly scheduled 9-hour cooling day.", border=True)
 
 # --------------------------------------------------------------------------- #
 # actual vs expected — the EnPI view
@@ -86,15 +87,15 @@ g = M.g14_summary(model)
 gc = st.columns(len(g) + 1)
 for i, r in g.iterrows():
     gc[i].metric(f"{r.split.title()} CV(RMSE)", f"{r.cv_rmse:.1f}%",
-                 delta=f"limit {r.cv_limit:.0f}%", delta_color="off")
+                 delta=f"limit {r.cv_limit:.0f}%", delta_color="off", border=True)
     gc[i].metric(f"{r.split.title()} NMBE", f"{r.nmbe:+.1f}%",
                  delta=("meets G14" if r.meets_g14 else "fails G14"),
                  delta_color="normal" if r.meets_g14 else "inverse",
                  help=f"ASHRAE Guideline 14 limit |NMBE| ≤ {r.nmbe_limit:.0f}% (daily model held "
-                      "to the hourly limits — lenient, so read as indicative).")
+                      "to the hourly limits — lenient, so read as indicative).", border=True)
 gc[-1].metric("Residual autocorrelation", f"{model['rho']:.2f}",
               help="Lag-1 autocorrelation of training residuals. Widens the band on a "
-                   "multi-day total, because correlated days carry less information.")
+                   "multi-day total, because correlated days carry less information.", border=True)
 
 ru = M.rollup(model, s, e, "MS" if freq == "Monthly" else "W-MON")
 cps_in = R.crosses_change_point(s if s is not None else D.RECORD_START,
@@ -161,12 +162,12 @@ if len(cu):
         k2[0].metric("Net vs expected, current stretch", f"{cur.cusum.iloc[-1]:+,.0f} kWh",
                      delta=ui.signed_thb(cur.cusum.iloc[-1] * tariff), delta_color="inverse",
                      help=f"From {cur.date.min().date()} to {cur.date.max().date()}, within "
-                          "one configuration.")
+                          "one configuration.", border=True)
         k2[1].metric("Days in stretch", f"{len(cur)}",
                      help=("Includes training days, where the CUSUM is ~0 by construction."
-                           if cur.in_train.any() else "All out of sample."))
+                           if cur.in_train.any() else "All out of sample."), border=True)
         k2[2].metric("Configuration", "baseline" if cur.baseline_segment.iloc[0] else "different",
-                     help="Whether this stretch is the one the baseline was trained in.")
+                     help="Whether this stretch is the one the baseline was trained in.", border=True)
     st.caption("Read the slope, not the level: a line climbing steadily means the floor is using "
                "more than the weather explains, and the point where the slope changes is when "
                "performance drifted. Within the training window the line hovers near zero by "
@@ -224,7 +225,7 @@ if len(dp):
         dc = M.demand_cost(h, s, e, charge)
         st.metric("Demand charges in period", f"฿{dc.charge_thb.sum():,.0f}",
                   help=f"Monthly maximum demand × {charge:,.0f} ฿/kW/month (sidebar). "
-                       + R.CONVENTIONS["demand_charge_thb_per_kw"][2] + ".")
+                       + R.CONVENTIONS["demand_charge_thb_per_kw"][2] + ".", border=True)
         if charge == 0:
             st.caption("Demand charge is set to 0 — MEA large-customer tariffs carry one. "
                        "Enter the contract rate in the sidebar to price these peaks.")
@@ -238,7 +239,7 @@ left, right = st.columns([2, 3])
 with left:
     st.subheader("Energy use intensity")
     st.metric("Partial EUI", f"{ei['eui']:.0f} kWh/m²/yr",
-              help=f"{ei['kwh_year']:,.0f} kWh/yr ÷ {area:,.0f} m².")
+              help=f"{ei['kwh_year']:,.0f} kWh/yr ÷ {area:,.0f} m².", border=True)
     bench = pd.DataFrame({
         "label": [f"Floor {floor} (partial)", "Bangkok good practice", "Bangkok typical"],
         "value": [ei["eui"], ei["good"], ei["typical"]],
@@ -248,7 +249,7 @@ with left:
             y=alt.Y("label:N", title=None, sort=None),
             x=alt.X("value:Q", title="kWh/m²/yr"),
             color=alt.Color("kind:N", scale=alt.Scale(
-                domain=["measured", "benchmark"], range=["#2e74b5", "#c9c9c9"]),
+                domain=["measured", "benchmark"], range=[ui.ACTUAL, ui.INK_3]),
                 legend=None),
             tooltip=["label", alt.Tooltip("value:Q", format=".0f")],
         ).properties(height=140), width="stretch")
@@ -271,9 +272,7 @@ with right:
         alt.Chart(m).mark_bar().encode(
             x=alt.X("zone:N", title=None),
             y=alt.Y("kWh:Q", title="kWh"),
-            color=alt.Color("end_use:N", scale=alt.Scale(
-                domain=["ac", "light", "plug"],
-                range=["#2e74b5", "#d98032", "#8d8d8d"]),
+            color=alt.Color("end_use:N", scale=ui.END_USE_COLOR,
                 legend=alt.Legend(orient="top", title=None)),
             tooltip=["zone", "end_use", alt.Tooltip("kWh:Q", format=",.0f")],
         ).properties(height=260), width="stretch")
@@ -312,7 +311,7 @@ with t1:
 with t2:
     ld = E.load_duration(h, s, e)
     st.altair_chart(
-        alt.Chart(ld).mark_area(opacity=0.7, color="#2e74b5").encode(
+        alt.Chart(ld).mark_area(opacity=0.7, color=ui.ACTUAL).encode(
             x=alt.X("rank_pct:Q", title="% of hours at or above"),
             y=alt.Y("kw:Q", title="floor demand (kW)"),
             tooltip=[alt.Tooltip("rank_pct:Q", format=".1f"),
@@ -330,9 +329,7 @@ with t3:
         alt.Chart(m).mark_bar().encode(
             x=alt.X("hour:O", title="hour of day"),
             y=alt.Y("kW:Q", title="mean kW per zone-hour"),
-            color=alt.Color("end_use:N", scale=alt.Scale(
-                domain=["ac", "light", "plug"],
-                range=["#2e74b5", "#d98032", "#8d8d8d"]),
+            color=alt.Color("end_use:N", scale=ui.END_USE_COLOR,
                 legend=alt.Legend(orient="top", title=None)),
             tooltip=["hour", "end_use", alt.Tooltip("kW:Q", format=".2f")],
         ).properties(height=280), width="stretch")
@@ -353,9 +350,7 @@ with b1:
         alt.Chart(bl.sort_values("ratio_pct", ascending=False)).mark_bar().encode(
             y=alt.Y("point:N", title=None, sort="-x"),
             x=alt.X("ratio_pct:Q", title="night as % of occupied"),
-            color=alt.Color("end_use:N", scale=alt.Scale(
-                domain=["ac", "light", "plug"],
-                range=["#2e74b5", "#d98032", "#8d8d8d"]), legend=None),
+            color=alt.Color("end_use:N", scale=ui.END_USE_COLOR, legend=None),
             tooltip=["point", alt.Tooltip("ratio_pct:Q", format=".1f"),
                      alt.Tooltip("night_kwh:Q", format=",.0f")],
         ).properties(height=320), width="stretch")

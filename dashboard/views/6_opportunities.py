@@ -50,8 +50,8 @@ def _lockout(floor: int) -> dict:
     return SC.lockout_measure(D.load_hourly(floor), floor)
 
 
-st.title("Opportunities & simulator")
-st.caption("Build a package of operational changes, see what it saves as a range, what it does "
+ui.page_header(f"Energy management · Floor {floor}", "Opportunities & simulator",
+               "Build a package of operational changes, see what it saves as a range, what it does "
            "to comfort, and how you would prove it. The engine tabs further down show how each "
            "lever is sized.")
 
@@ -103,19 +103,19 @@ tbl, comb, cf = res["table"], res["combined"], res["comfort"]
 target = R.conv("overcooled_target_pct")
 
 k = st.columns(4)
-k[0].metric("Package saving", f"{comb['low']:,.0f}–{comb['high']:,.0f} kWh/yr",
+k[0].metric("Package saving, kWh/yr", f"{comb['low']:,.0f}–{comb['high']:,.0f}",
             help=f"Mid {comb['mid']:,.0f} kWh/yr. Low and high come from the two estimators "
-                 "(and metered gross/net); never one number.")
-k[1].metric("Cost saved", f"฿{comb['low'] * t_loc:,.0f}–{comb['high'] * t_loc:,.0f}/yr",
-            delta=f"mid ฿{comb['mid'] * t_loc:,.0f}", delta_color="off")
+                 "(and metered gross/net); never one number.", border=True)
+k[1].metric("Cost saved, per year", f"฿{comb['low'] * t_loc:,.0f}–{comb['high'] * t_loc:,.0f}",
+            delta=f"mid ฿{comb['mid'] * t_loc:,.0f}", delta_color="off", border=True)
 k[2].metric("Emissions avoided", f"{comb['mid'] * ef_loc / 1000:,.1f} tCO₂e/yr",
-            help="Mid case × emission factor.")
+            help="Mid case × emission factor.", border=True)
 k[3].metric(f"Cooled hours below {R.conv('comfort_lo'):g} °C",
             f"{cf['below_now']:.0f}% → {cf['below_after']:.0f}%",
             delta=f"{cf['below_after'] - target:+.0f} pp vs {target:.0f}% target",
             delta_color="inverse",
             help="Whole-record cooled occupied hours on comfort zones, AC-kWh-weighted (the "
-                 "portfolio definition), after shifting each zone's temperatures by its lift.")
+                 "portfolio definition), after shifting each zone's temperatures by its lift.", border=True)
 
 st.dataframe(
     tbl, width="stretch", hide_index=True,
@@ -155,9 +155,9 @@ for _, p in plan.iterrows():
                  help=f"Expected saving {p['expected saving %']:.1f}% at the baseline's "
                       f"CV(RMSE) {p['CV(RMSE) %']:.1f}%, α={R.conv('pilot_alpha'):g}, "
                       f"power {R.conv('pilot_power'):g}. Four weeks can detect "
-                      f"{p['detectable in 4 weeks %']:.1f}%.")
+                      f"{p['detectable in 4 weeks %']:.1f}%.", border=True)
         cc_.metric("Expected saving", f"{p['expected saving %']:.1f}%",
-                   help="Of the measurement boundary's annual energy.")
+                   help="Of the measurement boundary's annual energy.", border=True)
         st.caption(f"Baseline period **{p['baseline period']}** · model: {p['baseline model']} · "
                    f"CV(RMSE) {p['CV(RMSE) %']:.1f}%  \n**Verification:** {p.verification}  \n"
                    f"**Exclusions:** {p.exclusions}")
@@ -176,12 +176,12 @@ if comb["mid"] > 0:
         tooltip=["assumption", alt.Tooltip("low_thb:Q", format=",.0f"),
                  alt.Tooltip("high_thb:Q", format=",.0f")])
     base_rule = alt.Chart(pd.DataFrame({"x": [comb["mid"] * t_loc]})).mark_rule(
-        color=ui.BAD, strokeWidth=2).encode(x="x:Q")
+        color=ui.INK, strokeWidth=2).encode(x="x:Q")
     st.altair_chart(ui.chart(bars + base_rule, height=40 * len(tor) + 40), width="stretch")
     st.caption(f"Each bar moves one assumption across its declared range (Methods page: "
                f"tariff ±{R.conv('sens_tariff_pct'):.0f}%, lift ±{R.conv('sens_dT_c'):g} °C, trim "
                f"±{R.conv('sens_trim_h'):g} h, %/°C between the physics and regression estimates) "
-               "and holds the rest. Red line: the package's mid case. The widest bar is the "
+               "and holds the rest. White line: the package's mid case. The widest bar is the "
                "assumption worth pinning down before committing.")
 else:
     st.info("The package saves nothing yet — set a lift, a trim or the lockout.")
@@ -225,11 +225,11 @@ with tab_sp:
 
     k = st.columns(4)
     k[0].metric("Sensitivity", f"{row.pct_per_c:+.1f} %/°C",
-                help=f"{row.role} — {row.note}")
-    k[1].metric("Energy saved", f"{tot:,.0f} kWh/yr")
-    k[2].metric("Cost saved", f"฿{tot * tariff:,.0f}/yr")
+                help=f"{row.role} — {row.note}", border=True)
+    k[1].metric("Energy saved", f"{tot:,.0f} kWh/yr", border=True)
+    k[2].metric("Cost saved", f"฿{tot * tariff:,.0f}/yr", border=True)
     k[3].metric("Range", f"฿{min(lo_s.saving_kwh.sum(), hi_s.saving_kwh.sum())*tariff:,.0f}"
-                         f" – ฿{max(lo_s.saving_kwh.sum(), hi_s.saving_kwh.sum())*tariff:,.0f}")
+                         f" – ฿{max(lo_s.saving_kwh.sum(), hi_s.saving_kwh.sum())*tariff:,.0f}", border=True)
 
     st.dataframe(
         sim.assign(**{"saving ฿/yr": sim.saving_kwh * tariff})
@@ -254,7 +254,7 @@ with tab_sp:
                 tooltip=["estimator", alt.Tooltip("dT:Q", format=".2f"),
                          alt.Tooltip("kWh:Q", format=",.0f")]),
             alt.Chart(pd.DataFrame({"d": [d_temp]})).mark_rule(
-                color="#b0453a", strokeDash=[5, 3]).encode(x="d:Q"),
+                color=ui.INK, strokeDash=[5, 3]).encode(x="d:Q"),
         ).properties(height=320), width="stretch")
 
     st.dataframe(est[["estimator", "pct_per_c", "lo", "hi", "role", "note"]].round(2),
@@ -278,10 +278,10 @@ with tab_phys:
         dec = A.load_decomposition(h, phys, floor=floor)
 
         k = st.columns(4)
-        k[0].metric("Thermal capacitance C", f"{p['C_kwh_per_c']:.2f} kWh/°C")
-        k[1].metric("Envelope conductance UA", f"{p['UA_kw_per_c']:.3f} kW/°C")
-        k[2].metric("Implied sensitivity", f"{p['pct_per_c']:+.1f} %/°C")
-        k[3].metric("Calibration sample", f"{phys['n']:,} zone-days")
+        k[0].metric("Thermal capacitance C", f"{p['C_kwh_per_c']:.2f} kWh/°C", border=True)
+        k[1].metric("Envelope conductance UA", f"{p['UA_kw_per_c']:.3f} kW/°C", border=True)
+        k[2].metric("Implied sensitivity", f"{p['pct_per_c']:+.1f} %/°C", border=True)
+        k[3].metric("Calibration sample", f"{phys['n']:,} zone-days", border=True)
 
         dl = dec.reset_index().melt(
             id_vars="zone", value_vars=["envelope_kw", "internal_kw", "residual_kw"],
@@ -295,7 +295,7 @@ with tab_phys:
                 y=alt.Y("zone:N", title=None),
                 x=alt.X("kW:Q", title="mean cooling load (kW) on cooled hours"),
                 color=alt.Color("component:N", scale=alt.Scale(
-                    range=["#2e74b5", "#d98032", "#9b9b9b"]),
+                    range=[ui.C["data/floor-1"], ui.C["data/floor-2"], ui.INK_3]),
                     legend=alt.Legend(orient="bottom", columns=1, title=None)),
                 order=alt.Order("component:N"),
                 tooltip=["zone", "component", alt.Tooltip("kW:Q", format=".2f")],
@@ -337,19 +337,20 @@ with tab_phys:
                    "occupancy is the likely reason.")
             )
             L = phys["frame"]
-            st.altair_chart(
-                alt.Chart(L).mark_circle(opacity=0.45, size=35).encode(
-                    x=alt.X("drive:Q", title="driving force T_out − T_in (°C)"),
-                    y=alt.Y("drift:Q", title="free-running drift (°C/hour)"),
-                    color=alt.Color("zone:N", scale=ui.ZONE_COLOR),
-                    tooltip=["zone", "date", alt.Tooltip("drive:Q", format=".1f"),
-                             alt.Tooltip("drift:Q", format=".2f")],
-                ).properties(height=280)
-                + alt.Chart(L).transform_regression(
-                    "drive", "drift", groupby=["zone"]).mark_line(
-                    strokeWidth=2).encode(x="drive:Q", y="drift:Q",
-                                          color=alt.Color("zone:N", scale=ui.ZONE_COLOR)),
-                width="stretch")
+            # One panel per zone (small multiples) rather than four colours on one plot.
+            pts = alt.Chart().mark_circle(opacity=0.45, size=35).encode(
+                x=alt.X("drive:Q", title="driving force T_out − T_in (°C)"),
+                y=alt.Y("drift:Q", title="free-running drift (°C/hour)"),
+                color=alt.Color("zone:N", scale=ui.ZONE_COLOR, legend=None),
+                tooltip=["zone", "date", alt.Tooltip("drive:Q", format=".1f"),
+                         alt.Tooltip("drift:Q", format=".2f")])
+            fit = alt.Chart().transform_regression(
+                "drive", "drift", groupby=["zone"]).mark_line(strokeWidth=2, color=ui.INK).encode(
+                x="drive:Q", y="drift:Q")
+            st.altair_chart(ui.chart(
+                alt.layer(pts, fit, data=L).properties(width=260, height=200)
+                .facet(facet=alt.Facet("zone:N", title=None), columns=4), height=None),
+                width="content")
 
 # --------------------------------------------------------------------------- #
 with tab_sched:
@@ -371,13 +372,13 @@ with tab_sched:
         tr = A.schedule_trim(h, phys, tuple(drop), recover, floor=floor)
         gross, net = tr.gross_kwh_year.sum(), tr.net_kwh_year.sum()
         k = st.columns(4)
-        k[0].metric("Gross energy released", f"{gross:,.0f} kWh/yr")
+        k[0].metric("Gross energy released", f"{gross:,.0f} kWh/yr", border=True)
         k[1].metric("Net of recovery", f"{net:,.0f} kWh/yr",
-                    delta=f"{net - gross:,.0f} recovery")
-        k[2].metric("Cost saved (net)", f"฿{net * tariff:,.0f}/yr")
+                    delta=f"{net - gross:,.0f} recovery", border=True)
+        k[2].metric("Cost saved (net)", f"฿{net * tariff:,.0f}/yr", border=True)
         k[3].metric("Temp at end of gap", f"{tr.end_temp_c.mean():.1f} °C",
                     help=f"From the calibrated drift rate. Above {R.conv('comfort_hi'):g} °C is a "
-                         "complaint risk.")
+                         "complaint risk.", border=True)
 
         st.dataframe(
             tr[["gross_kwh_year", "recovery_kwh", "net_kwh_year", "drift_c_per_h",

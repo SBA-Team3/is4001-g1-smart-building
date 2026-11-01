@@ -17,13 +17,12 @@ floor, as_of = c["floor"], c["as_of"]
 if not ui.require_wired(floor):
     st.stop()
 
-st.title("Sensor & data health")
-st.caption(
-    "This page sits above the others because a rule cannot tell that its input "
+ui.page_header(
+    f"Operations · Floor {floor}", "Sensor & data health",
+    "Which points are down, stale or lying? This page sits above the others because a rule cannot tell that its input "
     "has gone stale. A comfort or energy figure computed on a dead point looks "
     "exactly like one computed on a live point — so every other page is "
-    "conditional on what is shown here."
-)
+    "conditional on what is shown here.")
 
 H = ui.health(floor)
 S = ui.scored(floor)
@@ -62,7 +61,7 @@ with tab_now:
             }).round(1),
             width="stretch", hide_index=True,
             column_config={
-                "health": st.column_config.ProgressColumn(
+                "health": st.column_config.ProgressColumn(color=ui.ACTUAL, label=
                     "health", min_value=0, max_value=100, format="%d"),
                 "complete %": st.column_config.NumberColumn(format="%.1f"),
             })
@@ -155,7 +154,7 @@ with tab_points:
             "days frozen %", "longest flat (min)", "out of range", "spikes", "verdict"]]
         .round(1),
         width="stretch", hide_index=True,
-        column_config={"complete %": st.column_config.ProgressColumn(
+        column_config={"complete %": st.column_config.ProgressColumn(color=ui.ACTUAL, label=
             "complete %", min_value=0, max_value=100, format="%.1f")})
 
     st.divider()
@@ -183,10 +182,10 @@ with tab_points:
     with right:
         st.markdown("**Why temperature reports zero frozen days**")
         t = S[S.channel == "temp"]
-        st.metric("Temperature point-days flagged frozen", int(t.flag_flatline.sum()))
+        st.metric("Temperature point-days flagged frozen", int(t.flag_flatline.sum()), border=True)
         st.metric("Longest flat run while cooling runs",
                   f"{int(t.max_flat_occupied.max())} min",
-                  help=f"Threshold is {HL.FLATLINE_MIN['temp']} min.")
+                  help=f"Threshold is {HL.FLATLINE_MIN['temp']} min.", border=True)
         st.markdown(
             "Flatline thresholds differ by channel because the physics differs. A "
             "zone temperature cannot hold ±0.01 °C for an hour *while cooling is "
@@ -213,11 +212,10 @@ with tab_cross:
         hc = HL.humidity_consistency(hourly)
         if len(hc):
             st.altair_chart(
-                alt.Chart(hc).mark_bar().encode(
+                alt.Chart(hc).mark_bar(color=ui.ACTUAL).encode(
                     y=alt.Y("zone:N", title=None),
                     x=alt.X("abs_hum:Q", title="absolute humidity (g/m³)",
                             scale=alt.Scale(zero=False)),
-                    color=alt.Color("zone:N", scale=ui.ZONE_COLOR, legend=None),
                     tooltip=["zone", alt.Tooltip("abs_hum:Q", format=".2f"),
                              alt.Tooltip("dew:Q", format=".2f", title="dew point °C"),
                              alt.Tooltip("temp:Q", format=".1f"),
@@ -246,19 +244,24 @@ with tab_cross:
         pv = HL.peer_deviation(hourly)
         if len(pv):
             tol = float(pv.tolerance.iloc[0])
-            base = alt.Chart(pv[pv.reliable])
-            st.altair_chart(
+            # One small panel per zone: more than three zone colours on one plot
+            # cannot be told apart by every reader (DESIGN.md).
+            base = alt.Chart()
+            st.altair_chart(ui.chart(
                 alt.layer(
-                    alt.Chart(pd.DataFrame({"y": [-tol], "y2": [tol]})).mark_rect(
-                        opacity=0.14, color="#2e8b57").encode(y="y:Q", y2="y2:Q"),
+                    base.mark_area(opacity=0.18, color=ui.C["data/overcool-low"]).encode(
+                        x="period:T", y="lo:Q", y2="hi:Q"),
                     base.mark_line(point=True, strokeWidth=2).encode(
-                        x=alt.X("period:T", title=None),
+                        x=alt.X("period:T", title=None, axis=alt.Axis(format="%b %y", tickCount=4)),
                         y=alt.Y("deviation:Q", title="°C vs peer median"),
-                        color=alt.Color("zone:N", scale=ui.ZONE_COLOR),
+                        color=alt.Color("zone:N", scale=ui.ZONE_COLOR, legend=None),
                         tooltip=["zone", alt.Tooltip("period:T"),
                                  alt.Tooltip("deviation:Q", format=".2f"),
                                  alt.Tooltip("n:Q", title="hours")]),
-                ).properties(height=250), width="stretch")
+                    data=pv[pv.reliable].assign(lo=-tol, hi=tol),
+                ).properties(width=200, height=110)
+                 .facet(facet=alt.Facet("zone:N", title=None), columns=2), height=None),
+                width="content")
             st.caption(
                 f"Green band is the combined sensor tolerance ±{tol:.2f} °C, from "
                 "√(ε₁²+ε₂²) with the dataset's stated ±0.4 °C accuracy — the "
@@ -299,7 +302,7 @@ with tab_trace:
     else:
         t = m.reset_index().rename(columns={m.index.name or "index": "ts"})
         st.altair_chart(
-            alt.Chart(t).mark_line(strokeWidth=1.3, color="#2e74b5").encode(
+            alt.Chart(t).mark_line(strokeWidth=1.3, color=ui.ACTUAL).encode(
                 x=alt.X("ts:T", title=None),
                 y=alt.Y(f"{col}:Q", title=col, scale=alt.Scale(zero=False)),
                 tooltip=[alt.Tooltip("ts:T"), alt.Tooltip(f"{col}:Q", format=".3f")],
@@ -309,8 +312,8 @@ with tab_trace:
         if len(row):
             r = row.iloc[0]
             k = st.columns(5)
-            k[0].metric("Samples", f"{int(r.received)} / 1440")
-            k[1].metric("Distinct values", int(r.distinct))
-            k[2].metric("Longest flat run", f"{int(r.max_flat_nonzero)} min")
-            k[3].metric("Out of range", int(r.out_of_range))
-            k[4].metric("Spikes", int(r.spikes))
+            k[0].metric("Samples", f"{int(r.received)} / 1440", border=True)
+            k[1].metric("Distinct values", int(r.distinct), border=True)
+            k[2].metric("Longest flat run", f"{int(r.max_flat_nonzero)} min", border=True)
+            k[3].metric("Out of range", int(r.out_of_range), border=True)
+            k[4].metric("Spikes", int(r.spikes), border=True)

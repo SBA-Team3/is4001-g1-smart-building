@@ -1,0 +1,53 @@
+# Dashboard theme. Values come from dashboard/design/tokens.json, which is
+# exported from the Figma variables (see dashboard/DESIGN.md). Streamlit reads
+# this file from the folder you run `streamlit run dashboard/app.py` in, so run
+# from the repo root. Dark only for now.
+
+[theme]
+base = "dark"
+primaryColor = "#DA5F8E"               # accent/default — UI only, never a data colour
+backgroundColor = "#121417"            # bg/page
+secondaryBackgroundColor = "#2C3137"   # bg/control (inputs, code, segmented controls)
+textColor = "#F2F4F5"                  # text/primary
+borderColor = "#33383F"                # border/default
+dataframeBorderColor = "#33383F"
+dataframeHeaderBackgroundColor = "#24282D"
+dataframeHeaderTextColor = "#A9B0B8"
+linkColor = "#E57AA3"                  # accent/hover reads better as text on the page bg
+codeBackgroundColor = "#24282D"
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "8px"                     # radius/md
+buttonRadius = "8px"
+
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap, sans-serif"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap, sans-serif"
+baseFontSize = 14                      # Body/Regular
+headingFontSizes = ["24px", "18px", "18px", "15px", "12px", "11px"]   # H1; H2 for st.header and st.subheader
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+metricValueFontSize = "28px"           # Display/Metric
+metricValueFontWeight = 600
+
+# Status colours (st.metric deltas, st.error / st.warning / st.success / st.info, badges).
+redColor = "#D03B3B"
+redTextColor = "#F07A7A"
+redBackgroundColor = "#3A1F21"
+orangeColor = "#FAB219"
+orangeTextColor = "#F2F4F5"              # banner text stays primary; the amber is the edge and icon
+orangeBackgroundColor = "#3A2F14"
+yellowColor = "#FAB219"
+yellowTextColor = "#F2F4F5"
+yellowBackgroundColor = "#3A2F14"
+greenColor = "#0CA30C"
+greenTextColor = "#3FC56B"
+greenBackgroundColor = "#173222"
+grayColor = "#8A929B"
+grayTextColor = "#A9B0B8"
+grayBackgroundColor = "#24282D"
+
+# Floor 1..7, the same order as the notebooks (dark-mode steps).
+chartCategoricalColors = ["#3987E5", "#D95926", "#199E70", "#C98500", "#D55181", "#008300", "#9085E9"]
+
+[theme.sidebar]
+backgroundColor = "#1B1E22"            # bg/surface
+secondaryBackgroundColor = "#2C3137"

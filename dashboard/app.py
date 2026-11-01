@@ -31,14 +31,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "src"))   # works withou
 from sbanalytics import data as D          # noqa: E402
 from sbanalytics import registry as R      # noqa: E402
 
-st.set_page_config(page_title="CU-BEMS — FM operations", page_icon="🏢",
+import ui                                  # noqa: E402
+
+st.set_page_config(page_title="CU-BEMS — FM operations", page_icon=":material/apartment:",
                    layout="wide", initial_sidebar_state="expanded")
+ui.inject_css()
+_DESIGN = os.path.join(_HERE, "design")
+st.logo(os.path.join(_DESIGN, "logo.svg"), size="large",
+        icon_image=os.path.join(_DESIGN, "logo_mark.svg"))
 
 # --------------------------------------------------------------------------- #
-# global sidebar — set once, read by every page through ui.ctx()
+# context sidebar — set once, read by every page through ui.ctx()
 # --------------------------------------------------------------------------- #
-
-st.sidebar.title("Building operations")
 
 if not D.cache_ready(5):
     st.sidebar.error("Cleaned data not built.")
@@ -50,28 +54,33 @@ if not D.cache_ready(5):
     )
     st.stop()
 
+sb = st.sidebar
+sb.markdown('<p class="cb-overline">Context</p>', unsafe_allow_html=True)
+
 floor_labels = {
     f: f"Floor {f}" + ("" if meta["wired"] else "  · not wired")
     for f, meta in sorted(R.FLOORS.items())
 }
-floor = st.sidebar.selectbox(
-    "Floor", list(floor_labels), format_func=floor_labels.get,
-    index=list(floor_labels).index(5),
+# Keyed so a Portfolio floor card can open Floor status on its own floor.
+st.session_state.setdefault("floor_select", 5)
+floor = sb.selectbox(
+    "Floor", list(floor_labels), format_func=floor_labels.get, key="floor_select",
     help="The operational pages show wired floors only. The Portfolio overview "
          "reads every floor; the analysis/ notebooks cover all seven.")
 st.session_state["floor"] = floor
 
-as_of = st.sidebar.date_input(
-    "As of", value=D.DEFAULT_AS_OF.date(),
-    min_value=D.RECORD_START.date(), max_value=D.RECORD_END.date(),
+as_of = sb.date_input(
+    "Data as of", value=D.DEFAULT_AS_OF.date(),
+    min_value=D.RECORD_START.date(), max_value=D.RECORD_END.date(), format="DD/MM/YYYY",
     help="The record runs 1 Jul 2018 – 31 Dec 2019, so 'today' is a date you "
          "choose. Every page shows that day's status plus trailing windows.")
 st.session_state["as_of"] = pd.Timestamp(as_of)
 
-st.session_state["window_days"] = st.sidebar.select_slider(
-    "Trailing window", [1, 7, 14, 30, 90], value=7)
+st.session_state["window_days"] = sb.segmented_control(
+    "Trailing window (days)", [1, 7, 14, 30, 90], default=7, required=True,
+    key="window_select", width="stretch")
 
-with st.sidebar.expander("Assumptions", expanded=False):
+with sb.expander("Assumptions", icon=":material/tune:", expanded=False):
     st.session_state["tariff"] = st.number_input(
         "Tariff (฿/kWh)", 0.0, 20.0, float(R.conv("tariff_thb")), 0.10)
     st.session_state["area"] = st.number_input(
@@ -85,18 +94,30 @@ with st.sidebar.expander("Assumptions", expanded=False):
         help=R.CONVENTIONS["demand_charge_thb_per_kw"][2])
     st.caption("Full list with sources on the Methods page.")
 
-# Data-quality warnings for the chosen date, always visible.
-notes = D.data_status(as_of, floor) if R.FLOORS[floor]["wired"] else []
-if notes:
-    st.sidebar.divider()
-    for n in notes:
-        (st.sidebar.error if n["level"] == "error" else st.sidebar.warning)(
-            f"**{n['title']}**")
+# Data status for the chosen floor and date, always visible.
+sb.divider()
+rows = []
+if R.FLOORS[floor]["wired"]:
+    _H = ui.health(floor)
+    if (_H.day == pd.Timestamp(as_of).normalize()).any():
+        phi = ui.HL.point_health_index(_H, as_of, floor)
+        up = phi["points"] - phi["offline"]
+        rows.append(ui.dot("good" if not phi["offline"] else "warning",
+                           f"{up} / {phi['points']} points reporting"))
+        rows.append(ui.dot("good" if phi["completeness"] >= R.conv("completeness_target") else "warning",
+                           f"Points {phi['completeness']:.0f}% complete today"))
+    else:
+        rows.append(ui.dot("critical", "No data for this date"))
+    for n in D.data_status(as_of, floor):
+        rows.append(ui.dot("critical" if n["level"] == "error" else "warning", n["title"]))
+else:
+    rows.append(ui.dot("offline", "Floor not wired — Portfolio only"))
+sb.markdown('<p class="cb-overline" style="margin-bottom:8px">Data status</p>'
+            + "".join(f"<div style='margin-bottom:6px'>{r}</div>" for r in rows),
+            unsafe_allow_html=True)
 
-st.sidebar.divider()
-st.sidebar.caption(
-    "CU-BEMS, Chulalongkorn University · 7-storey office, Bangkok · "
-    "1-minute data, Jul 2018 – Dec 2019.")
+sb.divider()
+sb.caption("CU-BEMS · 7-storey office, Bangkok  \n1-minute data, Jul 2018 – Dec 2019")
 
 # --------------------------------------------------------------------------- #
 # navigation
@@ -107,8 +128,8 @@ st.sidebar.caption(
 # (supervisors, technicians). Energy management: "are we on target and what
 # would a change save?" (energy manager, finance). Reference: "where does this
 # number come from?"
-P = "pages"
-nav = st.navigation({
+P = "views"
+nav = st.navigation(position="top", pages={
     "Overview": [
         st.Page(f"{P}/0_portfolio.py", title="Portfolio overview", icon=":material/apartment:",
                 default=True),

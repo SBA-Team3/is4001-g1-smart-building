@@ -34,9 +34,9 @@ from sbanalytics import data as D  # noqa: E402
 from sbanalytics import registry as R  # noqa: E402
 
 APP = str(ROOT / "dashboard" / "app.py")
-PAGES = ["pages/0_portfolio.py", "pages/1_floor_status.py", "pages/5_faults.py",
-         "pages/3_zones.py", "pages/2_sensor_health.py", "pages/4_energy.py",
-         "pages/6_opportunities.py", "pages/8_methods.py"]
+PAGES = ["views/0_portfolio.py", "views/1_floor_status.py", "views/5_faults.py",
+         "views/3_zones.py", "views/2_sensor_health.py", "views/4_energy.py",
+         "views/6_opportunities.py", "views/8_methods.py"]
 DATES = [dt.date(2019, 6, 14), dt.date(2018, 11, 15), dt.date(2019, 9, 27), dt.date(2019, 12, 31)]
 FLOORS = R.wired_floors()
 TIMEOUT = 300
@@ -90,16 +90,16 @@ def test_no_floor_inherits_floor5_history():
     """F5's outages, change-points and stairwell are F5's alone."""
     for floor in [f for f in FLOORS if f != 5]:
         for as_of in (dt.date(2019, 8, 20), dt.date(2019, 9, 27)):   # F5 z2 outage; F5 transfer
-            txt = _text(_render("pages/1_floor_status.py", as_of, floor))
+            txt = _text(_render("views/1_floor_status.py", as_of, floor))
             assert "z2: sensors offline" not in txt, f"F{floor} @ {as_of}: shows F5's z2 outage"
             assert "re-apportioned" not in txt, f"F{floor} @ {as_of}: shows F5's z2/z4 change-point"
             assert "stairwell" not in txt, f"F{floor} @ {as_of}: calls a zone a stairwell"
 
 
 def test_floor_specific_notes():
-    txt = _text(_render("pages/1_floor_status.py", dt.date(2018, 11, 15), 3))
+    txt = _text(_render("views/1_floor_status.py", dt.date(2018, 11, 15), 3))
     assert "all meters offline" in txt.lower(), "F3 Oct-Nov 2018 meter outage not flagged"
-    txt = _text(_render("pages/1_floor_status.py", dt.date(2019, 12, 31), 6))
+    txt = _text(_render("views/1_floor_status.py", dt.date(2019, 12, 31), 6))
     assert "Past the end of this floor's file" in txt, "F6 file end not flagged"
 
 
@@ -109,7 +109,7 @@ def _metric(at: AppTest, label: str) -> str:
 
 def test_outage_reads_as_no_data():
     """F3's meters are all offline on 2018-11-15: no zeros, no faults raised on NaN."""
-    at = _render("pages/1_floor_status.py", dt.date(2018, 11, 15), 3)
+    at = _render("views/1_floor_status.py", dt.date(2018, 11, 15), 3)
     txt = _text(at)
     assert not re.search(r"\bnan\b", txt), "a fault or caption was built from NaN"
     assert _metric(at, "Energy today") == "no data", "outage day shows a number, not 'no data'"
@@ -119,8 +119,8 @@ def test_outage_reads_as_no_data():
 def test_open_fault_counts_agree():
     """Floor status's open-fault count is what the Faults page shows on the same window."""
     for floor, as_of in ((5, dt.date(2019, 11, 14)), (3, dt.date(2018, 11, 15))):
-        n_status = _metric(_render("pages/1_floor_status.py", as_of, floor), "Open faults")
-        at = _render("pages/5_faults.py", as_of, floor)
+        n_status = _metric(_render("views/1_floor_status.py", as_of, floor), "Open faults")
+        at = _render("views/5_faults.py", as_of, floor)
         at.selectbox(key="faults_period").set_value("Trailing window").run()
         n_faults = _metric(at, "Open faults") if at.metric else "0"
         assert n_status == n_faults, f"F{floor} @ {as_of}: status {n_status} vs faults {n_faults}"
@@ -128,7 +128,7 @@ def test_open_fault_counts_agree():
 
 def test_portfolio_flags_f1_and_f6():
     for as_of in DATES:
-        at = _render("pages/0_portfolio.py", as_of)
+        at = _render("views/0_portfolio.py", as_of)
         assert not _errors(at), _errors(at)
         txt = _text(at)
         assert "F1" in txt and "non-office" in txt, f"{as_of}: Floor 1 not annotated as non-office"

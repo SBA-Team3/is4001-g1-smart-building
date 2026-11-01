@@ -64,6 +64,7 @@ is4001-g1-smart-building/
 │   ├── 05_forecasting.ipynb           E  what is coming tomorrow?
 │   └── 06_recommendations.ipynb       F  what should facilities management do?
 └── dashboard/               Streamlit dashboard: portfolio view of all floors + Floor 5 operations, reads data/cleaned/
+                             (design rules, tokens and the Figma link: dashboard/DESIGN.md)
 ```
 
 ### `src/sbanalytics` — what lives where

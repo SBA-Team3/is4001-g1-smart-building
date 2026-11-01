@@ -17,8 +17,7 @@ c = ui.ctx()
 floor = c["floor"]
 h = ui.hourly(floor) if R.FLOORS[floor]["wired"] else None
 
-st.title("Methods & assumptions")
-st.caption("Every threshold this dashboard applies, where it comes from, what "
+ui.page_header("Reference", "Methods & assumptions", "Every threshold this dashboard applies, where it comes from, what "
            "we corrected, and what we cannot compute.")
 
 def _gaps(f: int) -> str:
@@ -222,13 +221,13 @@ with t_corr:
         if chk:
             k = st.columns(4)
             k[0].metric("z2 mean load", f"{chk['after']['z2']:.2f} kW",
-                        delta=f"{chk['delta_a_pct']:+.1f}%")
+                        delta=f"{chk['delta_a_pct']:+.1f}%", border=True)
             k[1].metric("z4 mean load", f"{chk['after']['z4']:.2f} kW",
-                        delta=f"{chk['delta_b_pct']:+.1f}%")
+                        delta=f"{chk['delta_b_pct']:+.1f}%", border=True)
             k[2].metric("z2 + z4 combined", f"{chk['after']['sum']:.2f} kW",
-                        delta=f"{chk['delta_sum_pct']:+.1f}%")
+                        delta=f"{chk['delta_sum_pct']:+.1f}%", border=True)
             k[3].metric("z2 : z4 ratio",
-                        f"{chk['ratio_before']:.2f} → {chk['ratio_after']:.2f}")
+                        f"{chk['ratio_before']:.2f} → {chk['ratio_after']:.2f}", border=True)
             st.success(
                 "**This is the signature of a re-apportionment, not a demand "
                 "change.** Each zone shifts sharply — z4 down 19%, z2 up 10% — "
@@ -346,26 +345,26 @@ with t_pilot:
         mds4 = A.detectable_saving(cv, 4, hpd, 5, R.conv("pilot_alpha"), power, rho)
 
         k = st.columns(4)
-        k[0].metric("Expected saving from the step", f"{expected:.1f}%")
+        k[0].metric("Expected saving from the step", f"{expected:.1f}%", border=True)
         k[1].metric("Weeks to detect it",
-                    f"{need:.0f}" if np.isfinite(need) else "> 5 years")
+                    f"{need:.0f}" if np.isfinite(need) else "> 5 years", border=True)
         k[2].metric("Detectable in 4 weeks", f"{mds4:.1f}%",
                     delta="step detectable" if mds4 <= expected else "step too small",
-                    delta_color="normal" if mds4 <= expected else "inverse")
-        k[3].metric("Cooling hours per day", hpd)
+                    delta_color="normal" if mds4 <= expected else "inverse", border=True)
+        k[3].metric("Cooling hours per day", hpd, border=True)
 
         W = pd.DataFrame({"weeks": np.arange(1, 53)})
         W["mds"] = [A.detectable_saving(cv, w, hpd, 5, R.conv("pilot_alpha"), power, rho)
                     for w in W.weeks]
         st.altair_chart(
             alt.layer(
-                alt.Chart(W).mark_line(strokeWidth=2.5, color="#2e74b5").encode(
+                alt.Chart(W).mark_line(strokeWidth=2.5, color=ui.ACTUAL).encode(
                     x=alt.X("weeks:Q", title="pilot length per step (weeks)"),
                     y=alt.Y("mds:Q", title="minimum detectable saving (%)",
                             scale=alt.Scale(type="log")),
                     tooltip=["weeks:Q", alt.Tooltip("mds:Q", format=".2f")]),
                 alt.Chart(pd.DataFrame({"y": [expected]})).mark_rule(
-                    color="#b0453a", strokeWidth=2).encode(y="y:Q"),
+                    color=ui.INK, strokeDash=[5, 3], strokeWidth=1.5).encode(y="y:Q"),
             ).properties(height=300), width="stretch")
 
         st.warning(

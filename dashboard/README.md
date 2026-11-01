@@ -47,17 +47,21 @@ building FDD is that a rule cannot tell its input has gone stale.
 ### What each reworked page shows
 
 - **Portfolio overview** — KPI strip (building kWh, ฿, tCO₂e, % of cooled
-  occupied hours below 23 °C vs the 40% target, data completeness); floor league
-  (partial EUI, AC share, overcooled share as a progress bar, after-hours AC,
-  weather-normalised deviation, completeness, a generated status note); one
-  generated "what to look at" sentence per floor; floor × month overcooling heat
-  map; monthly energy by floor. Floor 1 is in the totals, last and greyed in the
-  league, and out of every overcooling or schedule ranking. Floor 6 carries its
-  file-end flag everywhere it appears.
+  occupied hours below 23 °C vs the 40% target, data completeness); one card per
+  floor, worst first (overcooled share against the 40% target marker, partial
+  EUI, after-hours AC, weather-normalised deviation, a data-status dot, and the
+  generated "biggest lever" sentence), with the full league as a table in an
+  expander; floor × month overcooling heat map; monthly energy by floor. Floor 1
+  is in the totals, last, marked non-office, and out of every overcooling or
+  schedule ranking. Floor 6 carries its file-end flag everywhere it appears.
 - **Floor status** — trust band first, then the proposal's two KPIs (this
   month's overcooled share vs 40%; excess cooling kWh/฿ vs the normalised
-  expectation, this month vs last, blocked across a change-point), then a
-  "since yesterday" strip (new / cleared faults, points that went offline).
+  expectation, this month vs last, blocked across a change-point) beside a
+  "since yesterday" card (new / cleared faults, points that went offline); today's
+  KPIs; one card per zone, worst first, with its recommended action and a
+  "Create work order" button that marks the fault Acknowledged; the top three
+  faults; the last 30 days by end use, with holidays where the AC still ran
+  called out.
 - **Faults & work orders** — each fault has a stable id, cost of inaction
   (฿/day), days open, recurrence, trade, action and a verification check;
   lifecycle New → Acknowledged → In progress → Resolved (+ Muted) saved to
@@ -76,13 +80,22 @@ building FDD is that a rule cannot tell its input has gone stale.
   M&V card per measure; a tornado chart. The setpoint / thermal-model /
   schedule-trim tabs below are the engine.
 
+## Design
+
+Dark theme from the team's Figma file. Colours, type and components are
+documented in [DESIGN.md](DESIGN.md); the tokens live in `design/tokens.json` and
+`.streamlit/config.toml` (repo root). Don't hard-code a colour in a page —
+`tests/test_design_tokens.py` checks.
+
 ## Structure
 
 ```
 app.py              navigation (persona groups), global sidebar (floor, as-of
                     date, tariff, emission factor, demand charge)
-ui.py               cached loaders, trust band, chart theme (Streamlit-only)
-pages/              one file per page; analytics come from ../src/sbanalytics/,
+ui.py               cached loaders, design tokens, trust band, cards, chips,
+                    chart theme (Streamlit-only)
+design/             tokens.json (from Figma), logo
+views/              one file per page; analytics come from ../src/sbanalytics/,
                     the same code the analysis notebooks use
 cache/              local state (fault_states.csv) — gitignored
 ```

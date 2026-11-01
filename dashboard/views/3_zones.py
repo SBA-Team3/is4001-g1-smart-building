@@ -20,12 +20,11 @@ if not ui.require_wired(floor):
 h = ui.hourly(floor)
 start, end = D.window(as_of, max(win, 30))
 
-st.title("Zones")
-st.caption(
-    "Ranked by **exceedance degree-hours**, not exceedance hours. Hour counts "
+ui.page_header(
+    f"Operations · Floor {floor}", "Zones & comfort",
+    "Which zones are too cold, and by how much? Ranked by **exceedance degree-hours**, not exceedance hours. Hour counts "
     "hide the magnitude of the deviation — ten hours at 22.9 °C and ten hours "
-    "at 18 °C score identically on hours and very differently on degree-hours."
-)
+    "at 18 °C score identically on hours and very differently on degree-hours.")
 
 cc = st.columns(4)
 lo = cc[0].slider("Band lower (°C)", 20.0, 25.0, float(C.band()[0]), 0.5)
@@ -70,8 +69,9 @@ st.dataframe(
       "overcool °C·h", "overheat °C·h", "in band %", "AC kWh",
       "cooling below band %", "data confidence"]].round(1),
     width="stretch", hide_index=True,
-    column_config={"in band %": st.column_config.ProgressColumn(
-        "in band %", min_value=0, max_value=100, format="%.0f")})
+    column_config={"in band %": st.column_config.ProgressColumn(color=ui.ACTUAL, label=
+        "in band %", min_value=0, max_value=100, format="%.0f"),
+                   "AC kWh": st.column_config.NumberColumn(format="%.0f")})
 
 left, right = st.columns(2)
 with left:
@@ -84,7 +84,7 @@ with left:
         alt.Chart(m).mark_bar().encode(
             y=alt.Y("zone:N", title=None, sort="-x"),
             x=alt.X("dh:Q", title="degree-hours"),
-            color=alt.Color("kind:N", scale=alt.Scale(range=["#2e74b5", "#b0453a"]),
+            color=alt.Color("kind:N", scale=ui.COLD_WARM,
                             legend=alt.Legend(orient="top", title=None)),
             tooltip=["zone", "kind", alt.Tooltip("dh:Q", format=",.0f")],
         ).properties(height=200), width="stretch")
@@ -94,12 +94,11 @@ with left:
 with right:
     st.markdown("**Where the cooling energy goes**")
     st.altair_chart(
-        alt.Chart(zc).mark_bar().encode(
+        alt.Chart(zc).mark_bar(color=ui.ACTUAL).encode(
             y=alt.Y("zone:N", title=None, sort="-x"),
             x=alt.X("cooling_below_band_pct:Q",
                     title=f"% of cooling delivered below {lo:g} °C",
                     scale=alt.Scale(domain=[0, 100])),
-            color=alt.Color("zone:N", scale=ui.ZONE_COLOR, legend=None),
             tooltip=["zone", alt.Tooltip("cooling_below_band_pct:Q", format=".1f"),
                      alt.Tooltip("ac_kwh:Q", format=",.0f")],
         ).properties(height=200), width="stretch")
@@ -130,13 +129,13 @@ st.altair_chart(
         alt.Chart(fl).mark_line(strokeWidth=2.5).encode(
             x=alt.X("shift:Q", title="setpoint rise (°C)"),
             y=alt.Y("pct:Q", title="% of cooled hours"),
-            color=alt.Color("band:N", title=None, scale=alt.Scale(
-                range=["#2e74b5", "#b0453a"]), legend=alt.Legend(orient="top")),
+            color=alt.Color("band:N", title=None, scale=ui.COLD_WARM,
+                legend=alt.Legend(orient="top")),
             strokeDash=alt.StrokeDash("zone:N", legend=alt.Legend(orient="top")),
             tooltip=["zone", "band", alt.Tooltip("shift:Q", format=".2f"),
                      alt.Tooltip("pct:Q", format=".1f")]),
         alt.Chart(pd.DataFrame({"s": [shift]})).mark_rule(
-            color="#555", strokeDash=[5, 3]).encode(x="s:Q"),
+            color=ui.INK, strokeDash=[5, 3]).encode(x="s:Q"),
     ).properties(height=300), width="stretch")
 
 now = C.zone_comfort(h, start=s, end=e, lo=lo, hi=hi, ac_on=ac_on, floor=floor)
@@ -189,15 +188,15 @@ if len(zd):
     band_df = pd.DataFrame({"lo": [lo], "hi": [hi]})
     st.altair_chart(
         alt.layer(
-            alt.Chart(band_df).mark_rect(opacity=0.12, color="#2e8b57").encode(
+            alt.Chart(band_df).mark_rect(opacity=0.18, color=ui.C["data/overcool-low"]).encode(
                 y="lo:Q", y2="hi:Q"),
-            base.mark_line(color="#b0453a", strokeWidth=1.8).encode(
+            base.mark_line(color=ui.WARM, strokeWidth=2).encode(
                 x=alt.X("ts:T", title=None),
                 y=alt.Y("temp:Q", title="mean °C", scale=alt.Scale(zero=False)),
                 tooltip=["ts:T", alt.Tooltip("temp:Q", format=".1f")]),
         ).properties(height=220), width="stretch")
     st.altair_chart(
-        base.mark_bar(color="#2e74b5").encode(
+        base.mark_bar(color=ui.ACTUAL).encode(
             x=alt.X("ts:T", title=None), y=alt.Y("ac:Q", title="AC kWh/day"),
             tooltip=["ts:T", alt.Tooltip("ac:Q", format=",.0f")],
         ).properties(height=150), width="stretch")
