@@ -1,11 +1,11 @@
 # CU-BEMS building — facilities operations dashboard
 
 A BMS-style operations dashboard for the CU-BEMS building, built for the
-university FM team (Office of Physical Resources Management) rather than an
-analyst. The Portfolio overview reads all seven floors; the operational pages
-are wired for Floors 3–7. Floor 5 carries the hand-validated findings (the
-z2↔z4 transfer, the supply-air sensor, the stairwell); on the other floors those
-passages are replaced by what the registry declares for that floor.
+university FM team (Office of Physical Resources Management). Its first
+questions are energy use, cost, and which sensors are down, so the Overview
+answers those for the whole building on one 1440×900 screen. The operational
+pages are wired for Floors 3–7; F1 (non-office, no sensors) and F2 (not wired)
+appear only in building totals.
 
 ## Run it
 
@@ -22,98 +22,66 @@ files every notebook uses — built by `src/sbanalytics/pipeline.py`. It never
 touches the raw files: minute-level fault detection over 790,560 rows × 26
 channels cannot run on a page load.
 
-## Why the pages are in this order
+## Layout
 
-The navigation is grouped by **who asks the question**, the pattern commercial
-platforms (OpenBlue, Forge, Building X, EcoStruxure Building Advisor,
-SkySpark/Clockworks) use:
+One **context bar** sits above every page: floor (`Bldg · F3 … F7`; Bldg is the
+Overview's building view, floor pages fall back to the last wired floor, default
+F5), the as-of date, the **period** (`Today · 7d · 30d · MTD · 12m · Record`,
+default MTD) and an **Assumptions** popover (tariff, floor area, emission factor,
+demand charge). Every page reads that one period, so counts agree across pages.
+There is no sidebar.
 
-| Group | Page | Persona | Question |
-|---|---|---|---|
-| **Overview** | Portfolio overview *(default)* | FM lead, leadership | Where do I send the team? Are we on the 40% overcooling target? |
-| | Floor status | Floor supervisor | Can I trust today's data, and what changed since yesterday? |
-| **Operations** | Faults & work orders | Supervisor, technicians | What is broken, what does it cost per day, who fixes it, how do we know it's fixed? |
-| | Zones & comfort | Supervisor | Which zones are too cold, and by how much? |
-| | Sensor & data health | Controls / metering-IT | Which points are down, stale or lying? |
-| **Energy management** | Energy performance | Energy manager, finance | Are we using more than the weather explains? When did it drift? |
-| | Opportunities & simulator | Energy manager, finance, leadership | What would a package of changes save, in ฿ and tCO₂e, what does it do to comfort, and how would we prove it? |
-| **Reference** | Methods & assumptions | Anyone checking a number | Where does this come from? |
+The navigation is flat, in the order the FM asks:
 
-Within each page the order is still: **can I trust it → what is wrong → how are
-we performing → what could we change.** Data health sits above everything else
-on the operational pages because the documented failure mode of rule-based
-building FDD is that a rule cannot tell its input has gone stale.
+| Page | Question |
+|---|---|
+| **Overview** *(default)* | How much energy and money this period, against expected? Which sensors are down? Which floor and which alarm first? |
+| **Floor** | For one floor: alarms and data health, energy today, cost MTD vs expected, peak, cooled <23 °C vs 40%; zones worst first; act on alarms (Work order / Acknowledge / Mute / Resolve) |
+| **Alarms** | The fault register as a dense, filterable queue: severity, ฿/day, days open, days in state, aging; detail dialog with action, "fixed when", causes, note and state buttons; CSV export for a CMMS |
+| **Sensors** | Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; point × day status map; per-point record; cross-sensor checks; raw trace |
+| **Comfort** | Which zones are too cold, by how much (degree-hours); floor × month overcooling map; zone detail |
+| **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, CUSUM, signature and outlier days, peak demand, profiles |
+| **Savings** | The intervention simulator: package inputs → kWh/yr and ฿/yr ranges, tCO₂e, comfort trade-off, IPMVP M&V plan; measures, tornado, control-stability lever, and how each lever is sized |
+| **Methods** | Conventions, point registry, change-points, and "About the data" (ISA-18.2 self-audit, what cannot be detected, why not UMLH, flatline rationale, combination rule, practice, corrections, baseline, pilot, exclusions) |
 
-### What each reworked page shows
-
-- **Portfolio overview** — KPI strip (building kWh, ฿, tCO₂e, % of cooled
-  occupied hours below 23 °C vs the 40% target, data completeness); one card per
-  floor, worst first (overcooled share against the 40% target marker, partial
-  EUI, after-hours AC, weather-normalised deviation, a data-status dot, and the
-  generated "biggest lever" sentence), with the full league as a table in an
-  expander; floor × month overcooling heat map; monthly energy by floor. Floor 1
-  is in the totals, last, marked non-office, and out of every overcooling or
-  schedule ranking. Floor 6 carries its file-end flag everywhere it appears.
-- **Floor status** — trust band first, then the proposal's two KPIs (this
-  month's overcooled share vs 40%; excess cooling kWh/฿ vs the normalised
-  expectation, this month vs last, blocked across a change-point) beside a
-  "since yesterday" card (new / cleared faults, points that went offline); today's
-  KPIs; one card per zone, worst first, with its recommended action and a
-  "Create work order" button that marks the fault Acknowledged; the top three
-  faults; the last 30 days by end use, with holidays where the AC still ran
-  called out.
-- **Faults & work orders** — each fault has a stable id, cost of inaction
-  (฿/day), days open, recurrence, trade, action and a verification check;
-  lifecycle New → Acknowledged → In progress → Resolved (+ Muted) saved to
-  `dashboard/cache/fault_states.csv`; CSV export for a CMMS; the ISA-18.2
-  self-audit and the "what we cannot detect" list are kept.
-- **Energy performance** — actual vs expected (monthly/weekly, 90% band),
-  G14 CV(RMSE)/NMBE with pass/fail, CUSUM restarted at each change-point,
-  energy signature with the change-point lines and the drill-down list of
-  workdays far above them, peak demand (daily trend, top-10 hours with outdoor
-  temperature, demand charge); then the existing EUI, end use, carpet, load
-  duration and off-hours sections.
-- **Opportunities & simulator** — scenario builder (zone-temperature lift per
-  zone or all, end-of-day trim, weekend/holiday lockout, cost per measure,
-  tariff, emission factor) → one row per measure plus a combined row: kWh/yr
-  low–mid–high, ฿/yr, tCO₂e/yr, payback, comfort after, confidence; an IPMVP
-  M&V card per measure; a tornado chart. The setpoint / thermal-model /
-  schedule-trim tabs below are the engine.
+Every page opens with the **alarm band**: ● critical · ▲ warning · ○ points down ·
+◐ unacknowledged, plus one line of data health. "Point down" is OFFLINE, FROZEN
+or BAD SAMPLES on the as-of day (`ui.point_status`); PARTIAL is degraded, not down.
 
 ## Design
 
-Dark theme from the team's Figma file. Colours, type and components are
-documented in [DESIGN.md](DESIGN.md); the tokens live in `design/tokens.json` and
-`.streamlit/config.toml` (repo root). Don't hard-code a colour in a page —
-`tests/test_design_tokens.py` checks.
+Dark only. Colours, type and components are in [DESIGN.md](DESIGN.md); the tokens
+live in `design/tokens.json` and `.streamlit/config.toml` (repo root). Don't
+hard-code a colour in a page — `tests/test_design_tokens.py` checks.
 
 ## Structure
 
 ```
-app.py              navigation (persona groups), global sidebar (floor, as-of
-                    date, tariff, emission factor, demand charge)
-ui.py               cached loaders, design tokens, trust band, cards, chips,
-                    chart theme (Streamlit-only)
-design/             tokens.json (from Figma), logo
+app.py              flat top navigation, context bar (floor, as-of date, period,
+                    assumptions)
+ui.py               cached loaders, design tokens, the global period, point status,
+                    fault register, alarm band, chips, tiles, chart theme
+design/             tokens.json, logo
 views/              one file per page; analytics come from ../src/sbanalytics/,
                     the same code the analysis notebooks use
 cache/              local state (fault_states.csv) — gitignored
 ```
 
-New analytics modules (pure pandas, no Streamlit):
+Analytics modules (pure pandas, no Streamlit):
 
 | Module | What it does |
 |---|---|
-| `portfolio` | building KPIs, floor league, floor × month overcooling, meter-outage episodes, per-floor levers and the generated "what to look at" sentence |
-| `mv` | daily change-point baseline per floor (F5 trains between its change-points), G14 summary, monthly/weekly roll-up with uncertainty band, segmented CUSUM, energy signature, peak demand |
+| `portfolio` | building KPIs, floor league, floor × month overcooling, meter-outage episodes, per-floor levers and the generated "biggest lever" sentence |
+| `mv` | daily change-point baseline per floor, G14 summary, roll-up with uncertainty band, segmented CUSUM, energy signature, peak demand |
 | `scenario` | intervention simulator: lift / trim / lockout, combined without double counting, comfort after, IPMVP plan, tornado |
 | `workorders` | fault lifecycle store (append-only CSV) and CMMS export |
-| `faults` (extended) | stable ids, cost of inaction, days open, recurrence, trade, action, verification (`PLAYBOOK`) |
-| `kpis` (extended) | `cooled_occupied` + `overcooled_share` — the one definition of the 68–83% KPI |
+| `faults` | stable ids, cost of inaction, days open, recurrence, trade, action, verification (`PLAYBOOK`) |
+| `kpis` | `cooled_occupied` + `overcooled_share` — the one definition of the overcooling KPI |
 
-Smoke test: `python3 tests/test_dashboard_smoke.py` renders every page on
-2019-06-14, 2018-11-15 (sensor gap), 2019-09-27 (change-point) and 2019-12-31,
-and checks the Portfolio's F1 / F6 annotations.
+Smoke test: `python3 tests/test_dashboard_smoke.py` renders every page for every
+wired floor on 2019-06-14, 2018-11-15 (sensor gap), 2019-09-27 (change-point) and
+2019-12-31, setting floor and date through the context bar, and checks the
+Overview's F1 / F6 annotations and that the Floor and Alarms open counts agree.
 
 ## The registry is the important bit
 

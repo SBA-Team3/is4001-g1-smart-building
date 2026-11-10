@@ -46,12 +46,14 @@ os.environ["FM_FAULT_STATES"] = os.path.join(tempfile.mkdtemp(), "fault_states.c
 
 
 def _render(page: str, as_of: dt.date, floor: int = 5) -> AppTest:
+    """Set floor and date through the context bar (by widget key), then open the page."""
     at = AppTest.from_file(APP, default_timeout=TIMEOUT)
     at.run()
-    at.sidebar.selectbox[0].set_value(floor)
-    at.sidebar.date_input[0].set_value(as_of)
+    at.segmented_control(key="floor_select").set_value(f"F{floor}")
+    at.date_input(key="as_of").set_value(as_of)
     at.run()                                 # the date must land before the page switch
-    assert at.session_state["as_of"].date() == as_of
+    got = at.session_state["as_of"]
+    assert (got.date() if hasattr(got, "date") and callable(got.date) else got) == as_of
     assert at.session_state["floor"] == floor
     at.switch_page(page)
     at.run()
@@ -117,13 +119,15 @@ def test_outage_reads_as_no_data():
 
 
 def test_open_fault_counts_agree():
-    """Floor status's open-fault count is what the Faults page shows on the same window."""
+    """The Floor page's open-alarm count is what the Alarms page shows: both read the
+    one global period (the context bar), so there is no per-page window to drift."""
     for floor, as_of in ((5, dt.date(2019, 11, 14)), (3, dt.date(2018, 11, 15))):
-        n_status = _metric(_render("views/1_floor_status.py", as_of, floor), "Open faults")
+        txt = _text(_render("views/1_floor_status.py", as_of, floor))
+        m = re.search(r"Active alarms · (\d+) open", txt)
+        assert m, f"F{floor} @ {as_of}: Floor page shows no open-alarm count"
         at = _render("views/5_faults.py", as_of, floor)
-        at.selectbox(key="faults_period").set_value("Trailing window").run()
         n_faults = _metric(at, "Open faults") if at.metric else "0"
-        assert n_status == n_faults, f"F{floor} @ {as_of}: status {n_status} vs faults {n_faults}"
+        assert m.group(1) == n_faults, f"F{floor} @ {as_of}: floor {m.group(1)} vs alarms {n_faults}"
 
 
 def test_portfolio_flags_f1_and_f6():

@@ -1,4 +1,4 @@
-"""Sensor & data health — which points are down, stale or lying."""
+"""Sensors — which points are down, stale or lying, worst first."""
 
 from __future__ import annotations
 
@@ -14,300 +14,208 @@ import ui
 
 c = ui.ctx()
 floor, as_of = c["floor"], c["as_of"]
+start, end = c["start"], c["end"]
 if not ui.require_wired(floor):
     st.stop()
 
-ui.page_header(
-    f"Operations · Floor {floor}", "Sensor & data health",
-    "Which points are down, stale or lying? This page sits above the others because a rule cannot tell that its input "
-    "has gone stale. A comfort or energy figure computed on a dead point looks "
-    "exactly like one computed on a live point — so every other page is "
-    "conditional on what is shown here.")
+ui.page_header("Sensors", f"Floor {floor} sensors",
+               f"Status on {ui.day_txt(as_of)} · history over {ui.esc(c['period_label'])}. A rule cannot "
+               "tell that its input has gone stale, so every other page is conditional on this one.")
 
 H = ui.health(floor)
 S = ui.scored(floor)
 hourly = ui.hourly(floor)
 
-ui.trust_band(floor, as_of)
+ps = ui.floor_band(floor, as_of)
 ui.status_notes(as_of, floor)
 
-tab_now, tab_map, tab_points, tab_cross, tab_trace = st.tabs(
-    ["Today", "Point × day map", "Per-point record", "Cross-sensor checks", "Raw trace"])
-
-
 # --------------------------------------------------------------------------- #
-with tab_now:
-    d = S[S.day == as_of.normalize()]
-    if not len(d):
-        st.error("No point-day records for this date.")
-    else:
-        view = d[["zone", "channel", "column", "role", "received", "completeness",
-                  "flat_measured", "out_of_range", "spikes", "health"]].copy()
-        view["status"] = np.select(
-            [view.received == 0,
-             d.flag_flatline.values,
-             view.completeness < R.conv("completeness_target"),
-             (view.out_of_range > 0) | (view.spikes > 0)],
-            ["OFFLINE", "FROZEN", "PARTIAL", "BAD SAMPLES"], default="OK")
-        view = view.sort_values(["health", "zone"])
+# not OK first
+# --------------------------------------------------------------------------- #
+bad = ps[ps.status != "OK"]
+ok = ps[ps.status == "OK"]
 
-        n_ok = int((view.status == "OK").sum())
-        st.markdown(f"**{n_ok} of {len(view)} points OK on "
-                    f"{as_of.date()}.** Sorted worst first.")
-        st.dataframe(
-            view.rename(columns={
-                "column": "point", "received": "samples", "completeness": "complete %",
-                "flat_measured": "longest flat (min)", "out_of_range": "out of range",
-            }).round(1),
-            width="stretch", hide_index=True,
-            column_config={
-                "health": st.column_config.ProgressColumn(color=ui.ACTUAL, label=
-                    "health", min_value=0, max_value=100, format="%d"),
-                "complete %": st.column_config.NumberColumn(format="%.1f"),
-            })
 
-        stale = HL.last_good(H, as_of, floor)
-        stale = stale[stale.days_stale > 0]
-        if len(stale):
-            st.warning(
-                "**Points not reporting on this date.** Last good day and how "
-                "long they have been silent:")
-            st.dataframe(stale.rename(columns={"column": "point"}),
-                         width="stretch", hide_index=True)
+def _tbl(d: pd.DataFrame) -> pd.DataFrame:
+    return pd.DataFrame({"Point": d.point, "Zone": d.zone, "Channel": d.channel,
+                         "Status": [ui.point_glyph(s) for s in d.status],
+                         "Last good day": pd.to_datetime(d.last_good_day).dt.date,
+                         "Days stale": d.days_stale})
 
+
+ui.section(f"Not OK ({len(bad)})",
+           "○ OFFLINE no samples · ● FROZEN flatline · ▲ BAD SAMPLES out of range or spikes — these "
+           "three are down. ◐ PARTIAL is below the completeness target: degraded, not down.")
+if len(bad):
+    st.dataframe(ui.glyph_style(_tbl(bad), ["Status"], {"Days stale": "{:.0f}"}),
+                 hide_index=True, width="stretch", placeholder=ui.DASH,
+                 height=min(35 * len(bad) + 38, 420))
+else:
+    st.caption(f"✓ All {len(ps)} points OK on {ui.day_txt(as_of)}.")
+with st.expander(f"OK points ({len(ok)})", icon=":material/check:"):
+    st.dataframe(ui.glyph_style(_tbl(ok), ["Status"], {"Days stale": "{:.0f}"}),
+                 hide_index=True, width="stretch", placeholder=ui.DASH)
+
+tab_map, tab_points, tab_cross, tab_trace = st.tabs(
+    ["Point × day map", "Per-point record", "Cross-sensor checks", "Raw trace"])
 
 # --------------------------------------------------------------------------- #
 with tab_map:
-    st.markdown("**Point × day health.** The single most useful data-quality "
-                "visual: intermittent comms loss shows as vertical stripes, a "
-                "dead point as a horizontal band.")
-
+    st.caption("Status per point per day over the period. Intermittent comms loss shows as vertical "
+               "stripes, a dead point as a horizontal band. Pick 12m or Record for the long view.")
     ch = st.multiselect("Channels", sorted(S.channel.unique()),
-                        default=["temp", "rh", "ac", "light", "plug"])
-    show_blackout = st.toggle("Include the planned maintenance window", value=True,
-                              help="15 Sep 2018 – 6 Mar 2019: a building-wide "
-                                   "firmware update, per the dataset paper. "
-                                   "Energy metering was unaffected.")
-
-    hm = HL.heatmap_frame(H, channels=ch or None)
-    if not show_blackout:
-        hm = hm[~hm.in_blackout]
-
+                        default=[x for x in ["temp", "rh", "ac", "light", "plug"] if x in set(S.channel)])
+    hm = S[(S.day >= start) & (S.day <= end)]
+    if ch:
+        hm = hm[hm.channel.isin(ch)]
     if len(hm):
-        st.altair_chart(
-            alt.Chart(hm).mark_rect().encode(
-                x=alt.X("yearmonthdate(day):O", title=None,
-                        axis=alt.Axis(labelOverlap=True, tickCount=18, labels=False)),
-                y=alt.Y("point:N", title=None, sort="-x"),
-                color=alt.Color("health:Q", scale=alt.Scale(
-                    scheme="redyellowgreen", domain=[0, 100]),
-                    legend=alt.Legend(title="health")),
-                tooltip=["point", alt.Tooltip("day:T"), "health:Q", "completeness:Q",
-                         "received:Q", "max_flat_nonzero:Q", "spikes:Q"],
-            ).properties(height=26 * hm.point.nunique() + 40),
-            width="stretch")
-        st.caption(
-            "Red bands from mid-Sep 2018 to Mar 2019 are the planned sensor "
-            "maintenance."
-            + (" The separate red block on z1/z2 in Aug–Sep 2019 is a "
-               "real 45- and 69-day outage that the notebook never accounted for — "
-               "z2 has no indoor temperature at all for August 2019, the peak "
-               "cooling month." if floor == 5 else
-               " Any other red block is an outage on this floor; the sidebar names "
-               "the known ones."))
-
-    st.divider()
-    st.markdown("**Monthly completeness by point**")
-    mm = H.assign(month=H.day.dt.to_period("M").dt.to_timestamp()) \
-          .groupby(["zone", "channel", "month"], as_index=False) \
-          .agg(received=("received", "sum"), expected=("expected", "sum"))
-    mm["completeness"] = mm.received / mm.expected * 100
-    mm["point"] = mm.zone + " " + mm.channel
-    st.altair_chart(
-        alt.Chart(mm[mm.channel.isin(ch)] if ch else mm).mark_rect().encode(
-            x=alt.X("yearmonth(month):O", title=None),
-            y=alt.Y("point:N", title=None),
-            color=alt.Color("completeness:Q", scale=alt.Scale(
-                scheme="redyellowgreen", domain=[0, 100]), legend=alt.Legend(title="%")),
-            tooltip=["point", alt.Tooltip("month:T"),
-                     alt.Tooltip("completeness:Q", format=".1f")],
-        ).properties(height=22 * mm[mm.channel.isin(ch)].point.nunique() + 40 if ch else 400),
-        width="stretch")
-
+        hm = hm.assign(point=hm.zone + " " + hm.channel, status=np.select(
+            [hm.received == 0, hm.flag_flatline.values,
+             hm.completeness < R.conv("completeness_target"),
+             (hm.out_of_range > 0) | (hm.spikes > 0)],
+            ["OFFLINE", "FROZEN", "PARTIAL", "BAD SAMPLES"], default="OK"))
+        hm["mark"] = hm.status.map(ui.POINT_STATUS_MARK)
+        n_days = hm.day.nunique()
+        base = alt.Chart(hm).encode(
+            x=alt.X("yearmonthdate(day):O", title=None,
+                    axis=alt.Axis(labels=n_days <= 45, labelAngle=0, format="%-d", labelOverlap=True)),
+            y=alt.Y("point:N", title=None, sort="ascending", axis=alt.Axis(minExtent=64)))
+        layers = [base.mark_rect(strokeWidth=1.5 if n_days <= 90 else 0).encode(
+            fill=alt.Fill("status:N", scale=ui.POINT_STATUS_COLOR,
+                          legend=alt.Legend(orient="top", title=None, symbolType="square",
+                                            symbolStrokeWidth=1.5, columnPadding=24, labelLimit=160)),
+            stroke=alt.Stroke("status:N", scale=ui.POINT_STATUS_STROKE, legend=None),
+            tooltip=["point", alt.Tooltip("day:T"), "status", alt.Tooltip("health:Q", format=".0f"),
+                     alt.Tooltip("completeness:Q", format=".0f"), "received:Q",
+                     "max_flat_nonzero:Q", "spikes:Q"])]
+        if n_days <= 45:
+            layers.append(base.mark_text(fontSize=10).encode(
+                text="mark:N", color=alt.Color("status:N", legend=None, scale=alt.Scale(
+                    domain=ui.POINT_STATUS, range=[ui.INK, ui.C["status/warning-text"],
+                                                   ui.C["text/on-accent"], ui.C["text/on-accent"], ui.INK_2]))))
+        st.altair_chart(ui.chart(alt.layer(*layers), height=22 * hm.point.nunique() + 40), width="stretch")
+        st.caption("◐ PARTIAL (dark amber, amber outline) is degraded; ▲ BAD SAMPLES (solid amber) and "
+                   "● FROZEN (red) are down; '—' on grey with a ring is OFFLINE (no samples). Glyphs show "
+                   "for periods up to 45 days. The building-wide sensor gap "
+                   "(Sep 2018 – Mar 2019) shows as a block of them on the environmental channels."
+                   + (" The separate block on z1/z2 in Aug–Sep 2019 is a real 45- and 69-day outage."
+                      if floor == 5 else ""))
+    else:
+        st.info("No point-days in this period.", icon=":material/info:")
 
 # --------------------------------------------------------------------------- #
 with tab_points:
-    excl = st.toggle("Exclude the planned maintenance window from the denominator",
-                     value=True,
-                     help="With it included every zone looks equally broken by one "
-                          "known planned outage. Excluding it shows which points are "
-                          "still incomplete, which is the number to act on.")
+    excl = st.toggle("Exclude the planned maintenance window from the denominator", value=True,
+                     help="With it included every zone looks equally broken by one known planned "
+                          "outage. Excluding it shows which points are still incomplete.")
     ct = HL.completeness_table(H, exclude_blackout=excl)
     ct["verdict"] = ct.apply(HL.verdict, axis=1)
-
     st.dataframe(
         ct.rename(columns={
             "column": "point", "completeness": "complete %",
             "offline_days": "days offline", "flat_day_share": "days frozen %",
             "out_of_range": "out of range", "max_flat": "longest flat (min)",
         })[["zone", "channel", "point", "role", "complete %", "days offline",
-            "days frozen %", "longest flat (min)", "out of range", "spikes", "verdict"]]
-        .round(1),
+            "days frozen %", "longest flat (min)", "out of range", "spikes", "verdict"]].round(1),
         width="stretch", hide_index=True,
-        column_config={"complete %": st.column_config.ProgressColumn(color=ui.ACTUAL, label=
-            "complete %", min_value=0, max_value=100, format="%.1f")})
+        column_config={"complete %": st.column_config.NumberColumn(format="%.1f")})
+    st.caption("Whole record. Health is a number here on purpose: a bar would read as data.")
 
-    st.divider()
-    left, right = st.columns(2)
-
-    with left:
-        st.markdown("**Frozen points — ranked**")
-        ss = HL.stuck_summary(H)
-        ss = ss[ss.flat_day_share > 0].head(10)
-        st.dataframe(
-            ss.rename(columns={"column": "point", "flat_day_share": "days frozen %",
-                               "longest_min": "longest run (min)",
-                               "median_distinct": "distinct values/day"})
-              [["point", "role", "days frozen %", "longest run (min)",
-                "distinct values/day"]].round(1),
-            width="stretch", hide_index=True)
-        st.info(
-            "**The frozen points are plug meters, not temperature sensors.** "
-            "`z3_Plug` reports a constant ~0.27 kW with about 7 distinct values a "
-            "day and no diurnal shape at all — that is a constant, not a "
-            "measurement. `z5_Plug` and `z2_Plug` sit pinned for up to 2.6 days "
-            "at a time. Three of the five plug meters are arguably dead."
-        )
-
-    with right:
-        st.markdown("**Why temperature reports zero frozen days**")
-        t = S[S.channel == "temp"]
-        st.metric("Temperature point-days flagged frozen", int(t.flag_flatline.sum()), border=True)
-        st.metric("Longest flat run while cooling runs",
-                  f"{int(t.max_flat_occupied.max())} min",
-                  help=f"Threshold is {HL.FLATLINE_MIN['temp']} min.", border=True)
-        st.markdown(
-            "Flatline thresholds differ by channel because the physics differs. A "
-            "zone temperature cannot hold ±0.01 °C for an hour *while cooling is "
-            "running*; a lighting circuit can sit at a constant load all "
-            "afternoon. So sensors are judged on a 60-minute threshold evaluated "
-            "**only during operating hours** — ASHRAE Guideline 36 §5.16.14.11 "
-            "suspends fault evaluation when the equipment is off — and power "
-            "channels on a 4-hour threshold.\n\n"
-            "The two 60-minute temperature flatlines in the record are both "
-            "overnight with the AC off: genuine thermal quiescence. Reporting "
-            "them as faults would be manufacturing an alarm."
-        )
-
+    ui.md('<p class="cb-overline" style="margin-top:12px">Frozen points — ranked</p>')
+    ss = HL.stuck_summary(H)
+    ss = ss[ss.flat_day_share > 0].head(10)
+    st.dataframe(
+        ss.rename(columns={"column": "point", "flat_day_share": "days frozen %",
+                           "longest_min": "longest run (min)", "median_distinct": "distinct values/day"})
+          [["point", "role", "days frozen %", "longest run (min)", "distinct values/day"]].round(1),
+        width="stretch", hide_index=True)
+    if floor == 5:
+        st.caption("On this floor the frozen points are plug meters, not temperature sensors: z3_Plug "
+                   "reports a constant ~0.27 kW with about 7 distinct values a day; z5_Plug and "
+                   "z2_Plug sit pinned for up to 2.6 days at a time. Why temperature never reads "
+                   "frozen is on the Methods page.")
+    else:
+        st.caption("Why temperature never reads frozen (it is only judged while cooling runs) is on "
+                   "the Methods page.")
 
 # --------------------------------------------------------------------------- #
 with tab_cross:
-    st.markdown("**Cross-sensor consistency** — the strongest check available "
-                "without a reference instrument.")
-
-    left, right = st.columns(2)
-
+    left, right = st.columns(2, gap="large")
     with left:
-        st.markdown("##### Absolute humidity by zone")
+        ui.md('<p class="cb-overline">Absolute humidity by zone</p>')
         hc = HL.humidity_consistency(hourly)
         if len(hc):
-            st.altair_chart(
-                alt.Chart(hc).mark_bar(color=ui.ACTUAL).encode(
+            st.altair_chart(ui.chart(
+                alt.Chart(hc).mark_bar(color=ui.PRIMARY).encode(
                     y=alt.Y("zone:N", title=None),
-                    x=alt.X("abs_hum:Q", title="absolute humidity (g/m³)",
-                            scale=alt.Scale(zero=False)),
+                    x=alt.X("abs_hum:Q", title="absolute humidity (g/m³)", scale=alt.Scale(zero=False)),
                     tooltip=["zone", alt.Tooltip("abs_hum:Q", format=".2f"),
                              alt.Tooltip("dew:Q", format=".2f", title="dew point °C"),
-                             alt.Tooltip("temp:Q", format=".1f"),
-                             alt.Tooltip("rh:Q", format=".1f")],
-                ).properties(height=170), width="stretch")
+                             alt.Tooltip("temp:Q", format=".1f"), alt.Tooltip("rh:Q", format=".1f")]),
+                height=170), width="stretch")
             st.dataframe(
                 hc.rename(columns={"abs_hum": "abs humidity g/m³", "dew": "dew point °C",
-                                   "w": "humidity ratio", "temp": "temp °C",
-                                   "rh": "RH %", "abs_hum_dev": "vs median"})
-                  [["zone", "abs humidity g/m³", "dew point °C", "temp °C", "RH %",
-                    "vs median"]].round(2),
+                                   "temp": "temp °C", "rh": "RH %", "abs_hum_dev": "vs median"})
+                  [["zone", "abs humidity g/m³", "dew point °C", "temp °C", "RH %", "vs median"]].round(2),
                 width="stretch", hide_index=True)
-            if floor == 5:
-                st.success(
-                    "**An independent confirmation that z1 is not measuring room air.** "
-                    "Temperature legitimately differs between zones; moisture content "
-                    "largely does not, because they share an air path. z1's absolute "
-                    "humidity sits ~1.4 g/m³ below the floor median and its dew point "
-                    "~2.2 °C below — the signature of air that has just crossed a "
-                    "cooling coil and been dehumidified. This reaches the same verdict "
-                    "as the temperature argument without using temperature at all."
-                )
-
+            with st.expander("Why this check works"):
+                st.markdown(
+                    "Temperature legitimately differs between zones; moisture content largely does "
+                    "not, because they share an air path. A zone whose absolute humidity sits well "
+                    "below the floor median is reading air that has just crossed a cooling coil."
+                    + (" On this floor z1 sits ~1.4 g/m³ below the median and its dew point ~2.2 °C "
+                       "below — the same verdict as the temperature argument (supply-air sensor), "
+                       "reached without using temperature." if floor == 5 else ""))
     with right:
-        st.markdown("##### Temperature offset from peer median")
+        ui.md('<p class="cb-overline">Temperature offset from peer median</p>')
         pv = HL.peer_deviation(hourly)
         if len(pv):
             tol = float(pv.tolerance.iloc[0])
-            # One small panel per zone: more than three zone colours on one plot
-            # cannot be told apart by every reader (DESIGN.md).
             base = alt.Chart()
             st.altair_chart(ui.chart(
                 alt.layer(
-                    base.mark_area(opacity=0.18, color=ui.C["data/overcool-low"]).encode(
-                        x="period:T", y="lo:Q", y2="hi:Q"),
-                    base.mark_line(point=True, strokeWidth=2).encode(
+                    base.mark_area(opacity=0.35, color=ui.NO_DATA).encode(x="period:T", y="lo:Q", y2="hi:Q"),
+                    base.mark_line(point=True, strokeWidth=2, color=ui.PRIMARY).encode(
                         x=alt.X("period:T", title=None, axis=alt.Axis(format="%b %y", tickCount=4)),
                         y=alt.Y("deviation:Q", title="°C vs peer median"),
-                        color=alt.Color("zone:N", scale=ui.ZONE_COLOR, legend=None),
-                        tooltip=["zone", alt.Tooltip("period:T"),
-                                 alt.Tooltip("deviation:Q", format=".2f"),
+                        tooltip=["zone", alt.Tooltip("period:T"), alt.Tooltip("deviation:Q", format=".2f"),
                                  alt.Tooltip("n:Q", title="hours")]),
                     data=pv[pv.reliable].assign(lo=-tol, hi=tol),
                 ).properties(width=200, height=110)
-                 .facet(facet=alt.Facet("zone:N", title=None), columns=2), height=None),
+                .facet(facet=alt.Facet("zone:N", title=None), columns=2), height=None),
                 width="content")
-            st.caption(
-                f"Green band is the combined sensor tolerance ±{tol:.2f} °C, from "
-                "√(ε₁²+ε₂²) with the dataset's stated ±0.4 °C accuracy — the "
-                "ASHRAE G36 way of combining two instruments' error bands. "
-                "Months with fewer than 40 valid hours are omitted.")
-            st.warning(
-                ("**This is a stable offset, not calibration drift — and we will "
-                 "not call it drift.** z5 runs persistently ~1 °C above the peer "
-                 "median and z4 below it, but the offsets do not grow. With 18 "
-                 "months, no reference sensor, a 2–3 °C step change across the "
-                 "2019 maintenance window and two long z2 outages, true drift "
-                 "cannot be separated from a spatial difference." if floor == 5 else
-                 "**Read a persistent offset as a spatial difference, not drift.** "
-                 "With 18 months, no reference sensor and the 2019 sensor reinstall "
-                 "inside the record, true drift cannot be separated from one zone "
-                 "simply running warmer or colder than its peers.")
-                + " Reporting it as drift would be a claim the data cannot support."
-            )
-
+            with st.expander("How to read it"):
+                st.markdown(
+                    f"Grey band: combined sensor tolerance ±{tol:.2f} °C, √(ε₁²+ε₂²) with the stated "
+                    "±0.4 °C accuracy. Months with fewer than 40 valid hours are omitted. A persistent "
+                    "offset is a spatial difference, not calibration drift: with 18 months, no reference "
+                    "sensor and the 2019 sensor reinstall inside the record, drift cannot be separated "
+                    "from one zone simply running warmer or colder than its peers."
+                    + (" Here z5 runs ~1 °C above the peer median and z4 below it, and the offsets do "
+                       "not grow." if floor == 5 else ""))
 
 # --------------------------------------------------------------------------- #
 with tab_trace:
-    st.markdown("**Raw minute trace** — confirm a flagged point by eye.")
+    st.caption("Raw minute trace — confirm a flagged point by eye.")
     pts = [p for p in R.points(floor) if p.column]
     labels = {p.column: f"{p.zone} {p.channel} ({p.column})" for p in pts}
-
+    first_bad = next((p for p in bad.point if p in labels), None)
     cc = st.columns([2, 1])
     col = cc[0].selectbox("Point", list(labels), format_func=labels.get,
-                          index=list(labels).index("z3_Plug(kW)")
-                          if "z3_Plug(kW)" in labels else 0)
-    day = cc[1].date_input("Day", value=as_of.date(),
-                           min_value=D.RECORD_START.date(),
+                          index=list(labels).index(first_bad) if first_bad else 0)
+    day = cc[1].date_input("Day", value=as_of.date(), min_value=D.RECORD_START.date(),
                            max_value=D.RECORD_END.date(), key="trace_day")
-
     m = ui.day_minutes(floor, str(day), (col,))
     if not len(m) or m[col].notna().sum() == 0:
-        st.error(f"{labels[col]} reported nothing on {day}.")
+        st.warning(f"{labels[col]} reported nothing on {day}.", icon=":material/warning:")
     else:
         t = m.reset_index().rename(columns={m.index.name or "index": "ts"})
-        st.altair_chart(
-            alt.Chart(t).mark_line(strokeWidth=1.3, color=ui.ACTUAL).encode(
+        st.altair_chart(ui.chart(
+            alt.Chart(t).mark_line(strokeWidth=1.3, color=ui.PRIMARY).encode(
                 x=alt.X("ts:T", title=None),
                 y=alt.Y(f"{col}:Q", title=col, scale=alt.Scale(zero=False)),
-                tooltip=[alt.Tooltip("ts:T"), alt.Tooltip(f"{col}:Q", format=".3f")],
-            ).properties(height=260), width="stretch")
-
+                tooltip=[alt.Tooltip("ts:T"), alt.Tooltip(f"{col}:Q", format=".3f")]),
+            height=260), width="stretch")
         row = S[(S.column == col) & (S.day == pd.Timestamp(day))]
         if len(row):
             r = row.iloc[0]

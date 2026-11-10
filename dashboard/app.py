@@ -7,13 +7,10 @@ Build the shared cleaned dataset first (from the repo root):
 
     python -m sbanalytics.pipeline
 
-Audience is the university FM team first, then finance and leadership. The
-navigation is grouped by who asks the question: the overview for whoever opens
-it first, operations for the technicians and supervisors, energy management for
-the energy manager and finance, and the reference page for anyone who needs to
-check a number. Within each group the order is the order the questions get
-asked: can I trust the data, what is broken, how are we performing, and only
-then what could we change.
+The FM team's first questions are energy, cost and which sensors are down, so
+the Overview answers those for the whole building on one 1440×900 screen. The
+navigation is flat; one context bar (floor, as-of date, period, assumptions)
+sits above every page and is read through ui.ctx().
 """
 
 from __future__ import annotations
@@ -34,18 +31,13 @@ from sbanalytics import registry as R      # noqa: E402
 import ui                                  # noqa: E402
 
 st.set_page_config(page_title="CU-BEMS — FM operations", page_icon=":material/apartment:",
-                   layout="wide", initial_sidebar_state="expanded")
+                   layout="wide", initial_sidebar_state="collapsed")
 ui.inject_css()
 _DESIGN = os.path.join(_HERE, "design")
 st.logo(os.path.join(_DESIGN, "logo.svg"), size="large",
         icon_image=os.path.join(_DESIGN, "logo_mark.svg"))
 
-# --------------------------------------------------------------------------- #
-# context sidebar — set once, read by every page through ui.ctx()
-# --------------------------------------------------------------------------- #
-
 if not D.cache_ready(5):
-    st.sidebar.error("Cleaned data not built.")
     st.title("Cleaned data not built")
     st.markdown(
         "The dashboard reads the shared cleaned dataset in data/cleaned/ rather "
@@ -54,98 +46,84 @@ if not D.cache_ready(5):
     )
     st.stop()
 
-sb = st.sidebar
-sb.markdown('<p class="cb-overline">Context</p>', unsafe_allow_html=True)
-
-floor_labels = {
-    f: f"Floor {f}" + ("" if meta["wired"] else "  · not wired")
-    for f, meta in sorted(R.FLOORS.items())
-}
-# Keyed so a Portfolio floor card can open Floor status on its own floor.
-st.session_state.setdefault("floor_select", 5)
-floor = sb.selectbox(
-    "Floor", list(floor_labels), format_func=floor_labels.get, key="floor_select",
-    help="The operational pages show wired floors only. The Portfolio overview "
-         "reads every floor; the analysis/ notebooks cover all seven.")
-st.session_state["floor"] = floor
-
-as_of = sb.date_input(
-    "Data as of", value=D.DEFAULT_AS_OF.date(),
-    min_value=D.RECORD_START.date(), max_value=D.RECORD_END.date(), format="DD/MM/YYYY",
-    help="The record runs 1 Jul 2018 – 31 Dec 2019, so 'today' is a date you "
-         "choose. Every page shows that day's status plus trailing windows.")
-st.session_state["as_of"] = pd.Timestamp(as_of)
-
-st.session_state["window_days"] = sb.segmented_control(
-    "Trailing window (days)", [1, 7, 14, 30, 90], default=7, required=True,
-    key="window_select", width="stretch")
-
-with sb.expander("Assumptions", icon=":material/tune:", expanded=False):
-    st.session_state["tariff"] = st.number_input(
-        "Tariff (฿/kWh)", 0.0, 20.0, float(R.conv("tariff_thb")), 0.10)
-    st.session_state["area"] = st.number_input(
-        "Floor area (m²)", 100.0, 5000.0, float(R.conv("floor_area_m2")), 10.0,
-        help="11,700 m² total ÷ 7 floors. The paper gives no per-floor split.")
-    st.session_state["ef"] = st.number_input(
-        "Grid emission factor (kgCO₂e/kWh)", 0.0, 1.5, float(R.conv("co2_kg_per_kwh")), 0.01,
-        format="%.4f", help=R.CONVENTIONS["co2_kg_per_kwh"][2])
-    st.session_state["demand_charge"] = st.number_input(
-        "Demand charge (฿/kW/month)", 0.0, 1000.0, float(R.conv("demand_charge_thb_per_kw")), 10.0,
-        help=R.CONVENTIONS["demand_charge_thb_per_kw"][2])
-    st.caption("Full list with sources on the Methods page.")
-
-# Data status for the chosen floor and date, always visible.
-sb.divider()
-rows = []
-if R.FLOORS[floor]["wired"]:
-    _H = ui.health(floor)
-    if (_H.day == pd.Timestamp(as_of).normalize()).any():
-        phi = ui.HL.point_health_index(_H, as_of, floor)
-        up = phi["points"] - phi["offline"]
-        rows.append(ui.dot("good" if not phi["offline"] else "warning",
-                           f"{up} / {phi['points']} points reporting"))
-        rows.append(ui.dot("good" if phi["completeness"] >= R.conv("completeness_target") else "warning",
-                           f"Points {phi['completeness']:.0f}% complete today"))
-    else:
-        rows.append(ui.dot("critical", "No data for this date"))
-    for n in D.data_status(as_of, floor):
-        rows.append(ui.dot("critical" if n["level"] == "error" else "warning", n["title"]))
-else:
-    rows.append(ui.dot("offline", "Floor not wired — Portfolio only"))
-sb.markdown('<p class="cb-overline" style="margin-bottom:8px">Data status</p>'
-            + "".join(f"<div style='margin-bottom:6px'>{r}</div>" for r in rows),
-            unsafe_allow_html=True)
-
-sb.divider()
-sb.caption("CU-BEMS · 7-storey office, Bangkok  \n1-minute data, Jul 2018 – Dec 2019")
+# A table row (Overview floors) can ask to open another page; its callback
+# cannot switch pages itself, so it leaves a note here.
+_goto = st.session_state.pop("_goto", None)
+if _goto:
+    st.switch_page(_goto)
 
 # --------------------------------------------------------------------------- #
-# navigation
+# navigation — flat, in the order the FM asks: energy & cost, alarms, sensors
 # --------------------------------------------------------------------------- #
-
-# Grouped by persona -> question. Overview: "where do I send the team?" (FM
-# lead, leadership). Operations: "what is broken and can I trust it?"
-# (supervisors, technicians). Energy management: "are we on target and what
-# would a change save?" (energy manager, finance). Reference: "where does this
-# number come from?"
 P = "views"
-nav = st.navigation(position="top", pages={
-    "Overview": [
-        st.Page(f"{P}/0_portfolio.py", title="Portfolio overview", icon=":material/apartment:",
-                default=True),
-        st.Page(f"{P}/1_floor_status.py", title="Floor status", icon=":material/dashboard:"),
-    ],
-    "Operations": [
-        st.Page(f"{P}/5_faults.py", title="Faults & work orders", icon=":material/build:"),
-        st.Page(f"{P}/3_zones.py", title="Zones & comfort", icon=":material/grid_view:"),
-        st.Page(f"{P}/2_sensor_health.py", title="Sensor & data health", icon=":material/sensors:"),
-    ],
-    "Energy management": [
-        st.Page(f"{P}/4_energy.py", title="Energy performance", icon=":material/bolt:"),
-        st.Page(f"{P}/6_opportunities.py", title="Opportunities & simulator", icon=":material/savings:"),
-    ],
-    "Reference": [
-        st.Page(f"{P}/8_methods.py", title="Methods & assumptions", icon=":material/science:"),
-    ],
-})
+OVERVIEW = st.Page(f"{P}/0_portfolio.py", title="Overview", icon=":material/apartment:",
+                   default=True)
+nav = st.navigation(position="top", pages=[
+    OVERVIEW,
+    st.Page(f"{P}/1_floor_status.py", title="Floor", icon=":material/dashboard:"),
+    st.Page(f"{P}/5_faults.py", title="Alarms", icon=":material/notifications:"),
+    st.Page(f"{P}/2_sensor_health.py", title="Sensors", icon=":material/sensors:"),
+    st.Page(f"{P}/3_zones.py", title="Comfort", icon=":material/thermostat:"),
+    st.Page(f"{P}/4_energy.py", title="Energy", icon=":material/bolt:"),
+    st.Page(f"{P}/6_opportunities.py", title="Savings", icon=":material/savings:"),
+    st.Page(f"{P}/8_methods.py", title="Methods", icon=":material/science:"),
+])
+on_overview = nav.url_path == OVERVIEW.url_path
+
+# --------------------------------------------------------------------------- #
+# context bar — set once, read by every page through ui.ctx()
+# --------------------------------------------------------------------------- #
+WIRED = [f"F{f}" for f in R.wired_floors()]
+FLOOR_OPTS = ["Bldg"] + WIRED
+st.session_state.setdefault("floor", 5)
+st.session_state.setdefault("floor_select", "Bldg" if on_overview else f"F{st.session_state['floor']}")
+# Older sessions (and the Overview's row click) may hold a bare int.
+if isinstance(st.session_state["floor_select"], int):
+    st.session_state["floor_select"] = f"F{st.session_state['floor_select']}"
+if st.session_state["floor_select"] not in FLOOR_OPTS:
+    st.session_state["floor_select"] = f"F{st.session_state['floor']}"
+# Floor pages need a wired floor: "Bldg" there falls back to the last one used.
+if not on_overview and st.session_state["floor_select"] == "Bldg":
+    st.session_state["floor_select"] = f"F{st.session_state['floor']}"
+st.session_state.setdefault("period", ui.DEFAULT_PERIOD)
+st.session_state.setdefault("as_of", D.DEFAULT_AS_OF.date())
+if isinstance(st.session_state["as_of"], pd.Timestamp):
+    st.session_state["as_of"] = st.session_state["as_of"].date()
+for k, name in [("tariff", "tariff_thb"), ("area", "floor_area_m2"), ("ef", "co2_kg_per_kwh"),
+                ("demand_charge", "demand_charge_thb_per_kw")]:
+    st.session_state.setdefault(k, float(R.conv(name)))
+
+with st.container(key="ctxbar"):
+    cb = st.columns([3.3, 1.7, 4.2, 1.6], vertical_alignment="bottom", gap="medium")
+    sel = cb[0].segmented_control(
+        "Floor", FLOOR_OPTS, key="floor_select", required=True,
+        help="Bldg = the whole building (Overview only). F1 is not an office floor and F2 is "
+             "not wired; both are in the building totals.")
+    if sel == "Bldg" and not on_overview:
+        st.switch_page(OVERVIEW)
+    if sel != "Bldg":
+        st.session_state["floor"] = int(sel[1:])
+    cb[1].date_input(
+        "Data as of", key="as_of",
+        min_value=D.RECORD_START.date(), max_value=D.RECORD_END.date(), format="DD/MM/YYYY",
+        help="The record runs 1 Jul 2018 – 31 Dec 2019, so 'today' is a date you choose.")
+    cb[2].segmented_control(
+        "Period", ui.PERIODS, key="period", required=True,
+        help="Every page reads this one period. MTD = month to date; Record = from 1 Jul 2018 "
+             "to the as-of date.")
+    with cb[3].popover("Assumptions", icon=":material/tune:", width="stretch"):
+        st.number_input("Tariff (฿/kWh)", 0.0, 20.0, step=0.10, key="tariff",
+                        help="0 hides every ฿ figure behind 'set rate in Assumptions'.")
+        st.number_input("Floor area (m²)", 100.0, 5000.0, step=10.0, key="area",
+                        help="11,700 m² total ÷ 7 floors. The paper gives no per-floor split.")
+        st.number_input("Grid emission factor (kgCO₂e/kWh)", 0.0, 1.5, step=0.01, key="ef",
+                        format="%.4f", help=R.CONVENTIONS["co2_kg_per_kwh"][2])
+        st.number_input("Demand charge (฿/kW/month)", 0.0, 1000.0, step=10.0, key="demand_charge",
+                        help=R.CONVENTIONS["demand_charge_thb_per_kw"][2])
+        st.caption("Full list with sources on the Methods page.")
+
+st.session_state["building_view"] = sel == "Bldg"
+_s, _e, _ = ui.period_bounds(st.session_state["as_of"], st.session_state["period"])
+st.session_state["window_days"] = int((_e - _s).days) + 1
+
 nav.run()

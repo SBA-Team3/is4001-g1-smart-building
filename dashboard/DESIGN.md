@@ -1,112 +1,149 @@
 # Dashboard design system
 
-The dashboard follows one Figma file. Code and Figma share the same token names,
-so a colour or size is decided once and used everywhere.
-
-**Figma:** <https://www.figma.com/design/gDQN41sGJmdXJTwwI6vzTd> (pages: *Read me*,
-*Foundations*, *Components*, *Screens*)
+The dashboard is organised around what the FM team must do, not what the
+analysts proved. Its first questions are **energy, cost and which sensors are
+down**, and its main screen is a 1440×900 laptop. Colours, type and components
+are decided once here and used everywhere.
 
 | What | Where |
 |---|---|
-| Tokens (colours, spacing, radii, type) | `dashboard/design/tokens.json`, exported from the Figma variables |
-| Streamlit theme (widgets, alerts, metric deltas, fonts) | `.streamlit/config.toml` (repo root) |
-| Components as code (chips, dots, cards, trust band, chart chrome) | `dashboard/ui.py` |
-| Logo | `dashboard/design/logo.svg`, `logo_mark.svg` (icon from the Figma top bar) |
+| Tokens (colours, spacing, radii, type) | `dashboard/design/tokens.json` |
+| Streamlit theme (widgets, alerts, metric deltas, fonts, toolbar) | `.streamlit/config.toml` (repo root) |
+| Components as code (alarm band, chips, dots, tiles, chart chrome, point status, period) | `dashboard/ui.py` |
+| Logo | `dashboard/design/logo.svg`, `logo_mark.svg` |
 
 Run the app from the repo root (`streamlit run dashboard/app.py`); Streamlit only
 reads `.streamlit/config.toml` from the folder you start it in.
 
 ## Rules
 
-1. **Dark only.** There is no light theme yet. Don't add light colours.
+1. **Dark only.** Light variants are specified below but not built. Don't add them
+   to `tokens.json` or `config.toml`.
 2. **No hex codes in `views/`.** Use the names in `ui.py`: `ui.C["text/primary"]`,
-   `ui.INK`, `ui.BAD`, `ui.FLOOR_COLOR`, `ui.END_USE_COLOR`, … `tests/test_design_tokens.py`
+   `ui.PRIMARY`, `ui.CONTEXT`, `ui.END_USE_COLOR`, `ui.chip()`, … `tests/test_design_tokens.py`
    fails if a page hard-codes a colour.
-3. **Pink is for the interface, never for data.** `accent/default` (#DA5F8E) marks
-   what is selected or clickable: the active nav section, primary buttons, the
-   selected trailing window, links. It never colours a chart mark or a floor.
-4. **Floor N always has the same colour** (`data/floor-1` … `data/floor-7`), in the
-   dashboard and the notebooks. Floor 5's pink is a *data* colour that happens to sit
-   near the accent, so a selected floor is shown with a white outline, never a pink one.
-5. **Status colours mean status.** `status/critical`, `warning`, `good`, `neutral`
-   are only for severity and health, and always come with an icon and a word
-   (`ui.chip("high")`, `ui.dot("warning", "…")`). Never use them for "series 4".
-6. **Text uses text tokens.** `text/primary` for values, `text/secondary` for
-   labels and body copy, `text/muted` for units and footnotes. A coloured mark next
-   to the text carries identity, not the text itself.
-7. **Missing data is shown as missing.** "—", "no data" or the `NO_DATA` cell fill,
-   never 0.
+3. **Cyan is for the interface, never for data.** `accent/default` (#2EB4C8) marks
+   selection, focus and the primary button — nothing else. It is never decoration
+   and never a chart mark. Page-header overlines are `text/muted`, not accent.
+4. **Floors and zones are identified by label, not colour.** The seven floor hues and
+   five zone hues are retired, so the dashboard no longer colour-matches the
+   notebooks. In a chart, the selected floor or zone is `data/primary` and every
+   other one `data/context`. A chart that used to stack floors shows the building
+   total with the selected floor highlighted, or small multiples.
+5. **Status colours mean status, and always come with an icon and a word**
+   (`ui.chip("high")`, `ui.dot("offline", "…")`, glyph text like `● 3 crit`,
+   `○ OFFLINE`). Never use them for "series 4". `status/normal` appears on chips
+   and legends only, never as a large fill. `status/offline` is always a hollow
+   ring or a dashed outline.
+6. **Normal is quiet.** The alarm band is one grey strip; only abnormal counts get
+   colour, and a zero count is muted.
+7. **Text uses text tokens.** `text/primary` for values, `text/secondary` for
+   labels and body copy, `text/muted` for units, footnotes and overlines.
+8. **Missing data is shown as missing.** "—", "no data" or the `bg/control` cell
+   fill, never 0. A ฿ figure with a zero tariff reads "set rate in Assumptions",
+   never ฿0.
+9. **One period.** Every page reads the context bar's period (`ui.ctx()` →
+   `start`, `end`, `period_label`). A page never adds its own period control; a
+   window a model fixes for itself (the baseline's training window) is shown as
+   text.
+
+## Severity and state
+
+| Fault | Chip | Glyph in tables |
+|---|---|---|
+| High | critical, filled red | `● High` |
+| Medium | warning, filled amber | `▲ Medium` |
+| Low | info: grey + icon, no hue of its own | `ⓘ Low` |
+| New (unacknowledged) | filled | — |
+| Acknowledged / In progress | same hue, **hollow** (outline chip, ring dot) | state column |
+
+**Point down** = OFFLINE, FROZEN (`flag_flatline`) or BAD SAMPLES (out of range or
+spikes) on the as-of day — `ui.point_status()`, the one definition every page uses.
+PARTIAL (below the completeness target) is degraded, not down. Past a floor's file
+end its points are NO FILE and are not counted.
 
 ## Tokens
 
-Colours (dark mode). Full list in `design/tokens.json`.
+Full list in `design/tokens.json`. `status/good*` and `status/neutral*` remain as
+aliases of `status/normal*` and `status/offline*`.
 
 | Token | Hex | Use |
 |---|---|---|
-| `bg/page` | #121417 | page background |
-| `bg/surface` | #1B1E22 | cards, KPI tiles, sidebar |
-| `bg/raised` | #24282D | wells inside cards, table headers |
-| `bg/control` | #2C3137 | inputs; "no data" cells in charts |
-| `border/default` / `border/strong` | #33383F / #4A5058 | card borders / axis lines, secondary buttons |
-| `text/primary` / `secondary` / `muted` | #F2F4F5 / #A9B0B8 / #8A929B | see rule 6 |
-| `accent/default` / `hover` / `bg/accent-subtle` | #DA5F8E / #E57AA3 / #3A2230 | see rule 3 |
-| `status/critical` (+ `-text`, `-bg`) | #D03B3B (#F07A7A, #3A1F21) | High priority, failing |
-| `status/warning` (+ `-bg`) | #FAB219 (#3A2F14) | Medium priority, use with care |
-| `status/good` (+ `-text`, `-bg`) | #0CA30C (#3FC56B, #173222) | OK, trustworthy |
-| `status/neutral` (+ `-bg`) | #8A929B (#24282D) | Low / info, offline |
-| `data/floor-1 … 7` | #3987E5 #D95926 #199E70 #C98500 #D55181 #008300 #9085E9 | one colour per floor |
-| `data/enduse-ac / light / plug` | = floor-1 / 2 / 3 | AC, lighting, plug load |
-| `data/overcool-low / mid / high` | #2E8B57 / #D9C24A / #B0453A | overcooled share, 0 → 40% target → 100% |
-| `data/cold` / `data/warm` | = floor-1 / floor-2 | below / above the comfort band |
-| `data/zone-1 … 5` | #D55181 #9085E9 #8A929B #199E70 #C98500 | zones (a chart with more than three zones uses small multiples) |
+| `bg/page` | #0F1113 | page background |
+| `bg/surface` | #171A1D | cards, tiles, the alarm band |
+| `bg/raised` | #202428 | wells, table headers (no inputs on it) |
+| `bg/control` | #282D32 | inputs; "no data" cells |
+| `bg/accent-subtle` | #12343A | selected-row wash |
+| `border/default` | #30363C | decorative dividers only |
+| `border/strong` | #626C77 | card and input edges |
+| `text/primary` / `secondary` / `muted` | #ECEFF2 / #AEB6BF / #8E97A1 | rule 7 |
+| `text/on-accent` | #0B0D0F | text on cyan and on filled chips |
+| `accent/default` / `hover` | #2EB4C8 / #5CCBDB | rule 3; hover is also `linkColor` |
 
-The categorical sets were checked for colour-blind separation on the dark surface
-with the dataviz palette validator.
+| Status | Mark | `-text` | `-bg` |
+|---|---|---|---|
+| `status/critical` | #F0524F | #FF8E8A | #3B1B1C |
+| `status/warning` | #F2A516 | #FFC453 | #382B11 |
+| `status/normal` | #3FAE6E | #72D198 | #15301F |
+| `status/offline` | #8E97A1 | #B9C1CA | #23272C |
+
+| Data | Hex | Use |
+|---|---|---|
+| `data/primary` | #4F8DF6 | AC, cold, actual, the selected floor/zone |
+| `data/series-2` | #D8C08F | lighting, warm |
+| `data/series-3` | #A6CBFB | plug |
+| `data/context` | #5A636D | non-selected floors or zones; other configuration |
+| `data/seq-1 … 5` | #24406E #3567B8 #4F8DF6 #86B4F8 #BBD7FD | overcooled share, 20-pp steps |
+
+- Expected / baseline lines: `text/secondary`, dashed (`ui.expected_line`).
+- Change-point annotations: `text/muted`, dotted (`ui.cps_rules`).
+- The point × day health map *is* status: `status/normal-bg` (OK, quiet),
+  warning (PARTIAL, BAD SAMPLES), critical (FROZEN), `bg/control` with "—" (OFFLINE).
+- Overcooled share vs its 40% target is a blue magnitude plus a target tick; pass
+  or fail goes in a chip beside it, never in the bar colour.
+- Heatmap cell labels clear 4.5:1 on every ramp step: `text/primary` on seq-1/2,
+  `text/on-accent` on seq-3/4/5 (`ui.SEQ_INK`).
+- `chartCategoricalColors` = `[data/primary, data/series-2, data/series-3, data/context]`.
+
+### Light variants (specified, not built)
+
+| Token | Light |
+|---|---|
+| `bg/page` / `surface` / `raised` / `control` / `accent-subtle` | #F3F4F6 / #FFFFFF / #EDEFF2 / #E4E7EB / #DCF0F3 |
+| `border/default` / `strong` | #D5DAE0 / #848D97 |
+| `text/primary` / `secondary` / `muted` | #15181B / #474F58 / #5E6670 |
+| `accent/default` / `hover` | #0B7F90 / #096A78 |
+| `status/critical` (mark / text / bg) | #D12C2F / #A51C20 / #FCEBEB |
+| `status/warning` | #C27C00 / #7F5000 / #FFF2D9 |
+| `status/normal` | #1F8A4D / #16673A / #E4F3E9 |
+| `status/offline` | #7A838D / #474F58 / #EDEFF2 |
+| `data/primary` / `series-2` / `series-3` / `context` | #2F6FDB / #B0956A / #7EA6E6 / #B8C0C8 |
 
 Spacing `space/1…10` = 4, 8, 12, 16, 20, 24, 32, 40 px. Radii `sm` 6, `md` 8 (controls),
 `lg` 12 (cards), `full` (chips).
 
-Type is **Inter**: Display/Metric 28/36 semibold (KPI values), H1 24/32, H2 18/26
-(section titles, `st.subheader`), H3 15/22 (card titles), Body 14/20, Caption 12/16,
-Overline 11/16 uppercase.
+Type is **Inter**: Display/Metric 28/36 semibold (KPI values), H1 24/32, H2 18/26,
+H3 15/22, Body 14/20, Caption 12/16, Overline 11/16 uppercase.
 
 ## Components → code
 
-| Figma component | In code |
+| Component | In code |
 |---|---|
-| Top bar | `st.navigation(position="top")` + `st.logo` in `app.py` |
-| Context sidebar | `st.sidebar` in `app.py` (floor, as-of date, trailing window, assumptions, data status) |
-| Page header | `ui.page_header(group, title, sub)` |
-| Section header | `ui.section(title, sub)` |
-| KPI tile | `st.metric(..., border=True)`; `delta_color="inverse"` when lower is better |
-| Banner | `st.info` / `st.warning` / `st.error`, always with an `icon=` |
-| Severity chip | `ui.chip(priority, label)` |
-| Status dot | `ui.dot(status, label)` |
-| Trust band | `ui.trust_band(floor, as_of)` |
-| Floor card | `ui.card(key, edge=ui.FLOOR_HEX[f])` + `ui.floor_card_body(...)` + a tertiary `st.button` |
-| Zone card | `ui.card(...)` + `ui.zone_card_body(...)` |
-| Fault card | `ui.card(...)` + `st.columns([5, 4, 2])` in `views/5_faults.py` |
-| Button | `st.button` / `st.download_button`; `type="primary" / "secondary" / "tertiary"` |
-| Select field | `st.selectbox` / `st.date_input` |
-| Charts | Altair, wrapped in `ui.chart(c, height)` for the axis and grid tokens |
-| Table progress bars | `st.column_config.ProgressColumn(color=ui.ACTUAL, ...)` — the default is the pink accent, which rule 3 forbids for data |
+| Top nav (flat: Overview · Floor · Alarms · Sensors · Comfort · Energy · Savings · Methods) | `st.navigation(position="top")` in `app.py` |
+| Context bar (floor, as-of date, period, Assumptions popover) | `app.py`, keys `floor_select`, `as_of`, `period`; read via `ui.ctx()` |
+| Alarm band | `ui.alarm_band(counts, meta)`; `ui.floor_band(floor, as_of)` for one floor |
+| Page header | `ui.page_header(overline, title, sub_html)` |
+| KPI tile | `st.metric(..., border=True)`, or `ui.tile()` when it needs a list or sub-line |
+| Severity chip | `ui.chip(priority, label, hollow=)`, `ui.state_chip(row)` |
+| Status dot | `ui.dot(status, label, hollow=)` |
+| Status text in tables | glyph text + `ui.glyph_style(df, cols)` |
+| Row → detail | `st.dataframe(on_select=callback)` + `st.dialog` |
+| Banner | `st.info` / `st.warning` / `st.error`, always with an `icon=`; `st.info` is a quiet grey note |
+| Charts | Altair, wrapped in `ui.chart(c, height)` for axis and grid tokens |
 
 ## Changing a token
 
-1. Change the variable in Figma (*Foundations* page).
-2. Update `dashboard/design/tokens.json` to match.
-3. If it is a theme colour (accent, backgrounds, text, borders, status), update
-   `.streamlit/config.toml` too. TOML can't read the JSON, so
-   `tests/test_design_tokens.py` checks the two agree.
-4. Restart Streamlit; it caches `ui.py` and the theme.
-
-## Where the build differs from Figma
-
-- Streamlit draws its own widgets (selects, segmented control, toggles), so they
-  are close to the Figma components but not identical.
-- Floor status keeps a "How is the floor running?" KPI row (energy today, peak
-  demand, AC share, zones outside band, open faults) that the Figma frame leaves out.
-- Every card grid has a table view in an expander ("All floors as a table",
-  "Zones as a table").
-- Zones, Sensor health, Energy, Opportunities and Methods use the theme, page
-  header and chart tokens, but not yet the card layouts from their Figma frames.
+1. Update `dashboard/design/tokens.json`.
+2. If it is a theme colour, update `.streamlit/config.toml` too — TOML can't read the
+   JSON, so `tests/test_design_tokens.py` checks the two agree.
+3. Restart Streamlit; it caches `ui.py` and the theme.

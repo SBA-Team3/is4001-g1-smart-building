@@ -10,6 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from sbanalytics import analysis as A
+from sbanalytics import comfort as C
 from sbanalytics import data as D
 from sbanalytics import mv as M
 from sbanalytics import registry as R
@@ -50,147 +51,179 @@ def _lockout(floor: int) -> dict:
     return SC.lockout_measure(D.load_hourly(floor), floor)
 
 
-ui.page_header(f"Energy management · Floor {floor}", "Opportunities & simulator",
-               "Build a package of operational changes, see what it saves as a range, what it does "
-           "to comfort, and how you would prove it. The engine tabs further down show how each "
-           "lever is sized.")
+ui.page_header("Savings", f"Floor {floor} savings",
+               "Build a package of operational changes and see what it saves as a range, what it does "
+               "to comfort, and how you would prove it. Tariff and emission factor come from Assumptions.")
+ui.floor_band(floor, c["as_of"])
 
 phys = _physics(floor, True)
 reg = _reg(floor)
 est = A.estimator_range(phys, reg)
-
-# --------------------------------------------------------------------------- #
-# scenario builder
-# --------------------------------------------------------------------------- #
-st.subheader("Intervention simulator")
 cz = R.comfort_zones(floor)
 cap = float(R.conv("max_lift_c"))
 max_trim = SC.max_trim(h, floor)
+target = R.conv("overcooled_target_pct")
+LO = R.conv("comfort_lo")
+t_loc, ef_loc = float(tariff), float(c["ef"])
 
-with st.container(border=True):
-    i1, i2, i3 = st.columns([3, 2, 2])
-    with i1:
-        per_zone = st.toggle("Set the lift per zone", value=False)
-        if per_zone:
-            d_temp = {z: st.slider(f"{ui.zone_label(floor, z)} lift (°C)", 0.0, cap, 2.0, 0.25,
-                                   key=f"lift_{z}") for z in cz}
-        else:
-            lift = st.slider("Zone-temperature lift ΔT (°C), all comfort zones", 0.0, cap, 2.0, 0.25,
-                             help="There is no setpoint channel, so a setpoint raise is modelled as "
-                                  "a shift of each zone's observed temperature distribution.")
-            d_temp = {z: lift for z in cz}
-    with i2:
+
+def _baht(v: float) -> str:
+    return f"฿{v:,.0f}" if t_loc else "set rate in Assumptions"
+
+
+# --------------------------------------------------------------------------- #
+# simulator: inputs (left) and results (right)
+# --------------------------------------------------------------------------- #
+left, right = st.columns([4, 8], gap="large")
+with left:
+    with st.container(border=True, key="card_sim_inputs"):
+        ui.md('<p class="cb-overline">Package</p>')
+        lift = st.slider("Zone-temperature lift ΔT (°C), all comfort zones", 0.0, cap, 2.0, 0.25,
+                         help="There is no setpoint channel, so a setpoint raise is modelled as a "
+                              "shift of each zone's observed temperature distribution.")
         trim_n = st.slider("Schedule trim (hours off the end of the day)", 0, max_trim, 0, 1,
                            help="Switches cooling off for the last n cooled hours. Ending the day "
                                 "early needs no recovery, so the metered energy is the saving.")
         lockout = st.toggle("Weekend / holiday lockout", value=False,
-                            help="Tie AC start/stop to the holiday calendar; weekend runs need "
-                                 "sign-off.")
-    with i3:
-        t_loc = st.number_input("Tariff (฿/kWh)", 0.0, 20.0, float(tariff), 0.1)
-        ef_loc = st.number_input("Emission factor (kgCO₂e/kWh)", 0.0, 1.5, float(c["ef"]), 0.01,
-                                 format="%.4f")
-    j = st.columns(3)
-    cost = {"lift": j[0].number_input("Cost: lift (฿)", 0.0, 1e7, 0.0, 1000.0,
-                                      help="0 for an operational change made at the BMS."),
-            "trim": j[1].number_input("Cost: schedule trim (฿)", 0.0, 1e7, 0.0, 1000.0),
-            "lockout": j[2].number_input("Cost: lockout (฿)", 0.0, 1e7, 0.0, 1000.0)}
+                            help="Tie AC start/stop to the holiday calendar; weekend runs need sign-off.")
+        with st.expander("Per-zone lift"):
+            per_zone = st.toggle("Set the lift per zone", value=False)
+            if per_zone:
+                d_temp = {z: st.slider(f"{ui.zone_label(floor, z)} lift (°C)", 0.0, cap, lift, 0.25,
+                                       key=f"lift_{z}") for z in cz}
+            else:
+                d_temp = {z: lift for z in cz}
+                st.caption("Off: every comfort zone takes the lift above.")
+        with st.expander("Implementation costs"):
+            cost = {"lift": st.number_input("Lift (฿)", 0.0, 1e7, 0.0, 1000.0,
+                                            help="0 for an operational change made at the BMS."),
+                    "trim": st.number_input("Schedule trim (฿)", 0.0, 1e7, 0.0, 1000.0),
+                    "lockout": st.number_input("Lockout (฿)", 0.0, 1e7, 0.0, 1000.0)}
+        st.caption(f"Tariff {t_loc:.2f} ฿/kWh · {ef_loc:.4f} kgCO₂e/kWh (Assumptions).")
 
 res = SC.simulate(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
                   cost=cost, tariff=t_loc, ef=ef_loc,
                   parts={"lockout": _lockout(floor)} if lockout else None)
 tbl, comb, cf = res["table"], res["combined"], res["comfort"]
-target = R.conv("overcooled_target_pct")
 
-k = st.columns(4)
-k[0].metric("Package saving, kWh/yr", f"{comb['low']:,.0f}–{comb['high']:,.0f}",
-            help=f"Mid {comb['mid']:,.0f} kWh/yr. Low and high come from the two estimators "
-                 "(and metered gross/net); never one number.", border=True)
-k[1].metric("Cost saved, per year", f"฿{comb['low'] * t_loc:,.0f}–{comb['high'] * t_loc:,.0f}",
-            delta=f"mid ฿{comb['mid'] * t_loc:,.0f}", delta_color="off", border=True)
-k[2].metric("Emissions avoided", f"{comb['mid'] * ef_loc / 1000:,.1f} tCO₂e/yr",
-            help="Mid case × emission factor.", border=True)
-k[3].metric(f"Cooled hours below {R.conv('comfort_lo'):g} °C",
-            f"{cf['below_now']:.0f}% → {cf['below_after']:.0f}%",
-            delta=f"{cf['below_after'] - target:+.0f} pp vs {target:.0f}% target",
-            delta_color="inverse",
-            help="Whole-record cooled occupied hours on comfort zones, AC-kWh-weighted (the "
-                 "portfolio definition), after shifting each zone's temperatures by its lift.", border=True)
+with right:
+    k = st.columns(4)
+    k[0].metric("Saving, kWh/yr", f"{comb['low'] / 1e3:,.1f}k–{comb['high'] / 1e3:,.1f}k",
+                help=f"Mid {comb['mid']:,.0f} kWh/yr. Low and high come from the two estimators "
+                     "(and metered gross/net); never one number.", border=True)
+    k[1].metric("Saving, ฿/yr", f"฿{comb['low'] * t_loc / 1e3:,.0f}k–{comb['high'] * t_loc / 1e3:,.0f}k" if t_loc
+                else "set rate in Assumptions",
+                delta=f"mid ฿{comb['mid'] * t_loc:,.0f}" if t_loc else None, delta_color="off",
+                delta_arrow="off", border=True)
+    k[2].metric("Emissions avoided", f"{comb['mid'] * ef_loc / 1000:,.1f} tCO₂e/yr",
+                help="Mid case × emission factor.", border=True)
+    k[3].metric(f"Cooled <{LO:g} °C", f"{cf['below_now']:.0f}% → {cf['below_after']:.0f}%",
+                delta=f"{'meets' if cf['below_after'] <= target else 'above'} {target:.0f}% target",
+                delta_color="off" if cf["below_after"] <= target else "inverse", delta_arrow="off",
+                help="Whole-record cooled occupied hours on comfort zones, AC-kWh-weighted, after "
+                     "shifting each zone's temperatures by its lift.", border=True)
+    warm = cf["above_after"]
+    (st.warning if warm > cf["above_now"] else st.info)(
+        f"**Comfort trade-off.** Cooled hours below {LO:g} °C go from {cf['below_now']:.0f}% to "
+        f"{cf['below_after']:.0f}% (target {target:.0f}%); hours above {R.conv('comfort_hi'):g} °C from "
+        f"{cf['above_now']:.0f}% to {warm:.0f}%. The projection shifts the observed distribution; it does "
+        "not narrow it — that is a control-loop retune, not a setpoint change.",
+        icon=":material/warning:" if warm > cf["above_now"] else ":material/info:")
 
+    ui.md('<p class="cb-overline" style="margin-top:8px">M&amp;V plan</p>')
+    fm = _floor_model(floor)
+    floor_cv = float(fm["metrics"].query("split == 'test'").cv_rmse.iloc[0])
+    floor_ac = M.annual_kwh(fm)
+    plan = SC.mv_plan(floor, res, _zone_cv(floor), floor_cv, lockout, trim_n, floor_ac)
+    if not len(plan):
+        st.caption("Select at least one measure to see its M&V plan.")
+    for _, p in plan.iterrows():
+        with st.container(border=True):
+            a, b, cc_ = st.columns([3, 2, 2], vertical_alignment="center")
+            a.markdown(f"**{p.measure}** · IPMVP Option {p['IPMVP option']}  \n"
+                       f"<small>Boundary: {p['measurement boundary']}</small>", unsafe_allow_html=True)
+            b.metric("Minimum pilot", f"{ui.fmt_weeks(p['minimum pilot (weeks)'])} weeks",
+                     help=f"Expected saving {p['expected saving %']:.1f}% at the baseline's "
+                          f"CV(RMSE) {p['CV(RMSE) %']:.1f}%, α={R.conv('pilot_alpha'):g}, "
+                          f"power {R.conv('pilot_power'):g}. Four weeks can detect "
+                          f"{p['detectable in 4 weeks %']:.1f}%.", border=True)
+            cc_.metric("Expected saving", f"{p['expected saving %']:.1f}%",
+                       help="Of the measurement boundary's annual energy.", border=True)
+            st.caption(f"Baseline period **{p['baseline period']}** · model: {p['baseline model']} · "
+                       f"CV(RMSE) {p['CV(RMSE) %']:.1f}%  \n**Verification:** {p.verification}  \n"
+                       f"**Exclusions:** {p.exclusions}")
+
+# --------------------------------------------------------------------------- #
+# below: measures, sensitivity, second lever, engine
+# --------------------------------------------------------------------------- #
+ui.section("Measures", f"One row per measure plus the combined package. The lift and trim act on the "
+                       f"comfort-sensored zones ({', '.join(cz)}); the lockout is floor-wide.")
 st.dataframe(
     tbl, width="stretch", hide_index=True,
     column_config={
         **{col: st.column_config.NumberColumn(format="%,.0f") for col in tbl.columns
            if col.startswith(("kWh", "฿", "cost"))},
         "tCO₂e/yr mid": st.column_config.NumberColumn(format="%.1f"),
-        "payback yr": st.column_config.NumberColumn(format="%.1f",
-                                                    help="Cost ÷ mid ฿/yr. 0 = no capital cost."),
+        "payback yr": st.column_config.NumberColumn(format="%.1f", help="Cost ÷ mid ฿/yr. 0 = no capital cost."),
         "comfort after": st.column_config.TextColumn(width="medium"),
     })
-warm = cf["above_after"]
-(st.warning if warm > cf["above_now"] else st.info)(
-    f"**Comfort trade-off.** The lift takes cooled hours below {R.conv('comfort_lo'):g} °C from "
-    f"{cf['below_now']:.0f}% to {cf['below_after']:.0f}% (target {target:.0f}%), and hours above "
-    f"{R.conv('comfort_hi'):g} °C from {cf['above_now']:.0f}% to {warm:.0f}%. The projection shifts "
-    "the observed distribution; it does not narrow it — a wide distribution needs control-loop "
-    "retuning, which is a commissioning job, not a setpoint change.")
-st.caption(f"**How the package is combined.** {R.METHODS['Combined savings'][0]} Scope: the lift "
-           f"and the trim act on the comfort-sensored zones ({', '.join(cz)}) the estimators were "
-           "calibrated on; the lockout is floor-wide.")
 
-# --- M&V plan --------------------------------------------------------------- #
-st.markdown("#### M&V plan")
-fm = _floor_model(floor)
-floor_cv = float(fm["metrics"].query("split == 'test'").cv_rmse.iloc[0])
-floor_ac = M.annual_kwh(fm)
-plan = SC.mv_plan(floor, res, _zone_cv(floor), floor_cv, lockout, trim_n, floor_ac)
-if not len(plan):
-    st.info("Select at least one measure to see its M&V plan.")
-for _, p in plan.iterrows():
-    with st.container(border=True):
-        a, b, cc_ = st.columns([3, 2, 2])
-        a.markdown(f"**{p.measure}** · IPMVP Option {p['IPMVP option']}  \n"
-                   f"<small>Boundary: {p['measurement boundary']}</small>", unsafe_allow_html=True)
-        b.metric("Minimum pilot", f"{ui.fmt_weeks(p['minimum pilot (weeks)'])} weeks",
-                 help=f"Expected saving {p['expected saving %']:.1f}% at the baseline's "
-                      f"CV(RMSE) {p['CV(RMSE) %']:.1f}%, α={R.conv('pilot_alpha'):g}, "
-                      f"power {R.conv('pilot_power'):g}. Four weeks can detect "
-                      f"{p['detectable in 4 weeks %']:.1f}%.", border=True)
-        cc_.metric("Expected saving", f"{p['expected saving %']:.1f}%",
-                   help="Of the measurement boundary's annual energy.", border=True)
-        st.caption(f"Baseline period **{p['baseline period']}** · model: {p['baseline model']} · "
-                   f"CV(RMSE) {p['CV(RMSE) %']:.1f}%  \n**Verification:** {p.verification}  \n"
-                   f"**Exclusions:** {p.exclusions}")
-
-# --- sensitivity ------------------------------------------------------------ #
-st.markdown("#### Which assumption moves the answer most")
+ui.section("Which assumption moves the answer most")
 tor = SC.tornado(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
                  tariff=t_loc, max_trim=max_trim)
-if comb["mid"] > 0:
-    tl = tor.melt(id_vars=["assumption", "base_thb", "swing"], value_vars=["low_thb", "high_thb"],
-                  var_name="end", value_name="thb")
+if comb["mid"] > 0 and t_loc:
     order = tor.assumption.tolist()
-    bars = alt.Chart(tor).mark_bar(color=ui.ACTUAL, opacity=0.7).encode(
+    bars = alt.Chart(tor).mark_bar(color=ui.PRIMARY, opacity=0.85).encode(
         y=alt.Y("assumption:N", sort=order, title=None),
         x=alt.X("low_thb:Q", title="combined mid saving (฿/yr)"), x2="high_thb:Q",
-        tooltip=["assumption", alt.Tooltip("low_thb:Q", format=",.0f"),
-                 alt.Tooltip("high_thb:Q", format=",.0f")])
+        tooltip=["assumption", alt.Tooltip("low_thb:Q", format=",.0f"), alt.Tooltip("high_thb:Q", format=",.0f")])
     base_rule = alt.Chart(pd.DataFrame({"x": [comb["mid"] * t_loc]})).mark_rule(
         color=ui.INK, strokeWidth=2).encode(x="x:Q")
     st.altair_chart(ui.chart(bars + base_rule, height=40 * len(tor) + 40), width="stretch")
-    st.caption(f"Each bar moves one assumption across its declared range (Methods page: "
-               f"tariff ±{R.conv('sens_tariff_pct'):.0f}%, lift ±{R.conv('sens_dT_c'):g} °C, trim "
-               f"±{R.conv('sens_trim_h'):g} h, %/°C between the physics and regression estimates) "
-               "and holds the rest. White line: the package's mid case. The widest bar is the "
-               "assumption worth pinning down before committing.")
+    st.caption(f"Each bar moves one assumption across its declared range (tariff ±{R.conv('sens_tariff_pct'):.0f}%, "
+               f"lift ±{R.conv('sens_dT_c'):g} °C, trim ±{R.conv('sens_trim_h'):g} h, %/°C between the physics "
+               "and regression estimates) and holds the rest. White line: the package's mid case.")
+elif not t_loc:
+    st.caption("Set a tariff in Assumptions to size the ฿ sensitivity.")
 else:
-    st.info("The package saves nothing yet — set a lift, a trim or the lockout.")
+    st.caption("The package saves nothing yet — set a lift, a trim or the lockout.")
 
-st.divider()
-st.subheader("Engine: how each lever is sized")
+ui.section("The second lever: control stability",
+           "Raising the setpoint moves the distribution; tightening the control deadband narrows it. "
+           "They are different work orders and only one of them is a setpoint change.")
+lo_b, hi_b = C.band()
+f1, f2 = st.columns(2)
+shift = f1.slider("Setpoint rise (°C)", 0.0, 4.0, 1.5, 0.25, key="frontier_shift")
+sd_scale = f2.slider("Deadband tightening", 0.4, 1.0, 1.0, 0.05, key="frontier_sd",
+                     help="1.00 leaves the spread unchanged; 0.60 is a control loop retuned to cut swing by 40%.")
+fr = C.frontier(h, lo=lo_b, hi=hi_b, sd_scale=sd_scale, floor=floor)
+fl = fr.melt(id_vars=["zone", "shift"], value_vars=["pct_cold", "pct_warm"], var_name="band", value_name="pct")
+fl["band"] = fl["band"].map({"pct_cold": f"< {lo_b:g} °C", "pct_warm": f"> {hi_b:g} °C"})
+st.altair_chart(ui.chart(alt.layer(
+    alt.Chart(fl).mark_line(strokeWidth=2.5).encode(
+        x=alt.X("shift:Q", title="setpoint rise (°C)"), y=alt.Y("pct:Q", title="% of cooled hours"),
+        color=alt.Color("band:N", title=None, scale=ui.COLD_WARM, legend=alt.Legend(orient="top")),
+        strokeDash=alt.StrokeDash("zone:N", legend=alt.Legend(orient="top")),
+        tooltip=["zone", "band", alt.Tooltip("shift:Q", format=".2f"), alt.Tooltip("pct:Q", format=".1f")]),
+    alt.Chart(pd.DataFrame({"s": [shift]})).mark_rule(color=ui.INK, strokeDash=[5, 3]).encode(x="s:Q"),
+), height=280), width="stretch")
+dz = D.occupied(h, zones=R.comfort_zones(floor), require_temp=True, ac_on=True)
+after = []
+for z, g in dz.groupby("zone"):
+    n = C.shift_distribution(g.temp_c, shift, sd_scale)
+    after.append({"zone": z, "cold %": (n < lo_b).mean() * 100, "warm %": (n > hi_b).mean() * 100,
+                  "mean °C": n.mean(), "sd °C": n.std(), "sd now": g.temp_c.std()})
+af = pd.DataFrame(after)
+if len(af):
+    st.dataframe(af.drop(columns="sd now").round(1), width="stretch", hide_index=True)
+    st.caption(f"At +{shift:g} °C with deadband ×{sd_scale:.2f}, roughly {af['cold %'].mean():.0f}% of cooled "
+               f"hours are still below {lo_b:g} °C. Today's distributions are wide (σ ≈ "
+               f"{af['sd now'].min():.1f}–{af['sd now'].max():.1f} °C), so a zone that stays volatile after a "
+               "setpoint change is a controls-tuning item, not a setpoint item.")
 
-tab_sp, tab_phys, tab_sched = st.tabs(
-    ["Setpoint", "Where the load goes", "Schedule trim"])
+# --------------------------------------------------------------------------- #
+with st.expander("How each lever is sized", icon=":material/engineering:"):
+    tab_sp, tab_phys, tab_sched = st.tabs(["Setpoint", "Where the load goes", "Schedule trim"])
 
 # --------------------------------------------------------------------------- #
 with tab_sp:
@@ -295,7 +328,7 @@ with tab_phys:
                 y=alt.Y("zone:N", title=None),
                 x=alt.X("kW:Q", title="mean cooling load (kW) on cooled hours"),
                 color=alt.Color("component:N", scale=alt.Scale(
-                    range=[ui.C["data/floor-1"], ui.C["data/floor-2"], ui.INK_3]),
+                    range=[ui.PRIMARY, ui.SERIES_2, ui.CONTEXT]),
                     legend=alt.Legend(orient="bottom", columns=1, title=None)),
                 order=alt.Order("component:N"),
                 tooltip=["zone", "component", alt.Tooltip("kW:Q", format=".2f")],
@@ -304,7 +337,7 @@ with tab_phys:
         st.dataframe(dec[["measured_kw", "envelope_pct", "internal_pct",
                           "residual_pct"]].round(1), width="stretch")
 
-        st.success(
+        st.info(
             f"**Envelope conduction is only {dec.envelope_pct.mean():.0f}% of the "
             f"cooling load.** A setpoint change acts on that share, plus some "
             f"unknown part of the latent load inside the residual. It acts on "
@@ -317,40 +350,41 @@ with tab_phys:
             f"do by absorbing occupancy."
         )
 
-        with st.expander("How the calibration works"):
-            st.markdown(
-                "At 12:00 the AC draws ~0 kWh on every weekday. For that hour "
-                "the zone is a free-running thermal mass whose only *measured* "
-                "heat input is lighting plus plug load:\n\n"
-                r"$$C\,\frac{dT}{dt} = UA\,(T_{out}-T_{in}) + Q_{int} + a\,I_{sol}$$"
-                "\n\nRegressing the hourly drift on the metered internal gain "
-                "identifies $1/C$; the driving-force coefficient then gives "
-                "$UA$. In steady cooled operation the envelope term is the part "
-                "of the load a setpoint change removes, so "
-                r"$d(\text{load})/d(T_{set}) = -UA$."
-                "\n\nCrucially, indoor temperature never appears on the "
-                "right-hand side as a *cause* of energy — so unlike a regression "
-                "of load on temperature, this cannot be confounded by occupancy. "
-                + ("It also agrees in sign across all three zones, where the "
-                   "regression gives z5 the wrong sign entirely." if floor == 5 else
-                   "Where the regression and the physics disagree in sign for a zone, "
-                   "occupancy is the likely reason.")
-            )
-            L = phys["frame"]
-            # One panel per zone (small multiples) rather than four colours on one plot.
-            pts = alt.Chart().mark_circle(opacity=0.45, size=35).encode(
-                x=alt.X("drive:Q", title="driving force T_out − T_in (°C)"),
-                y=alt.Y("drift:Q", title="free-running drift (°C/hour)"),
-                color=alt.Color("zone:N", scale=ui.ZONE_COLOR, legend=None),
-                tooltip=["zone", "date", alt.Tooltip("drive:Q", format=".1f"),
-                         alt.Tooltip("drift:Q", format=".2f")])
-            fit = alt.Chart().transform_regression(
-                "drive", "drift", groupby=["zone"]).mark_line(strokeWidth=2, color=ui.INK).encode(
-                x="drive:Q", y="drift:Q")
-            st.altair_chart(ui.chart(
-                alt.layer(pts, fit, data=L).properties(width=260, height=200)
-                .facet(facet=alt.Facet("zone:N", title=None), columns=4), height=None),
-                width="content")
+        # How the calibration works (plain text: no expander inside an expander)
+        ui.md('<p class="cb-overline" style="margin-top:12px">How the calibration works</p>')
+        st.markdown(
+            "At 12:00 the AC draws ~0 kWh on every weekday. For that hour "
+            "the zone is a free-running thermal mass whose only *measured* "
+            "heat input is lighting plus plug load:\n\n"
+            r"$$C\,\frac{dT}{dt} = UA\,(T_{out}-T_{in}) + Q_{int} + a\,I_{sol}$$"
+            "\n\nRegressing the hourly drift on the metered internal gain "
+            "identifies $1/C$; the driving-force coefficient then gives "
+            "$UA$. In steady cooled operation the envelope term is the part "
+            "of the load a setpoint change removes, so "
+            r"$d(\text{load})/d(T_{set}) = -UA$."
+            "\n\nCrucially, indoor temperature never appears on the "
+            "right-hand side as a *cause* of energy — so unlike a regression "
+            "of load on temperature, this cannot be confounded by occupancy. "
+            + ("It also agrees in sign across all three zones, where the "
+               "regression gives z5 the wrong sign entirely." if floor == 5 else
+               "Where the regression and the physics disagree in sign for a zone, "
+               "occupancy is the likely reason.")
+        )
+        L = phys["frame"]
+        # One panel per zone (small multiples) rather than four colours on one plot.
+        pts = alt.Chart().mark_circle(opacity=0.45, size=35).encode(
+            x=alt.X("drive:Q", title="driving force T_out − T_in (°C)"),
+            y=alt.Y("drift:Q", title="free-running drift (°C/hour)"),
+            color=alt.value(ui.PRIMARY),
+            tooltip=["zone", "date", alt.Tooltip("drive:Q", format=".1f"),
+                     alt.Tooltip("drift:Q", format=".2f")])
+        fit = alt.Chart().transform_regression(
+            "drive", "drift", groupby=["zone"]).mark_line(strokeWidth=2, color=ui.INK).encode(
+            x="drive:Q", y="drift:Q")
+        st.altair_chart(ui.chart(
+            alt.layer(pts, fit, data=L).properties(width=260, height=200)
+            .facet(facet=alt.Facet("zone:N", title=None), columns=4), height=None),
+            width="content")
 
 # --------------------------------------------------------------------------- #
 with tab_sched:
@@ -385,7 +419,7 @@ with tab_sched:
                 "end_temp_c", "resumes_same_day"]].round(2), width="stretch")
 
         if not tr.resumes_same_day.any():
-            st.success(
+            st.info(
                 "Cooling does not resume after this gap, so nothing has to be "
                 "pulled back out — the gross saving is the net saving. Trimming "
                 "the end of the day is the cheapest lever on the floor.")

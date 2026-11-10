@@ -1,6 +1,9 @@
-"""Portfolio overview — the whole building on one screen: where do I send the team?"""
+"""Overview — the whole building on one 1440×900 screen: energy, cost, which
+sensors are down, and which floor and alarm to look at first."""
 
 from __future__ import annotations
+
+import time
 
 import altair as alt
 import numpy as np
@@ -8,23 +11,26 @@ import pandas as pd
 import streamlit as st
 
 from sbanalytics import data as D
+from sbanalytics import energy as E
+from sbanalytics import kpis as K
+from sbanalytics import mv as M
 from sbanalytics import portfolio as P
 from sbanalytics import registry as R
 import ui
 
+_t0 = time.perf_counter()
 c = ui.ctx()
-as_of, tariff, ef, area = c["as_of"], c["tariff"], c["ef"], c["area"]
-target = R.conv("overcooled_target_pct")
-target_txt = f"{target:.0f}%"
+as_of, tariff, ef = c["as_of"], c["tariff"], c["ef"]
+s, e = c["start"], c["end"]
 LO = R.conv("comfort_lo")
+target = R.conv("overcooled_target_pct")
+sel_floor = None if st.session_state.get("building_view", True) else c["floor"]
+WIRED = R.wired_floors()
 
-h = ui.building_hourly()
-H = ui.building_health()
 
-
-@st.cache_data(show_spinner="Ranking floors…")
-def _league(area: float) -> pd.DataFrame:
-    return P.floor_league(D.load_hourly(None), area, D.load_health(None))
+@st.cache_resource(show_spinner="Fitting the weather-normalised baselines…")
+def _model(floor: int) -> dict:
+    return M.daily_model(D.load_hourly(floor), floor, "total_kwh")
 
 
 @st.cache_resource(show_spinner="Sizing each floor's levers…")
@@ -32,219 +38,236 @@ def _levers() -> pd.DataFrame:
     return P.floor_levers(D.load_hourly(None))
 
 
-@st.cache_data(show_spinner="Building the overcooling map…")
-def _heat() -> pd.DataFrame:
-    return P.overcooled_by_month(D.load_hourly(None))
+@st.cache_data(show_spinner="Ranking floors…")
+def _league(area: float) -> pd.DataFrame:
+    return P.floor_league(D.load_hourly(None), area, D.load_health(None))
 
 
-def _day(t) -> str:
-    t = pd.Timestamp(t)
-    return f"{t.day} {t:%b %Y}"
+def _vs_expected(floor: int, s_, e_) -> tuple[float, float]:
+    """(actual, expected) kWh over the usable days of the period, from the floor's baseline."""
+    d = _model(floor)["daily"]
+    d = d[(d.date >= s_) & (d.date <= e_) & d.actual.notna() & d.expected.notna()]
+    return (float(d.actual.sum()), float(d.expected.sum())) if len(d) else (np.nan, np.nan)
 
 
-# --------------------------------------------------------------------------- #
-# header
-# --------------------------------------------------------------------------- #
-periods = {"Month to date": (as_of.replace(day=1), as_of),
-           f"Trailing {c['window']} day(s)": D.window(as_of, c["window"]),
-           "Last 12 months": D.window(as_of, 365),
-           "Whole record": (D.RECORD_START, D.RECORD_END)}
-hd = st.columns([3, 1], vertical_alignment="bottom")
-with hd[0]:
-    ui.page_header("Overview", "Portfolio overview",
-                   f"All seven floors · 11,700 m² · 33 zones · Where do I send the team, and are we "
-                   f"on the {target_txt} overcooling target?")
-pname = hd[1].selectbox("Period", list(periods), index=0)
-s, e = periods[pname]
-s = max(pd.Timestamp(s), D.RECORD_START)
-hd[1].caption(f"{_day(s)} – {_day(e)} · data as of {_day(as_of)}")
+def _cool_share(h_, s_, e_) -> float:
+    o = K.overcooled_share(K.cooled_occupied(D.slice_hourly(h_, s_, e_)), by=())
+    return float(o.share_below.iloc[0] * 100) if len(o) else np.nan
+
+
+h = ui.building_hourly()
+ui.page_header("Overview", "Building overview",
+               f"CU-BEMS · 7 floors · 33 zones · {c['period_label']}")
 
 # --------------------------------------------------------------------------- #
-# banners + KPI strip
+# alarm band — every wired floor, the one global period
+# --------------------------------------------------------------------------- #
+reg = ui.building_register(c)
+ps = ui.building_point_status(as_of)
+past_end = [f for f in R.FILE_END if as_of >= R.floor_file_end(f).normalize()]
+ui.alarm_band(ui.band_counts(reg, ps),
+              f"Floors {WIRED[0]}–{WIRED[-1]} · {len(reg[reg.is_open]) if len(reg) else 0} open alarms")
+lo_b, hi_b = (pd.Timestamp(x) for x in R.BLACKOUT)
+
+# --------------------------------------------------------------------------- #
+# per-floor numbers for the period
+# --------------------------------------------------------------------------- #
+rows = []
+act_w = exp_w = 0.0
+for f in WIRED:
+    hf = h[h.floor == f]
+    tot = E.floor_totals(hf, s, e, f)["total"]
+    a_, x_ = _vs_expected(f, s, e)
+    if np.isfinite(a_):
+        act_w, exp_w = act_w + a_, exp_w + x_
+    rf = reg[reg.floor == f] if len(reg) else reg
+    op = rf[rf.is_open] if len(rf) else rf
+    n_crit = int((op.priority == "high").sum()) if len(op) else 0
+    n_warn = int((op.priority == "medium").sum()) if len(op) else 0
+    psf = ps[ps.floor == f]
+    down = int(psf.is_down.sum())
+    sl = D.slice_hourly(hf, s, e)
+    meter_pct = float(sl.kwh_ok.mean() * 100) if len(sl) else np.nan
+    no_file = f in past_end and s >= R.floor_file_end(f).normalize()
+    if no_file or not np.isfinite(tot):
+        status, rank = "○ no data", 3
+    elif n_crit:
+        status, rank = f"● {n_crit} crit", 0
+    elif np.isfinite(meter_pct) and meter_pct < R.conv("completeness_target"):
+        status, rank = "▲ meters", 1
+    elif n_warn:
+        status, rank = f"▲ {n_warn} warn", 1
+    elif down:
+        status, rank = f"○ {down} down", 2
+    else:
+        status, rank = "✓ ok", 4
+    fe = R.floor_file_end(f)
+    note = (f"file ends {fe.day} {fe:%b %y}" if fe is not None
+            else "meter gaps" if np.isfinite(meter_pct)
+            and meter_pct < R.conv("completeness_target") else "")
+    cool = _cool_share(hf, s, e)
+    rows.append({"Floor": f"F{f}", "Status": status, "kWh": tot,
+                 "฿": tot * tariff if tariff and np.isfinite(tot) else np.nan,
+                 "vs exp %": (a_ - x_) / x_ * 100 if np.isfinite(a_) and x_ else np.nan,
+                 f"<{LO:g} °C %": cool, "Alarms": len(op), "Down": down, "Note": note,
+                 "_rank": rank, "_crit": n_crit, "_cool": cool if np.isfinite(cool) else -1, "_f": f})
+ft = pd.DataFrame(rows).sort_values(["_rank", "_crit", "_cool"], ascending=[True, False, False])
+other = h[h.floor.isin([1, 2])]
+other_kwh = E.floor_totals(other, s, e)["total"]
+ft = pd.concat([ft, pd.DataFrame([{
+    "Floor": "F1 · F2", "Status": "non-office", "kWh": other_kwh,
+    "฿": other_kwh * tariff if tariff and np.isfinite(other_kwh) else np.nan,
+    "vs exp %": np.nan, f"<{LO:g} °C %": np.nan, "Alarms": np.nan, "Down": np.nan,
+    "Note": "F1 non-office · F2 n/m", "_f": 0}])], ignore_index=True)
+
+# --------------------------------------------------------------------------- #
+# three tiles
 # --------------------------------------------------------------------------- #
 bk = P.building_kpis(h, s, e, tariff, ef)
-for f in bk["truncated_floors"]:
-    st.warning(f"**Floor {f}'s file ends {R.floor_file_end(f):%Y-%m-%d %H:%M}.** Building totals for "
-               f"days after that exclude Floor {f} — they are not metered, not zero.",
-               icon=":material/warning:")
-COLD = f"below {LO:g} °C %"
-lo, hi = (pd.Timestamp(x) for x in R.BLACKOUT)
-if s <= hi and pd.Timestamp(e) >= lo:
-    st.info(f"**This period overlaps the building-wide sensor gap ({lo.date()} – {hi.date()}).** "
-            "Energy is metered throughout; the overcooled share only counts hours with live sensors.",
-            icon=":material/info:")
-
-k = st.columns(5)
-k[0].metric("Building energy", f"{bk['kwh']:,.0f} kWh", border=True,
-            help="Submetered zone energy (AC + lighting + plug) on all seven floors, including "
-                 "Floor 1. Excludes central plant, lifts and common areas.")
-k[1].metric("Cost", f"฿{bk['thb']:,.0f}", border=True, help=f"At {tariff:.2f} ฿/kWh (sidebar).")
-k[2].metric("Emissions", f"{bk['tco2e']:,.1f} tCO₂e", border=True,
-            help=f"At {ef:.4f} kgCO₂e/kWh — {R.CONVENTIONS['co2_kg_per_kwh'][2]}.")
-oc = bk["overcooled_pct"]
-k[3].metric(f"Cooled hours below {LO:g} °C", f"{oc:.0f}%" if np.isfinite(oc) else "no sensor data",
-            delta=f"{oc - target:+.0f} pp vs {target_txt} target" if np.isfinite(oc) else None,
-            delta_color="inverse", border=True,
-            help="Office floors F2–F7: share of cooled, occupied zone-hours below "
-                 f"{LO:g} °C, weighted by zone AC energy (the notebooks' "
-                 "definition). Floor 1 has no sensors and is not an office floor.")
-k[4].metric("Data completeness", f"{bk['meter_pct']:.0f}% meters",
-            delta=(f"{bk['sensor_pct']:.0f}% sensors" if np.isfinite(bk["sensor_pct"]) else "no sensors"),
-            delta_color="off", border=True,
-            help=f"Share of zone-hours with usable metering / usable indoor temperature. "
-                 f"Target {R.conv('completeness_target'):.0f}%.")
-st.caption("**Floor 1 is not an office floor** (AC never switches off). Its energy is in the "
-           "totals; it is excluded from the overcooled share and every schedule ranking.")
+dev_pct = (act_w - exp_w) / exp_w * 100 if exp_w else np.nan
+t1, t2, t3 = st.columns(3)
+with t1:
+    if np.isfinite(dev_pct):
+        delta = (f"{'▲' if dev_pct > 0 else '▼'} {dev_pct:+.1f}% vs expected "
+                 f"({act_w - exp_w:+,.0f} kWh, F{WIRED[0]}–F{WIRED[-1]})")
+    else:
+        # No usable baseline days: fall back to the same span last month, if comparable.
+        ps0, pe0 = s - pd.DateOffset(months=1), e - pd.DateOffset(months=1)
+        prev = P.building_kpis(h, ps0, pe0)["kwh"]
+        blocked = any(ui.comparison_guard(ps0, e, f, show=False) for f in WIRED)
+        delta = ("no baseline; comparison blocked by a change-point" if blocked or not prev
+                 else f"{(bk['kwh'] - prev) / prev * 100:+.1f}% vs same span last month")
+    ui.tile("Energy · " + c["period"], f"{bk['kwh']:,.0f} kWh" if bk["kwh"] else "no data", delta,
+            sub=f"{bk['days']} day(s) · submetered zone loads, all 7 floors",
+            help="AC + lighting + plug on every floor, including F1 and F2. Expected = each wired "
+                 "floor's weather- and calendar-normalised baseline (Energy page).")
+with t2:
+    ex_thb = (act_w - exp_w) * tariff if np.isfinite(dev_pct) else np.nan
+    dc = c["demand_charge"]
+    ui.tile("Cost · " + c["period"], ui.thb(bk["kwh"], tariff),
+            (f"{ui.signed_thb(ex_thb)} vs expected" if tariff and np.isfinite(ex_thb) else ""),
+            sub=f"{bk['tco2e']:,.1f} tCO₂e · demand charge "
+                + ("shown on Energy" if dc else "— set rate in Assumptions"),
+            help=f"Energy × {tariff:.2f} ฿/kWh. The demand charge is billed separately.")
+with t3:
+    live = ps[ps.status != "NO FILE"]
+    down = live[live.is_down]
+    items = [f"{ui.short_point(r)} {ui.POINT_GLYPH[r.status][0]} {r.status.lower()}"
+             for r in down.head(3).itertuples()]
+    tail_ = ([f"+{len(down) - 3} more"] if len(down) > 3 else []) + [
+        f"○ F{f} no data since {R.floor_file_end(f).day} {R.floor_file_end(f):%b}" for f in past_end]
+    if tail_:
+        items.append(" · ".join(tail_))
+    ui.tile("Sensors down · today", f"{len(down)} of {len(live)} points",
+            "offline, frozen or bad samples on " + ui.day_txt(as_of),
+            items=[ui.esc(i) for i in items] or ["✓ every point reporting"],
+            help="Down = OFFLINE, FROZEN or BAD SAMPLES on the as-of day (Sensors page). "
+                 "PARTIAL points are degraded, not down.")
+    st.page_link("views/2_sensor_health.py", label="Sensors", icon=":material/arrow_forward:")
 
 # --------------------------------------------------------------------------- #
-# floor cards
+# floors table + top alarms
 # --------------------------------------------------------------------------- #
-hd = st.columns([4, 1], vertical_alignment="bottom")
-with hd[0]:
-    ui.section("Floors", f"Whole record. Office floors worst-first by cooled hours below "
-                         f"{LO:g} °C; Floor 1 last.")
-hd[1].markdown(f"<div style='text-align:right'>{ui.legend([(f'{target_txt} target', ui.INK)], tick=True)}"
-               "</div>", unsafe_allow_html=True)
-
-L = _league(area)
-lv = _levers()
+left, right = st.columns([7, 5], gap="medium")
 
 
-def _open_floor(f: int) -> None:
-    st.session_state["floor_select"] = f
+def _open_floor(order: list[int]) -> None:
+    rows_ = st.session_state["floors_tbl"].selection.rows
+    if rows_ and order[rows_[0]]:
+        st.session_state["floor_select"] = f"F{order[rows_[0]]}"
+        st.session_state["floor"] = order[rows_[0]]
+        st.session_state["_goto"] = "views/1_floor_status.py"
 
 
-rows = list(L.iterrows())
-for i, (_, r) in enumerate(rows):
-    if i % 3 == 0:                       # one st.columns per row, so a row's cards top-align
-        cols = st.columns(3)
-    f = int(r.floor)
-    office = f not in R.NON_OFFICE_FLOORS
-    with cols[i % 3]:
-        with ui.card(f"floor_{f}", edge=ui.FLOOR_HEX[f]):
-            ui.md(ui.floor_card_body(f, r.to_dict(), P.what_to_look_at(f, r.to_dict(), lv, tariff),
-                                     "office" if office else "non-office"))
-            if R.FLOORS[f]["wired"]:
-                if st.button("Open floor status", key=f"open_{f}", type="tertiary",
-                             icon=":material/arrow_forward:", on_click=_open_floor, args=(f,)):
-                    st.switch_page("views/1_floor_status.py")
-            else:
-                st.caption("Floor status not wired yet — see the analysis/ notebooks.")
-
-fails = [f"F{f}" for f in L.loc[L.baseline_meets_g14.eq(False), "floor"]]
-st.caption("'vs baseline' is Jul–Dec 2019 actual vs the weather- and calendar-normalised baseline "
-           "(notebook 02, total kWh); positive means more than expected."
-           + (f" The baseline for {', '.join(fails)} fails ASHRAE G14 out of sample — read its figure "
-              "as indicative only." if fails else ""))
-
-with st.expander("All floors as a table", icon=":material/table:"):
-    show = pd.DataFrame({
-        "floor": [f"F{f}" + ("  · non-office" if f in R.NON_OFFICE_FLOORS else "")
-                  + (f"  · file ends {R.floor_file_end(f):%d %b %y}" if f in R.FILE_END else "")
-                  for f in L.floor],
-        "partial EUI": L.eui,
-        "AC share %": L.ac_share_pct,
-        COLD: L.overcooled_pct,
-        "after-hours AC %": L.after_hours_ac_pct,
-        "vs baseline %": L.deviation_pct,
-        "meters %": L.meter_pct,
-        "sensors %": L.sensor_pct,
-        "status": L.status,
-    })
+with left:
+    ui.md('<p class="cb-overline">Floors · worst first · click a row to open it</p>')
+    show = ft.drop(columns=[x for x in ft.columns if x.startswith("_")])
+    hi_row = ft.index[ft._f == sel_floor][0] if sel_floor in ft._f.values else None
+    show.index = ft.index
+    _order = list(ft._f)
     st.dataframe(
-        show.style.format(
-            {"partial EUI": "{:.0f}", "AC share %": "{:.0f}", COLD: "{:.0f}",
-             "after-hours AC %": "{:.1f}", "vs baseline %": "{:+.1f}", "meters %": "{:.0f}",
-             "sensors %": "{:.0f}"}, na_rep="—"),
-        width="stretch", hide_index=True,
+        ui.glyph_style(show, ["Status"], {
+            "kWh": "{:,.0f}", "฿": "{:,.0f}", "vs exp %": "{:+.1f}",
+            f"<{LO:g} °C %": "{:.0f}", "Alarms": "{:.0f}", "Down": "{:.0f}"},
+            highlight_row=hi_row),
+        hide_index=True, width="stretch", key="floors_tbl", placeholder=ui.DASH,
+        on_select=lambda: _open_floor(_order), selection_mode="single-row",
         column_config={
-            "partial EUI": st.column_config.NumberColumn(
-                "partial EUI", help="kWh/m²/yr on the assumed floor area (sidebar). Submetered zone "
-                                    "loads only — not comparable to a whole-building benchmark."),
-            COLD: st.column_config.ProgressColumn(color=ui.ACTUAL, label=
-                f"{COLD} (target {target:.0f})", min_value=0, max_value=100, format="%.0f"),
-            "vs baseline %": st.column_config.NumberColumn(
-                "vs baseline %", help="Jul–Dec 2019 actual vs the weather- and calendar-normalised "
-                                      "baseline trained on Jul 2018 – Jun 2019 (notebook 02, total kWh). "
-                                      "Positive = used more than expected."),
-            "sensors %": st.column_config.NumberColumn(
-                "sensors %", help="Includes the six-month building-wide sensor gap."),
-            "status": st.column_config.TextColumn(width="large"),
+            "Floor": st.column_config.Column(width=58),
+            "Status": st.column_config.Column(width=96),
+            "kWh": st.column_config.Column(width=66),
+            "Alarms": st.column_config.Column(width=58),
+            "Down": st.column_config.Column(width=52),
+            "Note": st.column_config.Column(width=150),
+            "฿": st.column_config.Column(help="Energy × tariff. Blank when the rate is 0."),
+            "vs exp %": st.column_config.Column(
+                help="Actual vs the floor's weather/calendar-normalised baseline over the period's "
+                     "usable days. Positive = used more than expected."),
+            f"<{LO:g} °C %": st.column_config.Column(
+                help=f"Share of cooled, occupied zone-hours below {LO:g} °C (target < {target:.0f}%). "
+                     "Only hours with live sensors count."),
+            "Down": st.column_config.Column(help="Points OFFLINE, FROZEN or BAD SAMPLES today."),
         })
+    st.caption("**Floor 1 is not an office floor** (its AC never switches off) and F2 is not "
+               "monitored; both are in the building totals and out of every ranking. "
+               + (f"F6's file ends {R.floor_file_end(6):%d %b %Y}: after that it is not metered, "
+                  "not zero. " if 6 in R.FILE_END else "")
+               + (f"This period overlaps the building-wide sensor gap ({lo_b:%d %b %Y} – "
+                  f"{hi_b:%d %b %Y}), so the cooled-hours share is blank or partial."
+                  if s <= hi_b and e >= lo_b else ""))
+
+with right:
+    ui.md('<p class="cb-overline">Top alarms · open, by severity then ฿/day</p>')
+    op = ui.sort_faults(reg[reg.is_open]) if len(reg) else reg
+    if not len(op):
+        ui.md(f'<div class="cb-list"><div class="item">{ui.chip("ok", "No open alarms")}'
+              f'<div class="txt cb-cap">Nothing raised on floors F{WIRED[0]}–F{WIRED[-1]} '
+              f'in this period.</div></div></div>')
+    else:
+        items = []
+        for r in op.head(5).itertuples():
+            cost = (f"฿{r.cost_per_day_thb:,.0f}/day" if r.cost_per_day_thb and tariff else ui.DASH)
+            days = f"{r.days_open:.0f} d open" if np.isfinite(r.days_open) else ""
+            items.append(f'<div class="item">{ui.state_chip(r)}<div class="txt">'
+                         f'<div class="cb-strong">F{r.floor} {ui.esc(r.title)}</div>'
+                         f'<div class="cb-cap cb-muted">{ui.esc(r.state)} · {ui.esc(r.trade)}</div></div>'
+                         f'<div class="cost">{cost}<div class="cb-cap cb-muted">{days}</div></div></div>')
+        ui.md(f'<div class="cb-list">{"".join(items)}</div>')
+    st.page_link("views/5_faults.py", label=f"All {len(op)} open alarms",
+                 icon=":material/arrow_forward:")
 
 # --------------------------------------------------------------------------- #
-# floor x month heat map
+# below the fold
 # --------------------------------------------------------------------------- #
-with ui.card("heatmap"):
-    ui.section("Where the building is overcooled, month by month",
-               f"Share of cooled, occupied hours below {LO:g} °C, office floors. "
-               f"The {target_txt} target is the middle of the scale.")
-    hm = _heat().assign(floor=lambda d: "F" + d.floor.astype(str))
-    hm["label"] = np.where(hm.overcooled_pct.notna(),
-                           hm.overcooled_pct.round(0).astype("Int64").astype(str), "")
-    hm["cell"] = np.where(hm.overcooled_pct.notna(), "data", "no data")
-    # Dark ink on the light middle of the scale, light ink on its darker ends.
-    hm["ink"] = np.where(hm.overcooled_pct.between(25, 75), "dark", "light")
-    base = alt.Chart(hm).encode(
-        x=alt.X("yearmonth(month):O", title=None,
-                axis=alt.Axis(labelAngle=0, format="%b %y", orient="top", domain=False, ticks=False)),
-        y=alt.Y("floor:N", title=None, sort=[f"F{f}" for f in P.office_floors()],
-                axis=alt.Axis(domain=False, ticks=False)))
-    heat = alt.layer(
-        base.transform_filter("datum.cell == 'no data'").mark_rect(
-            color=ui.NO_DATA, cornerRadius=4, stroke=ui.SURFACE, strokeWidth=2),
-        base.transform_filter("datum.cell == 'data'").mark_rect(
-            cornerRadius=4, stroke=ui.SURFACE, strokeWidth=2).encode(
-            color=alt.Color("overcooled_pct:Q", scale=ui.OVERCOOL_COLOR, legend=None),
-            tooltip=["floor", alt.Tooltip("month:T", format="%b %Y"),
-                     alt.Tooltip("overcooled_pct:Q", format=".0f", title=COLD),
-                     alt.Tooltip("hours:Q", title="cooled zone-hours"),
-                     alt.Tooltip("zones:Q", title="zones counted")]),
-        base.mark_text(fontSize=12, fontWeight=500).encode(
-            text="label:N",
-            color=alt.Color("ink:N", scale=alt.Scale(domain=["dark", "light"],
-                                                     range=[ui.C["bg/page"], ui.INK]), legend=None)),
-        alt.Chart(pd.DataFrame({"m": [as_of.replace(day=1)]})).mark_rect(
-            fill=None, stroke=ui.INK, strokeWidth=2, cornerRadius=4).encode(x="yearmonth(m):O"),
-    )
-    st.altair_chart(ui.chart(heat, height=230), width="stretch")
-    stops = (f"{ui.C['data/overcool-low']} 0%, {ui.C['data/overcool-mid']} {target:.0f}%, "
-             f"{ui.C['data/overcool-high']} 100%")
-    ui.md(f'<div class="cb-row" style="gap:16px;align-items:flex-start;margin-top:-8px">'
-          f'<div style="width:220px"><div style="height:8px;border-radius:4px;'
-          f'background:linear-gradient(90deg,{stops})"></div>'
-          f'<div class="cb-cap cb-muted" style="position:relative;height:16px;margin-top:4px">'
-          f'<span style="position:absolute;left:0">0%</span>'
-          f'<span style="position:absolute;left:{target:.0f}%;transform:translateX(-50%)">'
-          f'{target_txt} target</span><span style="position:absolute;right:0">100%</span></div></div>'
-          f'{ui.legend([("No data", ui.NO_DATA)])}</div>')
-    st.caption(
-        f"Grey: the building-wide sensor gap ({lo:%b %Y} – {hi:%b %Y}) and "
-        + ", ".join(f"Floor {f} after its file ends ({R.floor_file_end(f):%d %b %Y})" for f in R.FILE_END)
-        + ". Floor 1 has no indoor sensors. White outline: the as-of month. The step from 2018 to "
-        "2019 is real and registered as a change-point: every zone ran 2–3 °C colder after the "
-        "sensors came back on 2019-03-06, so the whole-record shares on the floor cards average two "
-        "configurations.")
+ui.section("Building energy by month",
+           "Submetered kWh, whole record. " + (f"F{sel_floor} highlighted; the rest of the building in grey."
+                                               if sel_floor else "Pick a floor above to highlight it."))
+mo = P.monthly_energy(h)
+mo["part"] = np.where(mo.floor == sel_floor, f"F{sel_floor}", "Rest of building") if sel_floor \
+    else "Building"
+mo = mo.groupby(["month", "part"], as_index=False).kWh.sum()
+mo["order"] = (mo.part == "Rest of building").astype(int)
+dom = [f"F{sel_floor}", "Rest of building"] if sel_floor else ["Building"]
+rng = [ui.PRIMARY, ui.CONTEXT] if sel_floor else [ui.PRIMARY]
+st.altair_chart(ui.chart(alt.Chart(mo).mark_bar(stroke=ui.SURFACE, strokeWidth=1).encode(
+    x=alt.X("yearmonth(month):O", title=None, axis=alt.Axis(labelAngle=0, format="%b %y")),
+    y=alt.Y("kWh:Q", title="kWh / month",
+            axis=alt.Axis(format="~s", labelExpr="datum.value == 0 ? '0' : datum.label")),
+    color=alt.Color("part:N", scale=alt.Scale(domain=dom, range=rng),
+                    legend=alt.Legend(orient="top", title=None, symbolType="square")),
+    order=alt.Order("order:Q"),
+    tooltip=["part", alt.Tooltip("month:T", format="%b %Y"), alt.Tooltip("kWh:Q", format=",.0f")]),
+    height=240), width="stretch")
+st.caption("Floor 6 has nothing after October 2019 because its file ends, not because it used nothing.")
 
-# --------------------------------------------------------------------------- #
-# energy by floor
-# --------------------------------------------------------------------------- #
-with ui.card("monthly"):
-    ui.section("Monthly energy by floor",
-               "Submetered kWh per month. Floor 1 is the largest single consumer and runs around "
-               "the clock.")
-    mo = P.monthly_energy(h)
-    mo["floor"] = "F" + mo.floor.astype(str)
-    mo["order"] = mo.floor.str[1:].astype(int)
-    st.altair_chart(ui.chart(alt.Chart(mo).mark_bar(stroke=ui.SURFACE, strokeWidth=1).encode(
-        x=alt.X("yearmonth(month):O", title=None, axis=alt.Axis(labelAngle=0, format="%b %y")),
-        y=alt.Y("kWh:Q", title="kWh / month",
-                axis=alt.Axis(format="~s", labelExpr="datum.value == 0 ? '0' : datum.label")),
-        color=alt.Color("floor:N", scale=ui.FLOOR_COLOR,
-                        legend=alt.Legend(orient="top", title=None, symbolType="square",
-                                          labelExpr="'Floor ' + slice(datum.label, 1)")),
-        order=alt.Order("order:Q"),
-        tooltip=["floor", alt.Tooltip("month:T", format="%b %Y"), alt.Tooltip("kWh:Q", format=",.0f")]),
-        height=280), width="stretch")
-    st.caption("Floor 6 has no bar after October 2019 because its file ends, not because it used "
-               "nothing.")
+with st.expander("Biggest lever per floor", icon=":material/lightbulb:"):
+    L, lv = _league(c["area"]), _levers()
+    for _, r in L.iterrows():
+        f = int(r.floor)
+        if f in R.NON_OFFICE_FLOORS:
+            continue
+        ui.md(f'<p class="cb-body" style="margin:0 0 8px"><b>F{f}</b> — '
+              f'{ui.esc(P.what_to_look_at(f, r.to_dict(), lv, tariff))}</p>')
+    st.caption("Whole-record figures. Sized on the Savings page.")
+
+st.caption(f"Page computed in {time.perf_counter() - _t0:.1f} s.")

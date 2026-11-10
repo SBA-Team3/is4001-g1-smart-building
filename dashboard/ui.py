@@ -1,9 +1,9 @@
-"""Shared UI helpers: cached loaders, design tokens, the trust band, cards, formatting,
-chart theme.
+"""Shared UI helpers: cached loaders, design tokens, the global period, point
+status, the alarm band, chips, formatting and chart theme.
 
-Every colour, size and radius comes from design/tokens.json, which is exported
-from the Figma file (see DESIGN.md). Pages use the names here (ui.C, ui.BAD,
-ui.FLOOR_COLOR, ui.chip(), ...) and never a hex code of their own.
+Every colour, size and radius comes from design/tokens.json (see DESIGN.md).
+Pages use the names here (ui.C, ui.PRIMARY, ui.chip(), ...) and never a hex
+code of their own.
 """
 
 from __future__ import annotations
@@ -18,11 +18,13 @@ import pandas as pd
 import streamlit as st
 
 from sbanalytics import data as D
+from sbanalytics import faults as F
 from sbanalytics import health as HL
 from sbanalytics import registry as R
 from sbanalytics import workorders as W
 
 NOT_METERED = "—  not metered"
+DASH = "—"
 
 # --------------------------------------------------------------------------- #
 # design tokens
@@ -32,47 +34,57 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(_HERE, "design", "tokens.json"), encoding="utf-8") as _f:
     TOKENS = json.load(_f)
 
-#: Colour tokens by Figma name without the "color/" prefix: C["text/primary"].
+#: Colour tokens by name: C["text/primary"].
 C = TOKENS["color"]
-FIGMA_URL = TOKENS["$figma"]
 
-OK, WARN, BAD = C["status/good"], C["status/warning"], C["status/critical"]
+# status — only for severity and health, always with an icon and a word
+OK, WARN, BAD, OFFLINE = (C["status/normal"], C["status/warning"], C["status/critical"],
+                          C["status/offline"])
 INK, INK_2, INK_3 = C["text/primary"], C["text/secondary"], C["text/muted"]
 SURFACE, RAISED, GRID = C["bg/surface"], C["bg/raised"], C["border/default"]
-#: "No data" fill in charts: bg/control reads as empty on the surface without looking like a value.
+#: "No data" fill in charts: bg/control reads as empty without looking like a value.
 NO_DATA = C["bg/control"]
 
-ZONE_COLOR = alt.Scale(domain=["z1", "z2", "z3", "z4", "z5"],
-                       range=[C[f"data/zone-{i}"] for i in range(1, 6)])
-HEALTH_COLOR = alt.Scale(domain=[0, R.conv("health_warn"), R.conv("health_good"), 100],
-                         range=[C["data/overcool-high"], C["status/warning"],
-                                C["data/overcool-mid"], C["data/overcool-low"]])
-END_USE_COLOR = alt.Scale(domain=["ac", "light", "plug"],
-                          range=[C["data/enduse-ac"], C["data/enduse-light"], C["data/enduse-plug"]])
+# data — never status, never the accent
+PRIMARY, SERIES_2, SERIES_3, CONTEXT = (C["data/primary"], C["data/series-2"],
+                                        C["data/series-3"], C["data/context"])
+SEQ = [C[f"data/seq-{i}"] for i in range(1, 6)]
+#: Ink that clears 4.5:1 on each sequential step (light on the two dark steps).
+SEQ_INK = [INK, INK, C["text/on-accent"], C["text/on-accent"], C["text/on-accent"]]
+
+ACTUAL, EXPECTED, MUTED = PRIMARY, INK_2, CONTEXT
+END_USE_COLOR = alt.Scale(domain=["ac", "light", "plug"], range=[PRIMARY, SERIES_2, SERIES_3])
+END_USE_NAME = {"ac": "Air-conditioning", "light": "Lighting", "plug": "Plug load"}
 DAY_KIND_COLOR = alt.Scale(domain=["workday", "weekend", "holiday / closure"],
-                           range=[C["data/floor-1"], C["data/floor-2"], C["status/neutral"]])
-#: Overcooled share: green at or under the 40% target, through amber to red.
-OVERCOOL_COLOR = alt.Scale(domain=[0, R.conv("overcooled_target_pct"), 100],
-                           range=[C["data/overcool-low"], C["data/overcool-mid"],
-                                  C["data/overcool-high"]])
-#: Below the comfort band / above it.
-COLD, WARM = C["data/cold"], C["data/warm"]
+                           range=[PRIMARY, SERIES_2, CONTEXT])
+#: Below the comfort band (cold, blue) / above it (warm, sand).
+COLD, WARM = PRIMARY, SERIES_2
 COLD_WARM = alt.Scale(range=[COLD, WARM])
-ACTUAL, EXPECTED, MUTED = C["data/floor-1"], C["text/secondary"], C["border/strong"]
-#: Floor N is always the same colour, as in the notebooks (dark-mode steps of
-#: sbanalytics.viz.FLOOR_COLORS).
-FLOOR_HEX = {f: C[f"data/floor-{f}"] for f in sorted(R.FLOORS)}
-FLOOR_COLOR = alt.Scale(domain=[f"F{f}" for f in sorted(R.FLOORS)],
-                        range=[FLOOR_HEX[f] for f in sorted(R.FLOORS)])
+#: Overcooled share as a blue magnitude: five steps of 20 pp. Pass/fail against
+#: the 40% target is a chip beside it, never the colour.
+OVERCOOL_BINS = [20, 40, 60, 80]
+OVERCOOL_COLOR = alt.Scale(type="threshold", domain=OVERCOOL_BINS, range=SEQ)
+#: Point-day status in the health map. Offline is the empty control fill.
+POINT_STATUS = ["OK", "PARTIAL", "BAD SAMPLES", "FROZEN", "OFFLINE"]
+POINT_STATUS_COLOR = alt.Scale(domain=POINT_STATUS,
+                               range=[C["status/normal-bg"], C["status/warning-bg"], WARN, BAD, NO_DATA])
+#: Cell outlines: PARTIAL is the dark amber step outlined in amber (degraded); BAD
+#: SAMPLES is solid amber (down); OFFLINE is the empty control fill with a grey ring.
+POINT_STATUS_STROKE = alt.Scale(domain=POINT_STATUS,
+                                range=[C["bg/surface"], WARN, WARN, BAD, OFFLINE])
+POINT_STATUS_MARK = {"OK": "", "PARTIAL": "◐", "BAD SAMPLES": "▲", "FROZEN": "●", "OFFLINE": "—"}
+#: OK cells use the quiet normal background: normal is never a large bright fill.
 
 
-def overcool_hex(pct: float) -> str:
-    """Bar colour for an overcooled share: at/under target, up to 70%, above."""
-    if not np.isfinite(pct):
-        return C["status/neutral"]
-    if pct <= R.conv("overcooled_target_pct"):
-        return C["data/overcool-low"]
-    return C["data/overcool-mid"] if pct <= 70 else C["data/overcool-high"]
+def seq_step(pct: float) -> int:
+    """Index 0..4 of a 0–100 value on the sequential ramp."""
+    return int(np.searchsorted(OVERCOOL_BINS, pct, side="right")) if np.isfinite(pct) else -1
+
+
+def highlight(field: str, value) -> alt.condition:
+    """Selected floor/zone in data/primary, every other one in data/context."""
+    return alt.condition(alt.datum[field] == value, alt.value(PRIMARY), alt.value(CONTEXT))
+
 
 #: Fault lifecycle store. dashboard/cache/ is gitignored, so states stay local.
 #: FM_FAULT_STATES overrides it (the smoke test points it at a temp file).
@@ -116,19 +128,55 @@ def day_minutes(floor: int, day: str, columns: tuple) -> pd.DataFrame:
 
 
 # --------------------------------------------------------------------------- #
-# shared context
+# the global period
 # --------------------------------------------------------------------------- #
 
+PERIODS = ["Today", "7d", "30d", "MTD", "12m", "Record"]
+DEFAULT_PERIOD = "MTD"
+
+
+def period_bounds(as_of, period: str | None = None) -> tuple[pd.Timestamp, pd.Timestamp, str]:
+    """(start, end, label) of the global period, ending on the as-of day."""
+    period = period or st.session_state.get("period", DEFAULT_PERIOD)
+    end = pd.Timestamp(as_of).normalize()
+    if period == "Today":
+        start = end
+    elif period == "7d":
+        start = D.window(end, 7)[0]
+    elif period == "30d":
+        start = D.window(end, 30)[0]
+    elif period == "12m":
+        start = D.window(end, 365)[0]
+    elif period == "Record":
+        start = D.RECORD_START
+    else:
+        start = end.replace(day=1)
+    start = max(start, D.RECORD_START)
+    if start == end:
+        label = f"{end.day} {end:%b %Y}"
+    elif start.year == end.year:
+        label = f"{start.day} {start:%b} – {end.day} {end:%b %Y}"
+    else:
+        label = f"{start.day} {start:%b %Y} – {end.day} {end:%b %Y}"
+    names = {"Today": "today", "7d": "last 7 days", "30d": "last 30 days", "MTD": "month to date",
+             "12m": "last 12 months", "Record": "whole record to date"}
+    return start, end, f"{names.get(period, period)} · {label}"
+
+
 def ctx() -> dict:
-    """Sidebar selections, set once in app.py and read by every page."""
+    """Context-bar selections, set once in app.py and read by every page."""
+    as_of = pd.Timestamp(st.session_state.get("as_of", D.DEFAULT_AS_OF))
+    period = st.session_state.get("period", DEFAULT_PERIOD)
+    start, end, label = period_bounds(as_of, period)
     return {
         "floor": st.session_state.get("floor", 5),
-        "as_of": pd.Timestamp(st.session_state.get("as_of", D.DEFAULT_AS_OF)),
+        "as_of": as_of,
         "tariff": st.session_state.get("tariff", R.conv("tariff_thb")),
         "area": st.session_state.get("area", R.conv("floor_area_m2")),
-        "window": st.session_state.get("window_days", 7),
+        "window": int((end - start).days) + 1,
         "ef": st.session_state.get("ef", R.conv("co2_kg_per_kwh")),
         "demand_charge": st.session_state.get("demand_charge", R.conv("demand_charge_thb_per_kw")),
+        "period": period, "start": start, "end": end, "period_label": label,
     }
 
 
@@ -138,20 +186,148 @@ def require_wired(floor: int) -> bool:
     if meta.get("wired"):
         return True
     st.title(f"Floor {floor}")
-    st.warning(f"**Not wired yet.** {meta.get('note','')}")
-    st.markdown(
-        "The dashboard is floor-agnostic — every loader takes a floor number and "
-        "reads its channel list from the point registry. This floor is already in "
-        "the registry and the cleaned dataset (see the analysis/ notebooks); wiring "
-        "it here means checking the pages render sensibly, not changing analysis code."
-    )
+    st.warning(f"**Not wired yet.** {meta.get('note','')}", icon=":material/warning:")
     st.caption(f"Wired floors: {', '.join(f'F{f}' for f in R.wired_floors())}. "
-               "The Portfolio overview reads every floor.")
+               "The Overview reads every floor.")
     return False
 
 
 # --------------------------------------------------------------------------- #
-# page chrome and components (the Figma components, as HTML + CSS)
+# point status — one definition of "down", reused on every page
+# --------------------------------------------------------------------------- #
+
+DOWN = ("OFFLINE", "FROZEN", "BAD SAMPLES")
+#: status -> (glyph, kind). Kind picks the colour; the glyph and word carry it too.
+POINT_GLYPH = {"OFFLINE": ("○", "offline"), "FROZEN": ("●", "critical"),
+               "BAD SAMPLES": ("▲", "warning"), "PARTIAL": ("◐", "warning"),
+               "OK": ("✓", "normal"), "NO FILE": ("○", "offline")}
+
+
+def point_glyph(status: str) -> str:
+    return f"{POINT_GLYPH.get(status, ('', ''))[0]} {status}".strip()
+
+
+@st.cache_data(show_spinner=False)
+def point_status(floor: int, as_of) -> pd.DataFrame:
+    """One row per point on the as-of day: floor, zone, channel, point, status,
+    last good day, days stale. Status is the Sensors page's rule: OFFLINE (no
+    samples), FROZEN (flatline), PARTIAL (below the completeness target),
+    BAD SAMPLES (out of range or spikes), else OK. OFFLINE, FROZEN and BAD
+    SAMPLES are "down"; PARTIAL is degraded. Past a floor's file end every point
+    is NO FILE — not counted as down, because there is no file to be down in."""
+    S = scored(floor)
+    d = pd.Timestamp(as_of).normalize()
+    day = S[S.day == d]
+    cols = ["floor", "zone", "channel", "point", "status", "last_good_day", "days_stale", "is_down"]
+    fe = R.floor_file_end(floor)
+    if fe is not None and d > fe.normalize():
+        pts = S[["zone", "channel", "column"]].drop_duplicates()
+        out = pts.assign(status="NO FILE")
+    elif len(day):
+        status = np.select(
+            [day.received == 0, day.flag_flatline.values,
+             day.completeness < R.conv("completeness_target"),
+             (day.out_of_range > 0) | (day.spikes > 0)],
+            ["OFFLINE", "FROZEN", "PARTIAL", "BAD SAMPLES"], default="OK")
+        out = day[["zone", "channel", "column"]].assign(status=status)
+    else:
+        pts = S[["zone", "channel", "column"]].drop_duplicates()
+        out = pts.assign(status="OFFLINE")
+    lg = HL.last_good(health(floor), as_of, floor)[["column", "last_good_day", "days_stale"]]
+    out = out.merge(lg, on="column", how="left").rename(columns={"column": "point"})
+    out["floor"] = floor
+    out["is_down"] = out.status.isin(DOWN)
+    order = {"FROZEN": 0, "BAD SAMPLES": 1, "OFFLINE": 2, "PARTIAL": 3, "NO FILE": 4, "OK": 5}
+    out = out.sort_values(["status", "zone", "channel"], key=lambda s: s.map(order) if s.name == "status" else s)
+    return out[cols].reset_index(drop=True)
+
+
+def building_point_status(as_of) -> pd.DataFrame:
+    return pd.concat([point_status(f, as_of) for f in R.wired_floors()], ignore_index=True)
+
+
+def short_point(row) -> str:
+    """'F5 z3 plug'."""
+    return f"F{row.floor} {row.zone} {row.channel}"
+
+
+# --------------------------------------------------------------------------- #
+# fault register — one window, one set of states, so counts agree everywhere
+# --------------------------------------------------------------------------- #
+
+@st.cache_data(show_spinner="Building the fault register…")
+def _raw_register(floor: int, start, end, as_of, tariff: float) -> pd.DataFrame:
+    return F.build_register(D.load_hourly(floor), D.load_health(floor), start=start, end=end,
+                            floor=floor, tariff=tariff, as_of=as_of)
+
+
+def with_states(reg: pd.DataFrame, show_planned: bool = False) -> pd.DataFrame:
+    """A fault register as the FM team sees it: planned-maintenance items hidden,
+    saved lifecycle states and session mutes applied (`state`, `is_open`)."""
+    if not len(reg):
+        return reg
+    if not show_planned:
+        reg = reg[~reg.planned]
+    reg = W.apply_states(reg, FAULT_STATES)
+    if len(reg):
+        sm = reg.id.isin(st.session_state.get("muted", set()))
+        reg.loc[sm, "state"], reg.loc[sm, "is_open"] = "Muted", False
+    return reg
+
+
+#: Offline / metering rules a file end would trigger by itself.
+FILE_END_RULES = ("point_offline", "dead_meter", "metering_step_change")
+
+
+def register(floor: int, c: dict | None = None, show_planned: bool = False) -> pd.DataFrame:
+    """The floor's register over the global period, with states applied."""
+    c = c or ctx()
+    raw = _raw_register(floor, c["start"], c["end"], c["as_of"], float(c["tariff"]))
+    fe = R.floor_file_end(floor)
+    if fe is not None and len(raw):
+        # Points "going offline" on or after the file end are the file ending, not
+        # an outage. Outages that started before it stay.
+        artefact = (raw.rule.isin(FILE_END_RULES)
+                    & (pd.to_datetime(raw.first_seen).dt.normalize() >= fe.normalize()))
+        raw = raw[~artefact]
+    return with_states(raw.copy(), show_planned)
+
+
+def building_register(c: dict | None = None) -> pd.DataFrame:
+    c = c or ctx()
+    regs = [register(f, c) for f in R.wired_floors()]
+    regs = [r for r in regs if len(r)]
+    return pd.concat(regs, ignore_index=True) if regs else pd.DataFrame()
+
+
+PRIO_ORDER = {F.HIGH: 0, F.MED: 1, F.LOW: 2}
+SEV = {F.HIGH: ("●", "critical", "Critical"), F.MED: ("▲", "warning", "Warning"),
+       F.LOW: ("ⓘ", "info", "Info")}
+
+
+def sev_glyph(priority: str) -> str:
+    g, _, _ = SEV.get(priority, ("ⓘ", "info", "Info"))
+    return f"{g} {str(priority).capitalize()}"
+
+
+def sort_faults(reg: pd.DataFrame) -> pd.DataFrame:
+    if not len(reg):
+        return reg
+    return reg.assign(_o=reg.priority.map(PRIO_ORDER)).sort_values(
+        ["_o", "cost_per_day_thb"], ascending=[True, False]).drop(columns="_o")
+
+
+def set_fault_state(fid: str, state: str, note: str = "") -> None:
+    W.set_state(FAULT_STATES, fid, state, note)
+    st.session_state.setdefault("muted", set()).discard(fid)
+
+
+def mute_fault(fid: str) -> None:
+    st.session_state.setdefault("muted", set()).add(fid)
+
+
+# --------------------------------------------------------------------------- #
+# page chrome and components (HTML + CSS from the tokens)
 # --------------------------------------------------------------------------- #
 
 def _css() -> str:
@@ -171,83 +347,86 @@ def _css() -> str:
 .cb-ms{{font-family:'Material Symbols Rounded';font-weight:400;font-style:normal;line-height:1;
   display:inline-block;vertical-align:middle;-webkit-font-feature-settings:'liga';user-select:none}}
 .cb-overline{{{ts('Label/Overline')}text-transform:uppercase;color:var(--color-text-muted);margin:0}}
-.cb-overline.accent{{color:var(--color-accent-default)}}
 .cb-sub{{{ts('Body/Regular')}color:var(--color-text-secondary);margin:0}}
 .cb-cap{{{ts('Caption/Regular')}color:var(--color-text-secondary);margin:0}}
 .cb-muted{{color:var(--color-text-muted)}}
 .cb-h3{{{ts('Heading/H3')}color:var(--color-text-primary);margin:0}}
 .cb-metric{{{ts('Display/Metric')}color:var(--color-text-primary)}}
-.cb-hero{{{ts('Display/Hero')}color:var(--color-text-primary)}}
 .cb-h2{{{ts('Heading/H2')}color:var(--color-text-primary)}}
 .cb-strong{{{ts('Body/Strong')}color:var(--color-text-primary)}}
 .cb-body{{{ts('Body/Regular')}color:var(--color-text-primary)}}
 .cb-row{{display:flex;align-items:center;gap:var(--space-2)}}
 .cb-between{{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}}
 .cb-stack{{display:flex;flex-direction:column;gap:var(--space-1)}}
-/* severity chip: icon + label, always both */
-.cb-chip{{display:inline-flex;align-self:flex-start;align-items:center;gap:var(--space-1);padding:3px var(--space-2);
-  border:1px solid;border-radius:var(--radius-full);{ts('Caption/Strong')}white-space:nowrap}}
+/* severity chip: icon + word, always both. Filled = new; hollow = acknowledged / in progress */
+.cb-chip{{display:inline-flex;align-self:flex-start;align-items:center;gap:var(--space-1);padding:2px var(--space-2);
+  border:1.5px solid;border-radius:var(--radius-full);{ts('Caption/Strong')}white-space:nowrap}}
 .cb-chip .cb-ms{{font-size:14px}}
-.cb-chip.critical{{background:var(--color-status-critical-bg);border-color:var(--color-status-critical);color:var(--color-status-critical-text)}}
-.cb-chip.critical .cb-ms{{color:var(--color-status-critical)}}
-.cb-chip.warning{{background:var(--color-status-warning-bg);border-color:var(--color-status-warning);color:var(--color-text-primary)}}
-.cb-chip.warning .cb-ms{{color:var(--color-status-warning)}}
-.cb-chip.neutral{{background:var(--color-status-neutral-bg);border-color:var(--color-status-neutral);color:var(--color-text-secondary)}}
-.cb-chip.good{{background:var(--color-status-good-bg);border-color:var(--color-status-good);color:var(--color-status-good-text)}}
-.cb-chip.good .cb-ms{{color:var(--color-status-good)}}
-/* status dot */
+.cb-chip.critical{{background:var(--color-status-critical);border-color:var(--color-status-critical);color:var(--color-text-on-accent)}}
+.cb-chip.warning{{background:var(--color-status-warning);border-color:var(--color-status-warning);color:var(--color-text-on-accent)}}
+.cb-chip.normal{{background:var(--color-status-normal-bg);border-color:var(--color-status-normal);color:var(--color-status-normal-text)}}
+.cb-chip.info{{background:var(--color-bg-control);border-color:var(--color-bg-control);color:var(--color-text-secondary)}}
+.cb-chip.offline{{background:transparent;border-color:var(--color-status-offline);border-style:dashed;color:var(--color-status-offline-text)}}
+.cb-chip.hollow{{background:transparent}}
+.cb-chip.hollow.critical{{color:var(--color-status-critical-text)}}
+.cb-chip.hollow.warning{{color:var(--color-status-warning-text)}}
+.cb-chip.hollow.info{{border-color:var(--color-border-strong)}}
+/* status dot; offline is a hollow ring */
 .cb-dot{{display:inline-flex;align-items:center;gap:6px;{ts('Caption/Regular')}color:var(--color-text-secondary);white-space:nowrap}}
-.cb-dot i{{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--color-status-good)}}
+.cb-dot i{{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--color-status-normal)}}
 .cb-dot.warning i{{background:var(--color-status-warning)}}
 .cb-dot.critical i{{background:var(--color-status-critical)}}
-.cb-dot.offline i{{background:transparent;border:1.5px solid var(--color-status-neutral)}}
-/* trust band */
-.cb-band{{display:flex;align-items:center;gap:var(--space-8);padding:var(--space-5);border-radius:var(--radius-lg);
-  border-left:3px solid var(--color-status-good);background:var(--color-status-good-bg);flex-wrap:wrap}}
-.cb-band.warning{{border-left-color:var(--color-status-warning);background:var(--color-status-warning-bg)}}
-.cb-band.critical{{border-left-color:var(--color-status-critical);background:var(--color-status-critical-bg)}}
-.cb-band .verdict{{display:flex;align-items:center;gap:var(--space-3);flex:1 1 320px;min-width:0}}
-.cb-band .verdict .cb-ms{{font-size:28px;color:var(--color-status-good)}}
-.cb-band.warning .verdict .cb-ms{{color:var(--color-status-warning)}}
-.cb-band.critical .verdict .cb-ms{{color:var(--color-status-critical)}}
-.cb-band .stat b{{display:block;{ts('Heading/H2')}color:var(--color-text-primary)}}
-.cb-band .stat span{{{ts('Caption/Regular')}color:var(--color-text-secondary)}}
-/* card internals */
-.cb-stats{{display:flex;justify-content:space-between;gap:var(--space-3)}}
-.cb-stats b{{display:block;{ts('Body/Strong')}color:var(--color-text-primary)}}
-.cb-stats span{{{ts('Caption/Regular')}color:var(--color-text-muted)}}
-.cb-well{{display:flex;gap:var(--space-2);align-items:flex-start;background:var(--color-bg-raised);
-  border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);{ts('Caption/Regular')}color:var(--color-text-secondary)}}
-.cb-well .cb-ms{{font-size:16px;color:var(--color-text-muted)}}
-.cb-pills{{display:flex;gap:var(--space-4);align-items:center;background:var(--color-bg-raised);
-  border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);{ts('Caption/Strong')}color:var(--color-text-secondary)}}
-.cb-pills .cb-ms{{font-size:14px;color:var(--color-text-muted);margin-right:6px}}
-.cb-iconbox{{width:36px;height:36px;border-radius:50%;background:var(--color-bg-raised);display:flex;
-  align-items:center;justify-content:center;flex:none}}
-.cb-iconbox .cb-ms{{font-size:18px;color:var(--color-text-secondary)}}
+.cb-dot.offline i{{background:transparent;border:1.5px solid var(--color-status-offline)}}
+.cb-dot.hollow i{{background:transparent;border:1.5px solid currentColor}}
+/* alarm band: one quiet strip; only the counts carry colour */
+.cb-band{{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2) var(--space-6);padding:10px var(--space-4);
+  border:1px solid var(--color-border-default);border-radius:var(--radius-md);background:var(--color-bg-surface)}}
+.cb-band .n{{display:inline-flex;align-items:baseline;gap:6px;{ts('Body/Strong')}color:var(--color-text-secondary);white-space:nowrap}}
+.cb-band .n b{{{ts('Heading/H3')}color:var(--color-text-primary)}}
+.cb-band .n .g{{font-size:13px}}
+.cb-band .n.critical .g,.cb-band .n.critical b{{color:var(--color-status-critical-text)}}
+.cb-band .n.warning .g,.cb-band .n.warning b{{color:var(--color-status-warning-text)}}
+.cb-band .n.offline .g,.cb-band .n.offline b{{color:var(--color-status-offline-text)}}
+.cb-band .n.zero .g,.cb-band .n.zero b{{color:var(--color-text-muted)}}
+.cb-band.inner{{border:0;background:transparent;padding:0}}
+div.st-key-alarmband{{background:var(--color-bg-surface);border:1px solid var(--color-border-default);
+  border-radius:var(--radius-md);padding:10px var(--space-4);overflow:visible}}
+div.st-key-alarmband div[data-testid="stMarkdownContainer"]{{margin-bottom:0 !important}}
+div.st-key-alarmband div[data-testid="stPageLink"]{{display:flex;justify-content:flex-end}}
+.cb-band .sep{{width:1px;align-self:stretch;background:var(--color-border-default)}}
+.cb-band .meta{{{ts('Caption/Regular')}color:var(--color-text-secondary)}}
+/* tiles */
+.cb-tile{{min-height:124px;border:1px solid var(--color-border-strong);border-radius:var(--radius-lg);background:var(--color-bg-surface);
+  padding:14px var(--space-5);height:100%}}
+.cb-tile .lbl{{{ts('Label/Overline')}text-transform:uppercase;color:var(--color-text-muted)}}
+.cb-tile .v{{{ts('Display/Metric')}color:var(--color-text-primary);margin-top:2px}}
+.cb-tile .d{{{ts('Caption/Strong')}color:var(--color-text-secondary);margin-top:2px}}
+.cb-tile .s{{{ts('Caption/Regular')}color:var(--color-text-muted);margin-top:4px}}
+.cb-tile ul{{margin:6px 0 0;padding:0;list-style:none}}
+.cb-tile li{{{ts('Caption/Regular')}color:var(--color-text-secondary);margin:0 0 2px}}
 .cb-share{{position:relative;height:12px;margin:6px 0 4px}}
 .cb-share .track{{position:absolute;left:0;right:0;top:3px;height:6px;border-radius:3px;background:var(--color-bg-control)}}
-.cb-share .fill{{position:absolute;left:0;top:3px;height:6px;border-radius:3px}}
+.cb-share .fill{{position:absolute;left:0;top:3px;height:6px;border-radius:3px;background:var(--color-data-primary)}}
 .cb-share .target{{position:absolute;top:0;width:2px;height:12px;background:var(--color-text-primary)}}
 .cb-legend{{display:inline-flex;align-items:center;gap:6px;{ts('Caption/Regular')}color:var(--color-text-secondary);margin-right:var(--space-4)}}
 .cb-legend i{{width:10px;height:10px;border-radius:2px;display:inline-block}}
 .cb-legend i.tick{{width:2px;height:12px;border-radius:0}}
-.cb-list{{border:1px solid var(--color-border-default);border-radius:var(--radius-lg);background:var(--color-bg-surface);overflow:hidden}}
-.cb-list .item{{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) var(--space-5)}}
+.cb-list{{border:1px solid var(--color-border-strong);border-radius:var(--radius-lg);background:var(--color-bg-surface);overflow:hidden}}
+.cb-list .item{{display:flex;align-items:center;gap:var(--space-3);padding:10px var(--space-4)}}
 .cb-list .item + .item{{border-top:1px solid var(--color-border-default)}}
 .cb-list .item .txt{{flex:1;min-width:0}}
-.cb-list .item .cost{{{ts('Heading/H3')}color:var(--color-text-primary);white-space:nowrap}}
+.cb-list .item .cost{{{ts('Body/Strong')}color:var(--color-text-primary);white-space:nowrap;text-align:right}}
 /* native elements, restyled to the tokens */
-div[data-testid="stMainBlockContainer"]{{padding:88px var(--space-8) 64px !important}}
-/* st.metric(border=True) already pads 13px inside; this tops it up to the tile's 16 x 20 */
-div[data-testid="stMetric"]{{background:var(--color-bg-surface);border-radius:var(--radius-lg) !important;
+div[data-testid="stMainBlockContainer"]{{padding:48px var(--space-8) 64px !important}}
+div[data-testid="stMetric"]{{min-height:118px;background:var(--color-bg-surface);border-radius:var(--radius-lg) !important;
   padding:3px 7px !important}}
 div[data-testid="stMetricLabel"] p{{{ts('Caption/Strong')}color:var(--color-text-secondary)}}
 div[class*="st-key-card_"]{{background:var(--color-bg-surface);border-radius:var(--radius-lg)}}
+div.st-key-ctxbar{{border-bottom:1px solid var(--color-border-default);padding-bottom:10px;margin-bottom:4px}}
 h1{{letter-spacing:-0.2px}}
-/* sections sit 32px apart, as in the Figma screens */
-div[data-testid="stHeading"]:has(h3){{margin-top:16px}}
+div[data-testid="stHeading"]:has(h3){{margin-top:12px}}
 div[class*="st-key-card_"] div[data-testid="stHeading"]:has(h3){{margin-top:0}}
+section[data-testid="stSidebar"],div[data-testid="stSidebarCollapsedControl"]{{display:none}}
 </style>"""
 
 
@@ -271,8 +450,8 @@ def md(s: str) -> None:
 
 
 def page_header(group: str, title: str, sub: str = "") -> None:
-    """Overline (navigation group), H1 title, one-line purpose."""
-    md(f'<p class="cb-overline accent" style="margin-bottom:-12px">{esc(group)}</p>')
+    """Overline (muted), H1 title, one-line purpose. `sub` is HTML."""
+    md(f'<p class="cb-overline" style="margin-bottom:-12px">{esc(group)}</p>')
     st.title(title)
     if sub:
         md(f'<p class="cb-sub" style="margin-top:-12px">{sub}</p>')
@@ -284,24 +463,32 @@ def section(title: str, sub: str = "") -> None:
         md(f'<p class="cb-sub" style="margin-top:-12px">{sub}</p>')
 
 
-#: priority -> (chip class, icon). The icon is never optional: colour alone is
-#: not a severity signal.
+#: priority/status -> (chip class, icon). The icon is never optional.
 _CHIP = {"high": ("critical", "error"), "medium": ("warning", "warning"),
-         "low": ("neutral", "info"), "info": ("neutral", "info"),
-         "ok": ("good", "check_circle"), "critical": ("critical", "error"),
-         "warning": ("warning", "warning"), "good": ("good", "check_circle"),
-         "neutral": ("neutral", "info")}
+         "low": ("info", "info"), "info": ("info", "info"),
+         "critical": ("critical", "error"), "warning": ("warning", "warning"),
+         "ok": ("normal", "check_circle"), "normal": ("normal", "check_circle"),
+         "good": ("normal", "check_circle"), "neutral": ("info", "info"),
+         "offline": ("offline", "radio_button_unchecked")}
+HOLLOW_STATES = {"Acknowledged", "In progress"}
 
 
-def chip(priority: str, label: str | None = None) -> str:
+def chip(priority: str, label: str | None = None, hollow: bool = False) -> str:
+    """Severity chip. Filled for a new item; hollow (outline) once acknowledged."""
     cls, ic = _CHIP.get(str(priority).lower(), _CHIP["info"])
-    return (f'<span class="cb-chip {cls}">{icon(ic)}'
+    return (f'<span class="cb-chip {cls}{" hollow" if hollow else ""}">{icon(ic)}'
             f'{esc(label if label is not None else str(priority).capitalize())}</span>')
 
 
-def dot(status: str, label: str) -> str:
-    """status: good | warning | critical | offline."""
-    return f'<span class="cb-dot {status}"><i></i>{esc(label)}</span>'
+def state_chip(r) -> str:
+    """A fault's severity chip, hollow when it is acknowledged or in progress."""
+    return chip(r.priority, hollow=getattr(r, "state", "New") in HOLLOW_STATES)
+
+
+def dot(status: str, label: str, hollow: bool = False) -> str:
+    """status: normal | warning | critical | offline (offline is always a ring)."""
+    status = {"good": "normal"}.get(status, status)
+    return f'<span class="cb-dot {status}{" hollow" if hollow else ""}"><i></i>{esc(label)}</span>'
 
 
 def legend(items: list[tuple[str, str]], tick: bool = False) -> str:
@@ -311,141 +498,104 @@ def legend(items: list[tuple[str, str]], tick: bool = False) -> str:
 
 
 def share_bar(pct: float, target: float | None = None) -> str:
-    """The overcooled-share bar with its target marker (Floor card)."""
+    """A 0–100% blue magnitude with a target tick. Judgement goes in a chip beside it."""
     target = R.conv("overcooled_target_pct") if target is None else target
     w = max(0.0, min(100.0, pct)) if np.isfinite(pct) else 0.0
     return (f'<div class="cb-share"><div class="track"></div>'
-            f'<div class="fill" style="width:{w:.1f}%;background:{overcool_hex(pct)}"></div>'
+            f'<div class="fill" style="width:{w:.1f}%"></div>'
             f'<div class="target" style="left:{target:.1f}%"></div></div>')
 
 
+def tile(label: str, value: str, delta: str = "", sub: str = "", items: list[str] | None = None,
+         help: str = "") -> None:
+    """A KPI tile in HTML, for tiles that need a list or a sub-line st.metric can't hold."""
+    li = "".join(f"<li>{i}</li>" for i in (items or []))
+    md(f'<div class="cb-tile" title="{esc(help)}"><div class="lbl">{esc(label)}</div>'
+       f'<div class="v">{value}</div>'
+       + (f'<div class="d">{delta}</div>' if delta else "")
+       + (f'<div class="s">{sub}</div>' if sub else "")
+       + (f"<ul>{li}</ul>" if li else "") + "</div>")
+
+
 # --------------------------------------------------------------------------- #
-# the trust band — sits at the top of every operational page
+# the alarm band — top of every page
 # --------------------------------------------------------------------------- #
 
-def trust_band(floor: int, as_of, compact: bool = False) -> dict:
-    """Data-health header. Everything below it on a page is conditional on it."""
+def band_counts(reg: pd.DataFrame, ps: pd.DataFrame) -> dict:
+    op = reg[reg.is_open] if len(reg) else reg
+    return {
+        "critical": int((op.priority == F.HIGH).sum()) if len(op) else 0,
+        "warning": int((op.priority == F.MED).sum()) if len(op) else 0,
+        "down": int(ps.is_down.sum()) if len(ps) else 0,
+        "unack": int((op.state == "New").sum()) if len(op) else 0,
+    }
+
+
+def alarm_band(counts: dict, meta: str = "", link: bool = True) -> None:
+    """● N Critical · ▲ N Warning · ○ N Points down · ◐ N Unacknowledged · meta · All →"""
+    def n(kind, g, v, word):
+        return (f'<span class="n {kind if v else "zero"}"><span class="g">{g}</span>'
+                f'<b>{v}</b>{word}</span>')
+    html = ('<div class="cb-band">'
+            + n("critical", "●", counts["critical"], "Critical")
+            + n("warning", "▲", counts["warning"], "Warning")
+            + n("offline", "○", counts["down"], "Points down")
+            + n("warning", "◐", counts["unack"], "Unacknowledged")
+            + (f'<span class="sep"></span><span class="meta">{meta}</span>' if meta else "")
+            + "</div>")
+    if link:
+        with st.container(key="alarmband"):
+            cols = st.columns([12, 1], vertical_alignment="center", gap="small")
+            with cols[0]:
+                md(html.replace('class="cb-band"', 'class="cb-band inner"'))
+            cols[1].page_link("views/5_faults.py", label="All", icon=":material/arrow_forward:",
+                              icon_position="right")
+    else:
+        md(html)
+
+
+def data_health_line(floor: int, as_of) -> str:
+    """'Point health 92/100 · 98% complete today' — or why there is none."""
     H = health(floor)
+    if not (H.day == pd.Timestamp(as_of).normalize()).any():
+        fe = R.floor_file_end(floor)
+        if fe is not None and pd.Timestamp(as_of) >= fe.normalize():
+            return f"No data — F{floor}'s file ends {fe.day} {fe:%b %Y}"
+        return "No data for this date"
     phi = HL.point_health_index(H, as_of, floor)
-    day_rows = H[H.day == pd.Timestamp(as_of).normalize()]
-
-    if not len(day_rows):
-        st.error(f"No data at all for {pd.Timestamp(as_of).date()}.")
-        return phi
-
-    idx = phi["index"]
-    stale = HL.last_good(H, as_of, floor)
-    worst = int(stale.days_stale.max()) if len(stale) else 0
-    if idx >= R.conv("health_good"):
-        kind, ic, verdict = "good", "check_circle", "Data is trustworthy today"
-    elif idx >= R.conv("health_warn"):
-        kind, ic, verdict = "warning", "warning", "Use today's data with care"
-    else:
-        kind, ic, verdict = "critical", "error", "Today's data is not trustworthy"
-    flagged = (f"{phi['faulted']} point-day(s) flagged — see Sensor &amp; data health."
-               if phi["faulted"] else "No point-days flagged.")
-    sub = ("" if compact else "Everything below is conditional on this band. ") + flagged
-    stats = [
-        (f"{idx:.0f}/100", "point health",
-         "Mean per-point health for the selected day: completeness, less penalties for "
-         "frozen, out-of-range and spiking points."),
-        (f"{phi['points'] - phi['offline']}/{phi['points']}", "points reporting",
-         f"{phi['offline']} offline" if phi["offline"] else "All points online."),
-        (f"{phi['completeness']:.0f}%", "complete today",
-         f"Target {R.conv('completeness_target'):.0f}% of expected samples per point per day."),
-        (f"{worst} d", "longest stale", "Days since the stalest point last reported a good value."),
-    ]
-    md(f'<div class="cb-band {kind}"><div class="verdict">{icon(ic)}<div>'
-       f'<div class="cb-h3">{verdict}</div><div class="cb-cap">{sub}</div></div></div>'
-       + "".join(f'<div class="stat" title="{esc(h)}"><b>{v}</b><span>{l}</span></div>'
-                 for v, l, h in stats) + "</div>")
-    return phi
+    return f"Point health {phi['index']:.0f}/100 · {phi['completeness']:.0f}% complete today"
 
 
-def stat_card(title: str, items: list[tuple[str, str]]) -> None:
-    """A small card of big counts (Floor status' 'Since yesterday')."""
-    cells = "".join(f'<div><div class="cb-metric">{esc(v)}</div><div class="cb-cap cb-muted">'
-                    f'{esc(l)}</div></div>' for v, l in items)
-    md(f'<div style="background:var(--color-bg-surface);border:1px solid var(--color-border-default);'
-       f'border-radius:var(--radius-lg);padding:var(--space-4) var(--space-5);height:100%">'
-       f'<div class="cb-cap" style="font-weight:500;margin-bottom:8px">{esc(title)}</div>'
-       f'<div class="cb-between">{cells}</div></div>')
-
-
-def card(key: str, edge: str | None = None):
-    """A bordered surface card. `edge` paints the 4px identity edge (floor colour)."""
-    if edge:
-        md(f'<style>.st-key-card_{key}{{box-shadow:inset 4px 0 0 {edge}}}</style>')
-    return st.container(border=True, key=f"card_{key}")
-
-
-def floor_card_body(floor: int, row: dict, lever: str, kind: str = "office") -> str:
-    """Floor card (Figma 7:263) without its button. row = one floor_league row."""
-    if floor in R.FILE_END:
-        status = dot("offline", f"File ends {R.floor_file_end(floor):%d %b %Y}")
-    elif row.get("meter_pct", 100) < R.conv("completeness_target"):
-        status = dot("warning", f"Meters {row['meter_pct']:.0f}% complete")
-    else:
-        status = dot("good", "Reporting")
-    head = (f'<div class="cb-between" style="align-items:center"><div class="cb-h3">Floor {floor}'
-            f'{" · non-office" if kind != "office" else ""}</div>{status}</div>')
-    lo = R.conv("comfort_lo")
-    if kind == "office":
-        oc = row.get("overcooled_pct", np.nan)
-        main = (f'<div class="cb-row" style="align-items:baseline"><span class="cb-metric">'
-                f'{f"{oc:.0f}%" if np.isfinite(oc) else "—"}</span><span class="cb-cap">cooled '
-                f'hours below {lo:g} °C</span></div>{share_bar(oc)}'
-                f'<div class="cb-cap cb-muted">Target &lt; {R.conv("overcooled_target_pct"):.0f}%</div>')
-    else:
-        na = row.get("night_ac_pct", np.nan)
-        main = (f'<div class="cb-row" style="align-items:baseline"><span class="cb-metric">'
-                f'{f"{na:.0f}%" if np.isfinite(na) else "—"}</span><span class="cb-cap">overnight AC '
-                f'vs daytime</span></div><div class="cb-cap cb-muted">Not ranked on overcooling '
-                f'or schedule — the AC never switches off.</div>')
-
-    def _f(v, fmt):
-        return fmt.format(v) if v is not None and np.isfinite(v) else "—"
-
-    stats = (f'<div class="cb-stats"><div><b>{_f(row.get("eui"), "{:.0f}")}</b><span>kWh/m²·yr</span></div>'
-             f'<div><b>{_f(row.get("after_hours_ac_pct"), "{:.1f}%")}</b><span>after-hours AC</span></div>'
-             f'<div><b>{_f(row.get("deviation_pct"), "{:+.1f}%")}</b><span>vs baseline</span></div></div>')
-    return (f'<div class="cb-stack" style="gap:16px">{head}<div class="cb-stack" style="gap:2px">{main}'
-            f'</div>{stats}<div class="cb-well">{icon("lightbulb")}<span>{esc(lever)}</span></div></div>')
-
-
-def zone_card_body(zone_title: str, status_html: str, chip_html: str, ic: str,
-                   temp_label: str, temp: str, temp_big: bool, cold: str, cold_bad: bool,
-                   ac: str, rh: str, rec: str) -> str:
-    """Zone card (Figma 7:387) without its button."""
-    tcls = "cb-hero" if temp_big else "cb-h2"
-    tcol = "" if temp_big else "color:var(--color-text-secondary)"
-    ccol = "var(--color-status-critical-text)" if cold_bad else "var(--color-text-muted)"
-    return (
-        f'<div class="cb-stack" style="gap:16px">'
-        f'<div class="cb-between"><div class="cb-row" style="gap:10px"><div class="cb-iconbox">{icon(ic)}</div>'
-        f'<div class="cb-stack" style="gap:2px"><div class="cb-h3">{esc(zone_title)}</div>{status_html}</div></div>'
-        f'{chip_html}</div>'
-        f'<div class="cb-between" style="align-items:flex-end"><div class="cb-stack" style="gap:2px">'
-        f'<span class="cb-cap cb-muted">{esc(temp_label)}</span><span class="{tcls}" style="{tcol}">{esc(temp)}</span></div>'
-        f'<div class="cb-stack" style="gap:2px;align-items:flex-end"><span class="cb-cap cb-muted">Cold hours</span>'
-        f'<span class="cb-h2" style="color:{ccol}">{esc(cold)}</span></div></div>'
-        f'<div class="cb-pills"><span>{icon("bolt")}{esc(ac)}</span><span>{icon("water_drop")}{esc(rh)}</span></div>'
-        f'<div class="cb-stack" style="gap:6px"><p class="cb-overline">Recommended</p>'
-        f'<p class="cb-body">{esc(rec)}</p></div></div>')
+def floor_band(floor: int, as_of, reg: pd.DataFrame | None = None, extra: str = "") -> pd.DataFrame:
+    """The alarm band for one floor, with its down points named and one line of
+    data health. Returns the floor's point status."""
+    reg = register(floor) if reg is None else reg
+    ps = point_status(floor, as_of)
+    down = ps[ps.is_down]
+    names = ", ".join(f"{r.zone} {r.channel} {POINT_GLYPH[r.status][0]} {r.status.lower()}"
+                      for r in down.head(3).itertuples())
+    if len(down) > 3:
+        names += f" +{len(down) - 3} more"
+    meta = " · ".join(x for x in [names, data_health_line(floor, as_of), extra] if x)
+    alarm_band(band_counts(reg, ps), esc(meta).replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>"))
+    return ps
 
 
 def status_notes(as_of, floor: int = 5) -> None:
     """Blackout / outage / change-point warnings for the chosen date."""
     for note in D.data_status(as_of, floor):
         fn = st.error if note["level"] == "error" else st.warning
-        fn(f"**{note['title']}** — {note['detail']}")
+        fn(f"**{note['title']}** — {note['detail']}",
+           icon=":material/error:" if note["level"] == "error" else ":material/warning:")
 
 
-def comparison_guard(start, end, floor: int) -> list:
+def comparison_guard(start, end, floor: int, show: bool = True) -> list:
     """Block a period-over-period comparison that straddles a change-point."""
     cps = [c for c in R.crosses_change_point(start, end, floor) if c.blocks_comparison]
-    for c in cps:
-        st.error(f"**Comparison disabled — {c.title} ({c.date}).** {c.detail}")
+    if show:
+        for c in cps:
+            st.error(f"**Comparison disabled — {c.title} ({c.date}).** {c.detail}",
+                     icon=":material/block:")
     return cps
 
 
@@ -458,8 +608,17 @@ def kwh(v, digits=0):
         else f"{v:,.{digits}f}"
 
 
+def thb(kwh_v: float, tariff: float, suffix: str = "") -> str:
+    """฿ for an energy figure — or the prompt to set a rate, never ฿0."""
+    if not tariff:
+        return "set rate in Assumptions"
+    if kwh_v is None or not np.isfinite(kwh_v):
+        return DASH
+    return f"฿{kwh_v * tariff:,.0f}{suffix}"
+
+
 def money(v, tariff):
-    return f"฿{v * tariff:,.0f}"
+    return thb(v, tariff)
 
 
 def round_numeric(df: pd.DataFrame, digits: int = 1) -> pd.DataFrame:
@@ -467,41 +626,40 @@ def round_numeric(df: pd.DataFrame, digits: int = 1) -> pd.DataFrame:
     return df.round({c: digits for c in df.select_dtypes("number").columns})
 
 
-FAULTS_PERIOD_KEY = "faults_period"
-
-
-def with_states(reg: pd.DataFrame, show_planned: bool = False) -> pd.DataFrame:
-    """A fault register as the FM team sees it: planned-maintenance items hidden,
-    saved lifecycle states and session mutes applied (`state`, `is_open`). Every
-    page that counts open faults goes through here, so the counts agree."""
-    if not len(reg):
-        return reg
-    if not show_planned:
-        reg = reg[~reg.planned]
-    reg = W.apply_states(reg, FAULT_STATES)
-    if len(reg):
-        sm = reg.id.isin(st.session_state.get("muted", set()))
-        reg.loc[sm, "state"], reg.loc[sm, "is_open"] = "Muted", False
-    return reg
-
-
-def faults_link(n_open: int) -> None:
-    """'All N open faults →', opening the Faults page on the same trailing
-    window the count came from (its own default is 30 days)."""
-    if st.button(f"All {n_open} open faults", icon=":material/arrow_forward:", type="secondary"):
-        st.session_state[FAULTS_PERIOD_KEY] = "Trailing window"
-        st.switch_page("views/5_faults.py")
-
-
 def signed_thb(v) -> str:
     """'-฿2,047' / '+฿310'. The sign must come first: st.metric reads the
-    delta's direction from a leading '-', so '฿-2,047' would show as a rise."""
+    delta's direction from a leading '-'."""
     return f"{'-' if v < 0 else '+'}฿{abs(v):,.0f}"
 
 
+def day_txt(t) -> str:
+    t = pd.Timestamp(t)
+    return f"{t.day} {t:%b %Y}"
+
+
+_GLYPH_KIND = {"●": "critical", "▲": "warning", "○": "offline", "◐": "warning",
+               "✓": "normal", "ⓘ": "info", "⚠": "warning"}
+_KIND_TEXT = {"critical": C["status/critical-text"], "warning": C["status/warning-text"],
+              "offline": C["status/offline-text"], "normal": C["status/normal-text"],
+              "info": INK_2}
+
+
+def glyph_style(df: pd.DataFrame, cols: list[str], fmt: dict | None = None, highlight_row=None):
+    """Colour glyph-led text cells ('● 3 crit', '○ OFFLINE') by their glyph, and
+    show missing values as '—'. Returns a Styler for st.dataframe."""
+    def f(v):
+        s = str(v).strip()
+        k = _GLYPH_KIND.get(s[:1]) if s else None
+        return f"color:{_KIND_TEXT[k]}" if k else ""
+    sty = df.style.map(f, subset=[c for c in cols if c in df.columns])
+    if highlight_row is not None:
+        sty = sty.apply(lambda r: [f"color:{C['accent/hover']}" if r.name == highlight_row else ""
+                                   for _ in r], axis=1, subset=df.columns[:1])
+    return sty.format(fmt or {}, na_rep=DASH)
+
+
 def is_stairwell(floor: int, zone: str) -> bool:
-    """Only where the registry says so (F5 z3) — elsewhere a zone without an AC
-    meter is just that, and calling it a stairwell would be a guess."""
+    """Only where the registry says so (F5 z3)."""
     p = R.point_for_any(floor, zone, "ac")
     return bool(p and p.note.lower().startswith("stairwell"))
 
@@ -534,6 +692,10 @@ def zone_label(floor: int, zone: str) -> str:
     return zone
 
 
+# --------------------------------------------------------------------------- #
+# charts
+# --------------------------------------------------------------------------- #
+
 def chart(c, height=280):
     """Chart chrome from the tokens: recessive grid and axes, muted labels, no frame."""
     if height is not None:                     # None for faceted charts: panels set their own size
@@ -542,22 +704,17 @@ def chart(c, height=280):
             .configure_axis(gridColor=GRID, domainColor=C["border/strong"], tickColor=C["border/strong"],
                             labelColor=INK_3, titleColor=INK_2, labelFontSize=12, titleFontSize=12,
                             titleFontWeight=500)
-            .configure_legend(labelColor=INK_2, titleColor=INK_2, labelFontSize=12))
+            .configure_legend(labelColor=INK_2, titleColor=INK_2, labelFontSize=12)
+            .configure_header(labelColor=INK_2, titleColor=INK_2, labelFontSize=12))
 
 
-def altair_heatmap(df, x, y, color, tooltip, title="", scheme=None):
-    return alt.Chart(df).mark_rect().encode(
-        x=alt.X(x, title=None),
-        y=alt.Y(y, title=None),
-        color=alt.Color(color, scale=scheme or HEALTH_COLOR,
-                        legend=alt.Legend(title="health", orient="right")),
-        tooltip=tooltip,
-    ).properties(title=title)
+def expected_line(c: alt.Chart) -> alt.Chart:
+    """Expected / baseline: secondary text colour, dashed."""
+    return c.mark_line(color=EXPECTED, strokeWidth=2, strokeDash=[6, 4])
 
 
 def cps_rules(floor: int, start=None, end=None) -> alt.Chart | None:
-    """Vertical rules for blocking change-points (and the sensor gap) inside a
-    period — the annotation every time-series chart on the energy pages carries."""
+    """Dotted muted rules for blocking change-points (and the sensor gap) inside a period."""
     rows = [{"date": pd.Timestamp(c.date), "label": c.title} for c in R.CHANGE_POINTS
             if c.blocks_comparison and floor in c.floors]
     lo, hi = (pd.Timestamp(x) for x in R.BLACKOUT)
@@ -570,8 +727,47 @@ def cps_rules(floor: int, start=None, end=None) -> alt.Chart | None:
         df = df[df.date <= pd.Timestamp(end)]
     if not len(df):
         return None
-    return alt.Chart(df).mark_rule(color=WARN, strokeDash=[4, 3]).encode(
+    return alt.Chart(df).mark_rule(color=INK_3, strokeDash=[1, 3], strokeWidth=1.5).encode(
         x="date:T", tooltip=[alt.Tooltip("date:T"), "label:N"])
+
+
+def overcool_heatmap(hm: pd.DataFrame, as_of, floor_sort: list[str], height: int = 230):
+    """Floor × month overcooled share on the blue ramp, '—' cells for no data,
+    labels in ink that clears 4.5:1 on each step."""
+    hm = hm.copy()
+    hm["label"] = np.where(hm.overcooled_pct.notna(),
+                           hm.overcooled_pct.round(0).astype("Int64").astype(str), DASH)
+    hm["cell"] = np.where(hm.overcooled_pct.notna(), "data", "no data")
+    step = [seq_step(v) for v in hm.overcooled_pct.fillna(np.nan)]
+    hm["ink"] = ["light" if s < 0 or SEQ_INK[s] == INK else "dark" for s in step]
+    base = alt.Chart(hm).encode(
+        x=alt.X("yearmonth(month):O", title=None,
+                axis=alt.Axis(labelAngle=0, format="%b %y", orient="top", domain=False, ticks=False)),
+        y=alt.Y("floor:N", title=None, sort=floor_sort, axis=alt.Axis(domain=False, ticks=False)))
+    return alt.layer(
+        base.transform_filter("datum.cell == 'no data'").mark_rect(
+            color=NO_DATA, cornerRadius=4, stroke=SURFACE, strokeWidth=2),
+        base.transform_filter("datum.cell == 'data'").mark_rect(
+            cornerRadius=4, stroke=SURFACE, strokeWidth=2).encode(
+            color=alt.Color("overcooled_pct:Q", scale=OVERCOOL_COLOR, legend=None),
+            tooltip=["floor", alt.Tooltip("month:T", format="%b %Y"),
+                     alt.Tooltip("overcooled_pct:Q", format=".0f", title="cooled hours below band %"),
+                     alt.Tooltip("hours:Q", title="cooled zone-hours")]),
+        base.mark_text(fontSize=12, fontWeight=500).encode(
+            text="label:N",
+            color=alt.Color("ink:N", scale=alt.Scale(domain=["dark", "light"],
+                                                     range=[C["text/on-accent"], INK]), legend=None)),
+        alt.Chart(pd.DataFrame({"m": [pd.Timestamp(as_of).replace(day=1)]})).mark_rect(
+            fill=None, stroke=INK, strokeWidth=2, cornerRadius=4).encode(x="yearmonth(m):O"),
+    )
+
+
+def seq_legend() -> str:
+    """The five ramp steps with their ranges, plus the target and no-data keys."""
+    edges = [0] + OVERCOOL_BINS + [100]
+    sw = "".join(f'<span class="cb-legend"><i style="background:{SEQ[i]}"></i>'
+                 f'{edges[i]}–{edges[i + 1]}%</span>' for i in range(5))
+    return sw + legend([("No data", NO_DATA)])
 
 
 def file_end_note(floor: int, end=None) -> None:
@@ -579,7 +775,7 @@ def file_end_note(floor: int, end=None) -> None:
     fe = R.floor_file_end(floor)
     if fe is not None and (end is None or pd.Timestamp(end) >= fe.normalize()):
         st.warning(f"**Floor {floor}'s file ends {fe:%Y-%m-%d %H:%M}.** Everything after is "
-                   "not metered — never compare it with an earlier period.")
+                   "not metered — never compare it with an earlier period.", icon=":material/warning:")
 
 
 def fmt_weeks(w) -> str:

@@ -26,18 +26,36 @@ PAIRS = {
     "backgroundColor": "bg/page",
     "secondaryBackgroundColor": "bg/control",
     "textColor": "text/primary",
-    "borderColor": "border/default",
+    "borderColor": "border/strong",          # input and card edges
+    "dataframeBorderColor": "border/default",  # decorative dividers
+    "dataframeHeaderBackgroundColor": "bg/raised",
+    "dataframeHeaderTextColor": "text/secondary",
+    "linkColor": "accent/hover",
     "redColor": "status/critical",
     "redTextColor": "status/critical-text",
     "redBackgroundColor": "status/critical-bg",
     "orangeColor": "status/warning",
+    "orangeTextColor": "status/warning-text",
     "orangeBackgroundColor": "status/warning-bg",
     "yellowColor": "status/warning",
+    "yellowTextColor": "status/warning-text",
     "yellowBackgroundColor": "status/warning-bg",
-    "greenColor": "status/good",
-    "greenTextColor": "status/good-text",
-    "greenBackgroundColor": "status/good-bg",
+    "greenColor": "status/normal",
+    "greenTextColor": "status/normal-text",
+    "greenBackgroundColor": "status/normal-bg",
+    "grayColor": "status/offline",
+    "grayTextColor": "status/offline-text",
+    "grayBackgroundColor": "status/offline-bg",
 }
+
+#: chartCategoricalColors, in order.
+CATEGORICAL = ["data/primary", "data/series-2", "data/series-3", "data/context"]
+
+#: Legacy names kept as aliases; they must stay equal to the new ones.
+ALIASES = {"status/good": "status/normal", "status/neutral": "status/offline"}
+
+#: Retired token families: floors and zones are identified by label, not hue.
+RETIRED = ("data/floor-", "data/zone-", "data/overcool-", "data/enduse-", "data/cold", "data/warm")
 
 HEX = re.compile(r"#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b")
 
@@ -47,8 +65,16 @@ def test_theme_matches_tokens():
            if str(THEME.get(k, "")).upper() != TOKENS[t].upper()]
     assert THEME["sidebar"]["backgroundColor"].upper() == TOKENS["bg/surface"].upper()
     cats = [c.upper() for c in THEME["chartCategoricalColors"]]
-    assert cats == [TOKENS[f"data/floor-{f}"].upper() for f in range(1, 8)], "chart colours != floor tokens"
+    assert cats == [TOKENS[t].upper() for t in CATEGORICAL], "chartCategoricalColors != data tokens"
     assert not bad, "\n".join(bad)
+
+
+def test_aliases_and_retired_tokens():
+    for old, new in ALIASES.items():
+        for suf in ("", "-text", "-bg"):
+            assert TOKENS[old + suf].upper() == TOKENS[new + suf].upper(), f"{old + suf} != {new + suf}"
+    left = [k for k in TOKENS if k.startswith(RETIRED)]
+    assert not left, f"retired tokens still defined: {left}"
 
 
 def test_no_hex_in_views():
@@ -63,6 +89,7 @@ def test_no_hex_in_views():
 if __name__ == "__main__":
     fails = 0
     for name, fn in [("theme matches tokens", test_theme_matches_tokens),
+                     ("aliases equal, retired tokens gone", test_aliases_and_retired_tokens),
                      ("no hex colours in views", test_no_hex_in_views)]:
         try:
             fn()
