@@ -77,17 +77,20 @@ on_building_page = on_overview or nav.url_path == "carbon"
 # context bar — set once, read by every page through ui.ctx()
 # --------------------------------------------------------------------------- #
 WIRED = [f"F{f}" for f in R.wired_floors()]
-# "Bldg" exists only on the building pages; floor pages offer wired floors only.
-FLOOR_OPTS = (["Bldg"] + WIRED) if on_building_page else WIRED
+# Bldg only on Overview / Carbon; F1 (lobby, reporting only) on Overview, Carbon,
+# Floor and Energy; the office floors everywhere (ui.floor_options).
+FLOOR_OPTS = ui.floor_options(nav.url_path)
 on_carbon = nav.url_path == "carbon"
 st.session_state.setdefault("floor", 5)
+st.session_state.setdefault("office_floor", 5)          # last office floor, for fallbacks
 st.session_state.setdefault("floor_select", "Bldg" if on_building_page else f"F{st.session_state['floor']}")
 # Older sessions (and the Overview's row click) may hold a bare int.
 if isinstance(st.session_state["floor_select"], int):
     st.session_state["floor_select"] = f"F{st.session_state['floor_select']}"
-# Anything not offered here (e.g. "Bldg" on a floor page) falls back to the last wired floor.
+# Anything not offered here ("Bldg" on a floor page, F1 on an office-only page) falls
+# back to the last office floor (default F5).
 if st.session_state["floor_select"] not in FLOOR_OPTS:
-    st.session_state["floor_select"] = f"F{st.session_state['floor']}"
+    st.session_state["floor_select"] = f"F{st.session_state['office_floor']}"
 st.session_state.setdefault("period", ui.DEFAULT_PERIOD)
 st.session_state.setdefault("as_of", D.DEFAULT_AS_OF.date())
 if isinstance(st.session_state["as_of"], pd.Timestamp):
@@ -141,9 +144,12 @@ with st.container(key="ctxbar"):
     sel = cb[0].segmented_control(
         "Floor", FLOOR_OPTS, key="floor_select", required=True,
         help=("Bldg = the whole building. " if on_building_page else "")
-             + "F1 is not an office floor and F2 is not wired; both are in the building totals.")
+             + ("F1 is the lobby (reporting only: energy, cost, carbon). " if "F1" in FLOOR_OPTS else "")
+             + "F2 is not monitored; F1 and F2 are in the building totals.")
     if sel != "Bldg":
         st.session_state["floor"] = int(sel[1:])
+        if int(sel[1:]) in R.wired_floors():
+            st.session_state["office_floor"] = int(sel[1:])
     cb[1].date_input(
         "Data as of", key="as_of",
         min_value=D.RECORD_START.date(), max_value=D.RECORD_END.date(), format="DD/MM/YYYY",

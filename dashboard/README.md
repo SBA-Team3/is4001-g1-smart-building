@@ -4,7 +4,7 @@ A BMS-style operations dashboard for the CU-BEMS building, built for the
 university FM team (Office of Physical Resources Management). Its first
 questions are energy use, cost, and which sensors are down, so the Overview
 answers those for the whole building on one 1440×900 screen. The operational
-pages are wired for Floors 3–7; F1 (non-office, no sensors) and F2 (not wired)
+pages are wired for Floors 3–7; F1 (the lobby — a team assumption; no sensors) and F2 (not wired)
 appear only in building totals.
 
 ## Run it
@@ -129,7 +129,7 @@ What is still open:
 
 | Floor | Status |
 |---|---|
-| F1 | Not wired: no sensors, so Sensors, Savings and Methods fail; not an office floor anyway. |
+| F1 | Reporting only (Overview, Floor, Energy, Carbon): treated as the lobby — a team assumption; no sensors, AC never switches off. Still `wired: False` in the registry; the dashboard's `ui.REPORTING_ONLY` offers it on those pages only. |
 | F2 | Not wired: renders, but has no lunch shutdown, so the thermal model has no AC-off hour, and its 14-unit z2 needs its own triage view. |
 | F4, F7 | Wired. The physics fit is not identified (1/C CI reaches zero), so the setpoint estimate is the regression alone and the page says so. |
 | F6 | Wired. Unconfirmed z1/z5 meter-transfer candidate in Jun 2019 (00a §7), not yet in `CHANGE_POINTS`. |

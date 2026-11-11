@@ -143,7 +143,7 @@ with left:
     for f in sorted(R.FLOORS):
         kwh = E.floor_totals(h[h.floor == f], s, e)["total"]
         fe = R.floor_file_end(f)
-        note = ("non-office" if f in R.NON_OFFICE_FLOORS else "not wired" if not R.FLOORS[f]["wired"] else "")
+        note = (ui.REPORTING_ONLY.get(f) or ("not monitored" if not R.FLOORS[f]["wired"] else ""))
         if fe is not None and e >= fe.normalize():
             note = f"file ends {fe.day} {fe:%b %y}"
         rows.append({"Floor": f"F{f}", "tCO₂e": t(kwh) if np.isfinite(kwh) else np.nan,

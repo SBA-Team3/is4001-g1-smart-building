@@ -206,8 +206,12 @@ with t_about:
                    "indoor environmental sensor datasets, Scientific Data (2020), Fig. 2 — CC BY 4.0. "
                    "Floors 1–2 (left) and 3–7 (right); red dots are approximate multi-sensor locations.")
         st.markdown(
-            "The Comfort zone map is traced from the right-hand plan (`design/floorplans.json`, schematic, "
-            "not to scale). Data and caveats always come from the registry, not the figure. "
+            "The zone maps are traced from both plans (`design/floorplans.json`: `f3_7` from the right, "
+            "`f1_2` from the left; schematic, not to scale). Data and caveats always come from the "
+            "registry, not the figure. **Floor 1 is treated as the lobby — a team assumption; the "
+            "dataset does not say what it is.** It has no indoor sensors, its AC never switches off and "
+            "its load peaks at night, so it is reported for energy, cost and carbon only (Overview, "
+            "Floor, Energy, Carbon). "
             "**Where the data differs from the figure:**\n"
             "- **F2 z3** has a full sensor (temperature, RH, light index) that the figure does not mark.\n"
             "- **On F5, z3 is a stairwell with no cooling** — the purple areas include the stair and "

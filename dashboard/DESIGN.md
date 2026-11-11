@@ -51,12 +51,17 @@ reads `.streamlit/config.toml` from the folder you start it in.
     reader needs to place the numbers: counts, the date range (`ui.ctx()["range"]` —
     the context bar already names the period), a band or a scope. Section headings and
     overlines are names ("Top alerts", "Floors"). Explanations go in help tooltips.
-11. **Floor selector.** `Bldg` is offered only on Overview and Carbon; floor pages offer
-    F3–F7 and fall back to the last wired floor (default F5).
+11. **Floor selector.** `Bldg` is offered only on Overview and Carbon. **F1 (lobby)** is a
+    reporting-only floor (`ui.REPORTING_ONLY`, a frontend notion — the registry still marks it
+    unwired): offered on Overview, Carbon, Floor and Energy, with energy, cost and carbon only
+    (no comfort, alerts, baseline or savings). Alerts, Sensors, Comfort and Savings offer F3–F7
+    and fall back to the last office floor (default F5).
 12. **A floor past its file end** (`R.FILE_END`): if the whole period is after it, the
     page shows its header and one neutral "No data — …" message and stops
     (`ui.file_end_gate`); if the period overlaps it, one compact note.
-13. **Zone map.** Schematic from CU-BEMS Fig. 2; fills use the blue data ramp (Comfort, Floor)
+13. **Zone map.** Schematic from CU-BEMS Fig. 2 — two layouts in `design/floorplans.json`
+    (`f3_7` rectilinear; `f1_2` for floors 1–2, with its diagonal walls kept diagonal), picked by
+    floor; fills use the blue data ramp (Comfort, Floor)
     or a neutral `bg/raised` (Sensors); no zone hues; data and caveats come from the registry.
     Sensor markers use status colours and differ by shape too: hollow green ring = OK,
     amber ◐ = PARTIAL (working but under the completeness target), filled red = down

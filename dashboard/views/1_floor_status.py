@@ -21,7 +21,7 @@ import ui
 c = ui.ctx()
 floor, as_of, tariff = c["floor"], c["as_of"], c["tariff"]
 start, end = c["start"], c["end"]
-if not ui.require_wired(floor):
+if not ui.require_wired(floor, allow_reporting=True):
     st.stop()
 
 h = ui.hourly(floor)
@@ -35,6 +35,111 @@ m0 = as_of.replace(day=1)
 def _model(floor: int, target: str = "total_kwh") -> dict:
     return M.daily_model(D.load_hourly(floor), floor, target)
 
+
+def _last_30_days() -> None:
+    """Daily kWh by end use over the 30 days to the as-of date."""
+    ui.section("The last 30 days", "Daily kWh by end use")
+    dl = E.daily(h, as_of - pd.Timedelta(days=29), as_of)
+    if not len(dl) or dl[E.END_USES].isna().all().all():
+        st.info("No metered energy in these 30 days — the meters were offline.", icon=":material/info:")
+    else:
+        m = dl.melt(id_vars=["date", "is_weekend"], value_vars=E.END_USES,
+                    var_name="end_use", value_name="kWh")
+        m["end_use"] = m.end_use.str.replace("_kwh", "", regex=False)
+        m["order"] = m.end_use.map({"ac": 0, "light": 1, "plug": 2})
+        bars = alt.Chart(m).mark_bar(stroke=ui.SURFACE, strokeWidth=1).encode(
+            x=alt.X("yearmonthdate(date):O", title=None,
+                    axis=alt.Axis(labelAngle=0, format="%-d %b", labelOverlap=True)),
+            y=alt.Y("kWh:Q", title="kWh / day"),
+            color=alt.Color("end_use:N", scale=ui.END_USE_COLOR,
+                            legend=alt.Legend(orient="top", title=None, symbolType="square",
+                                              labelExpr=f"{ui.END_USE_NAME}[datum.label]".replace("'", '"'))),
+            order=alt.Order("order:Q"),
+            tooltip=[alt.Tooltip("date:T", format="%a %d %b %Y"), "end_use",
+                     alt.Tooltip("kWh:Q", format=",.0f")])
+        # Holidays where the AC still ran: annotated in muted text, not a data colour.
+        hol = (h[(h.ts >= as_of - pd.Timedelta(days=29)) & (h.ts < as_of + pd.Timedelta(days=1))
+                 & h.is_holiday]
+               .groupby(["date", "holiday_name"], as_index=False).ac_kwh.sum(min_count=1))
+        hol = hol[hol.ac_kwh > 1]
+        layers = [bars]
+        if len(hol):
+            hol["date"] = pd.to_datetime(hol.date)
+            hol["label"] = [f"{d.day} {d:%b} · {n} — AC still ran {k_:,.0f} kWh"
+                            for d, n, k_ in zip(hol.date, hol.holiday_name, hol.ac_kwh)]
+            ann = alt.Chart(hol).encode(x="yearmonthdate(date):O")
+            layers += [ann.mark_rule(color=ui.INK_3, strokeWidth=1, strokeDash=[1, 3]),
+                       ann.mark_text(color=ui.INK_2, align="left", dx=6, dy=-4, baseline="top",
+                                     fontWeight=500, fontSize=12).encode(text="label:N", y=alt.value(0))]
+        st.altair_chart(ui.chart(alt.layer(*layers), height=240), width="stretch")
+
+
+def _lobby() -> None:
+    """A reporting-only floor (F1, the lobby): energy, cost and data health only —
+    no comfort, no alerts, no baseline."""
+    ui.page_header("Floor", ui.floor_name(floor), c["range"])
+    end_ = ui.file_end_gate(floor, start, end)
+    if (H.day == as_of.normalize()).any():
+        ui.health_caption(floor, as_of)                          # meters only on this floor
+    else:
+        st.caption("No meter health data for this date.")
+    ui.status_notes(as_of, floor)
+
+    day_tot = E.floor_totals(h, as_of, as_of)
+    base = E.same_weekday_baseline(h, as_of)
+    dem = E.demand_stats(h, start, end_)
+    mtd_kwh = E.floor_totals(h, m0, as_of)["total"]
+    metered = np.isfinite(day_tot["total"])
+    k = st.columns(3)
+    k[0].metric("Energy today", f"{day_tot['total']:,.0f} kWh" if metered else "no data",
+                delta=(f"{base['delta_pct']:+.0f}% vs same weekday"
+                       if metered and base.get("delta_pct") is not None
+                       and np.isfinite(base.get("delta_pct", np.nan)) else None),
+                delta_color="inverse", border=True,
+                help="Compared with the mean of the same weekday over the previous 4 weeks.")
+    k[1].metric("Cost MTD", ui.thb(mtd_kwh, tariff) if np.isfinite(mtd_kwh) else "no data", border=True,
+                help=f"Energy × {tariff:.2f} ฿/kWh, {ui.day_txt(m0)} – {ui.day_txt(as_of)}.")
+    k[2].metric("Peak demand", f"{dem['peak_kw']:,.0f} kW" if dem else "—", border=True,
+                delta=f"at {pd.Timestamp(dem['peak_at']):%a %d %b %H:%M}" if dem else None,
+                delta_color="off", delta_arrow="off",
+                help=(f"Highest hourly-mean demand. Load factor {dem['load_factor']:.2f}." if dem
+                      else "No metered hours in the period."))
+
+    eu = E.end_use(h, start, end_, floor=floor)
+    tbl = pd.DataFrame({"Zone": eu.zone, "AC kWh": eu.ac_kwh, "Lighting kWh": eu.light_kwh,
+                        "Plug kWh": eu.plug_kwh, "Total kWh": eu.total_kwh,
+                        "Note": [("" if R.has_channel(floor, z, "ac") else "no AC meter") for z in eu.zone]})
+    st.session_state.setdefault("_floor_view", "Map")
+    st.session_state["floor_view"] = st.session_state["_floor_view"]
+    hl, hr = st.columns([5, 2], vertical_alignment="center")
+    hl.markdown('<p class="cb-overline">Zones</p>', unsafe_allow_html=True)
+    view = hr.segmented_control("View", ["Map", "Table"], key="floor_view", required=True,
+                                label_visibility="collapsed", width="stretch",
+                                on_change=lambda: st.session_state.__setitem__(
+                                    "_floor_view", st.session_state["floor_view"]))
+    if view == "Map":
+        tot = dict(zip(eu.zone, eu.total_kwh))
+        mc, _ = st.columns([7, 3])
+        with mc:
+            ui.zone_map(floor, as_of=as_of, neutral=True, height=330,
+                        label_extra={z: (f"{v:,.0f} kWh" if pd.notna(v) else "no data")
+                                     for z, v in tot.items()},
+                        zone_tips={z: ("" if R.has_channel(floor, z, "ac") else "no AC meter; ")
+                                   + f"{tot.get(z, float('nan')):,.0f} kWh in the period"
+                                   for z in tot})
+        st.caption("Schematic, not to scale — traced from CU-BEMS Fig. 2 (Methods). Total kWh per zone "
+                   "over the period.")
+    else:
+        st.dataframe(tbl.style.format({c_: "{:,.0f}" for c_ in tbl.columns if c_.endswith("kWh")},
+                                      na_rep=ui.DASH),
+                     hide_index=True, width="stretch", placeholder=ui.DASH)
+        st.caption("'—' is a meter that does not exist, never zero.")
+    _last_30_days()
+
+
+if floor in ui.REPORTING_ONLY:
+    _lobby()
+    st.stop()
 
 ui.page_header("Floor", f"Floor {floor}", f"{c['range']} | Comfort band {LO:g}–{HI:g} °C")
 end = ui.file_end_gate(floor, start, end)
@@ -223,38 +328,4 @@ with right:
                            "condition stops.")
     st.page_link("views/5_faults.py", label=f"All {len(op)} open alerts", icon=":material/arrow_forward:")
 
-# --- the last 30 days ------------------------------------------------------- #
-ui.section("The last 30 days", "Daily kWh by end use")
-dl = E.daily(h, as_of - pd.Timedelta(days=29), as_of)
-if not len(dl) or dl[E.END_USES].isna().all().all():
-    st.info("No metered energy in these 30 days — the meters were offline.", icon=":material/info:")
-else:
-    m = dl.melt(id_vars=["date", "is_weekend"], value_vars=E.END_USES,
-                var_name="end_use", value_name="kWh")
-    m["end_use"] = m.end_use.str.replace("_kwh", "", regex=False)
-    m["order"] = m.end_use.map({"ac": 0, "light": 1, "plug": 2})
-    bars = alt.Chart(m).mark_bar(stroke=ui.SURFACE, strokeWidth=1).encode(
-        x=alt.X("yearmonthdate(date):O", title=None,
-                axis=alt.Axis(labelAngle=0, format="%-d %b", labelOverlap=True)),
-        y=alt.Y("kWh:Q", title="kWh / day"),
-        color=alt.Color("end_use:N", scale=ui.END_USE_COLOR,
-                        legend=alt.Legend(orient="top", title=None, symbolType="square",
-                                          labelExpr=f"{ui.END_USE_NAME}[datum.label]".replace("'", '"'))),
-        order=alt.Order("order:Q"),
-        tooltip=[alt.Tooltip("date:T", format="%a %d %b %Y"), "end_use",
-                 alt.Tooltip("kWh:Q", format=",.0f")])
-    # Holidays where the AC still ran: annotated in muted text, not a data colour.
-    hol = (h[(h.ts >= as_of - pd.Timedelta(days=29)) & (h.ts < as_of + pd.Timedelta(days=1))
-             & h.is_holiday]
-           .groupby(["date", "holiday_name"], as_index=False).ac_kwh.sum(min_count=1))
-    hol = hol[hol.ac_kwh > 1]
-    layers = [bars]
-    if len(hol):
-        hol["date"] = pd.to_datetime(hol.date)
-        hol["label"] = [f"{d.day} {d:%b} · {n} — AC still ran {k_:,.0f} kWh"
-                        for d, n, k_ in zip(hol.date, hol.holiday_name, hol.ac_kwh)]
-        ann = alt.Chart(hol).encode(x="yearmonthdate(date):O")
-        layers += [ann.mark_rule(color=ui.INK_3, strokeWidth=1, strokeDash=[1, 3]),
-                   ann.mark_text(color=ui.INK_2, align="left", dx=6, dy=-4, baseline="top",
-                                 fontWeight=500, fontSize=12).encode(text="label:N", y=alt.value(0))]
-    st.altair_chart(ui.chart(alt.layer(*layers), height=240), width="stretch")
+_last_30_days()

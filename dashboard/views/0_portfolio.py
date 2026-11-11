@@ -95,13 +95,15 @@ for f in WIRED:
                  "_nodata": int(no_data), "_stake": stake, "_f": f})
 # Ranked by ฿ at stake per day across open alerts; floors with no data sink to the bottom.
 ft = pd.DataFrame(rows).sort_values(["_nodata", "_stake"], ascending=[True, False])
-other = h[h.floor.isin([1, 2])]
-other_kwh = E.floor_totals(other, s, e)["total"]
-ft = pd.concat([ft, pd.DataFrame([{
-    "Floor": "F1 · F2", "kWh": other_kwh,
-    "฿": other_kwh * tariff if tariff and np.isfinite(other_kwh) else np.nan,
-    "vs exp %": np.nan, f"<{LO:g} °C %": np.nan, "Alerts": np.nan, "Top type": "", "Down": np.nan,
-    "Note": "F1 non-office · F2 n/m", "_f": 0}])], ignore_index=True)
+# F1 (lobby, reporting only) and F2 (not monitored): in the totals, out of every ranking.
+extra = []
+for f_, note_, go in ((1, ui.REPORTING_ONLY[1], 1), (2, "not monitored", 0)):
+    kwh_ = E.floor_totals(h[h.floor == f_], s, e)["total"]
+    extra.append({"Floor": f"F{f_}", "kWh": kwh_,
+                  "฿": kwh_ * tariff if tariff and np.isfinite(kwh_) else np.nan,
+                  "vs exp %": np.nan, f"<{LO:g} °C %": np.nan, "Alerts": np.nan, "Top type": "",
+                  "Down": np.nan, "Note": note_, "_f": go})   # F1's row opens its Floor page
+ft = pd.concat([ft, pd.DataFrame(extra)], ignore_index=True)
 
 # --------------------------------------------------------------------------- #
 # three tiles
@@ -180,8 +182,8 @@ with left:
                      "Only hours with live sensors count."),
             "Down": st.column_config.Column(help="Points OFFLINE, FROZEN or BAD SAMPLES today."),
         })
-    st.caption("**Floor 1 is not an office floor** (its AC never switches off) and F2 is not "
-               "monitored; both are in the building totals and out of every ranking. "
+    st.caption("**Floor 1 is the lobby** (runs around the clock) and F2 is not monitored; both are "
+               "in the building totals and out of every ranking. "
                + (f"F6's file ends {R.floor_file_end(6):%d %b %Y}: after that it is not metered, "
                   "not zero. " if 6 in R.FILE_END else "")
                + (f"This period overlaps the building-wide sensor gap ({lo_b:%d %b %Y} – "

@@ -222,10 +222,32 @@ def ctx() -> dict:
     }
 
 
-def require_wired(floor: int) -> bool:
+#: Floors the dashboard reports for energy, cost and carbon only (a frontend notion;
+#: the registry still marks them unwired). Floor 1 is the lobby — a team
+#: assumption; the dataset does not say what it is.
+REPORTING_ONLY = {1: "lobby"}
+#: Pages that accept a reporting-only floor (by URL path); the rest need an office floor.
+REPORTING_PAGES = {"", "carbon", "floor_status", "energy"}
+BUILDING_PAGES = {"", "carbon"}
+
+
+def floor_options(url_path: str) -> list[str]:
+    """Floor choices in the context bar for a page: Bldg on building pages, F1
+    (lobby) where reporting-only floors are allowed, then the wired floors."""
+    opts = ["Bldg"] if url_path in BUILDING_PAGES else []
+    if url_path in REPORTING_PAGES:
+        opts += [f"F{f}" for f in sorted(REPORTING_ONLY)]
+    return opts + [f"F{f}" for f in R.wired_floors()]
+
+
+def floor_name(floor: int) -> str:
+    return f"Floor {floor}" + (f" ({REPORTING_ONLY[floor]})" if floor in REPORTING_ONLY else "")
+
+
+def require_wired(floor: int, allow_reporting: bool = False) -> bool:
     """Render the placeholder panel for an unwired floor. True means go ahead."""
     meta = R.FLOORS.get(floor, {})
-    if meta.get("wired"):
+    if meta.get("wired") or (allow_reporting and floor in REPORTING_ONLY):
         return True
     st.title(f"Floor {floor}")
     st.warning(f"**Not wired yet.** {meta.get('note','')}", icon=":material/warning:")
@@ -888,11 +910,16 @@ def seq_legend() -> str:
 
 
 # --------------------------------------------------------------------------- #
-# zone map — schematic plan of floors 3-7, traced from CU-BEMS Fig. 2
+# zone map — schematic plans traced from CU-BEMS Fig. 2 (floors 1-2 and 3-7)
 # --------------------------------------------------------------------------- #
 
 with open(os.path.join(_HERE, "design", "floorplans.json"), encoding="utf-8") as _f:
-    FLOORPLAN = json.load(_f)
+    FLOORPLANS = json.load(_f)
+
+
+def floorplan(floor: int) -> dict:
+    """The traced layout for a floor: `f1_2` for floors 1-2, `f3_7` for 3-7."""
+    return FLOORPLANS["layouts"][FLOORPLANS["floor_layout"][str(int(floor))]]
 
 
 def _ring(pts: list, aspect: float) -> list:
@@ -942,7 +969,7 @@ def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | No
     second line in status/critical-text (e.g. "● 2 meters down"); `zone_tips`
     {zone: text} adds a tooltip line. Sensor markers are status: a hollow green ring
     when the zone's multi-sensor works, a filled red dot when it is down."""
-    fp = FLOORPLAN
+    fp = floorplan(floor)
     k = float(fp["aspect"])
     as_of = as_of if as_of is not None else ctx()["as_of"]
     v = values.set_index("zone") if values is not None and "zone" in values else values
@@ -951,7 +978,8 @@ def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | No
     for z, d in fp["zones"].items():
         if neutral:
             reason, val, valid = "", np.nan, False
-            text = z if R.point_for(floor, z, "temp") is not None else f"{z} · no sensor"
+            text = (z if R.point_for(floor, z, "temp") is not None or floor in REPORTING_ONLY
+                    else f"{z} · no sensor")
         else:
             reason = zone_map_reason(floor, z)
             val = (float(v.loc[z, value_col]) if v is not None and z in v.index
@@ -1051,8 +1079,11 @@ def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | No
     sensor_key = (f'<span class="cb-legend"><span style="color:{OK}">○</span>sensor OK</span>'
                   f'<span class="cb-legend"><span style="color:{WARN}">◐</span>sensor partial</span>'
                   f'<span class="cb-legend"><span style="color:{BAD}">●</span>sensor down</span>')
+    if not len(sdf):                     # no multi-sensors on this floor (F1): no sensor key
+        sensor_key = ""
     if neutral:
-        md(f'<div style="margin-top:-6px">{sensor_key}</div>')
+        if sensor_key:
+            md(f'<div style="margin-top:-6px">{sensor_key}</div>')
         return
     edges = [0] + OVERCOOL_BINS + [100]
     steps = "".join(f'<span class="cb-legend"><i style="background:{SEQ[i]}"></i>'
