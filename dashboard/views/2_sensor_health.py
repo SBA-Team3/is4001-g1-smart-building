@@ -25,7 +25,7 @@ H = ui.health(floor)
 S = ui.scored(floor)
 hourly = ui.hourly(floor)
 
-ps = ui.floor_band(floor, as_of)
+ps = ui.health_caption(floor, as_of)
 ui.status_notes(as_of, floor)
 
 # --------------------------------------------------------------------------- #
@@ -49,7 +49,7 @@ if len(bad):
     st.dataframe(ui.glyph_style(_tbl(bad), ["Status"], {"Days stale": "{:.0f}"}),
                  column_config={"Status": st.column_config.Column(help=STATUS_HELP)},
                  hide_index=True, width="stretch", placeholder=ui.DASH,
-                 height=min(35 * len(bad) + 38, 420))
+                 height="auto" if len(bad) <= 12 else 420)
 else:
     st.caption(f"✓ All {len(ps)} points OK on {ui.day_txt(as_of)}.")
 with st.expander(f"OK points ({len(ok)})", icon=":material/check:"):

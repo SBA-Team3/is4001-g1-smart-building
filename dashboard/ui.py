@@ -1,5 +1,5 @@
 """Shared UI helpers: cached loaders, design tokens, the global period, point
-status, the alarm band, chips, formatting and chart theme.
+status, fault types, the data-health caption, chips, formatting and chart theme.
 
 Every colour, size and radius comes from design/tokens.json (see DESIGN.md).
 Pages use the names here (ui.C, ui.PRIMARY, ui.chip(), ...) and never a hex
@@ -303,17 +303,42 @@ def _raw_register(floor: int, start, end, as_of, tariff: float, lo: float) -> pd
                             floor=floor, tariff=tariff, as_of=as_of, lo=lo)
 
 
-def with_states(reg: pd.DataFrame, show_planned: bool = False) -> pd.DataFrame:
+#: People only acknowledge and handle the work; the system clears an alert.
+HUMAN_STATES = ["New", "Acknowledged", "In progress", "Muted"]
+
+
+def cleared_mask(last_seen: pd.Series, as_of) -> pd.Series:
+    """Cleared = not seen for more than the episode gap (3 days) before the as-of
+    day. The gap, not 'not seen today', so a weekend does not clear an alert."""
+    ls = pd.to_datetime(last_seen).dt.normalize()
+    days = (pd.Timestamp(as_of).normalize() - ls).dt.days
+    return (days > R.conv("episode_gap_days")).fillna(False)
+
+
+def with_states(reg: pd.DataFrame, show_planned: bool = False, as_of=None) -> pd.DataFrame:
     """A fault register as the FM team sees it: planned-maintenance items hidden,
-    saved lifecycle states and session mutes applied (`state`, `is_open`)."""
+    saved human states and session mutes applied, and auto-clear derived.
+
+    Adds `cleared`, `state_label` and `is_open` (= not cleared and not Muted). A
+    saved "Resolved" (no longer a manual state) reads as New; an alert that comes
+    back keeps its last human state."""
     if not len(reg):
         return reg
     if not show_planned:
         reg = reg[~reg.planned]
     reg = W.apply_states(reg, FAULT_STATES)
-    if len(reg):
-        sm = reg.id.isin(st.session_state.get("muted", set()))
-        reg.loc[sm, "state"], reg.loc[sm, "is_open"] = "Muted", False
+    if not len(reg):
+        return reg
+    reg.loc[reg.state == "Resolved", "state"] = "New"
+    sm = reg.id.isin(st.session_state.get("muted", set()))
+    reg.loc[sm, "state"] = "Muted"
+    as_of = pd.Timestamp(as_of if as_of is not None else st.session_state.get("as_of", D.DEFAULT_AS_OF))
+    reg["cleared"] = cleared_mask(reg.last_seen, as_of).to_numpy()
+    reg["is_open"] = ~reg.cleared & (reg.state != "Muted")
+    seen = pd.to_datetime(reg.last_seen)
+    reg["state_label"] = [
+        "Muted" if st_ == "Muted" else f"Cleared · last seen {d.day} {d:%b}" if c_ else st_
+        for st_, c_, d in zip(reg.state, reg.cleared, seen)]
     return reg
 
 
@@ -332,7 +357,7 @@ def register(floor: int, c: dict | None = None, show_planned: bool = False) -> p
         artefact = (raw.rule.isin(FILE_END_RULES)
                     & (pd.to_datetime(raw.first_seen).dt.normalize() >= fe.normalize()))
         raw = raw[~artefact]
-    return with_states(raw.copy(), show_planned)
+    return with_states(raw.copy(), show_planned, c["as_of"])
 
 
 def building_register(c: dict | None = None) -> pd.DataFrame:
@@ -342,21 +367,70 @@ def building_register(c: dict | None = None) -> pd.DataFrame:
     return pd.concat(regs, ignore_index=True) if regs else pd.DataFrame()
 
 
-PRIO_ORDER = {F.HIGH: 0, F.MED: 1, F.LOW: 2}
-SEV = {F.HIGH: ("●", "critical", "Critical"), F.MED: ("▲", "warning", "Warning"),
-       F.LOW: ("ⓘ", "info", "Info")}
+#: Alerts are labelled, filtered and summarised by fault type (the register's
+#: `rule`), never by severity: the rule thresholds are not aligned with the 40%
+#: target and some depend on the period length. rule -> (label, Material icon).
+FAULT_TYPES = {
+    "overcooling": ("Overcooling", "ac_unit"),
+    "after_hours_ac": ("AC after hours", "schedule"),
+    "after_hours_light": ("Lights overnight", "lightbulb"),
+    "short_cycling": ("Short cycling", "autorenew"),
+    "humidity": ("Humidity", "water_drop"),
+    "dead_meter": ("Dead meter", "power_off"),
+    "point_offline": ("Point offline", "sensors_off"),
+    "step_change": ("Meter change", "swap_horiz"),
+}
 
 
-def sev_glyph(priority: str) -> str:
-    g, _, _ = SEV.get(priority, ("ⓘ", "info", "Info"))
-    return f"{g} {str(priority).capitalize()}"
+def type_label(rule: str) -> str:
+    return FAULT_TYPES.get(rule, (str(rule).replace("_", " ").title(), ""))[0]
+
+
+#: Plain-text stand-ins for the chip icons, for places that cannot render HTML
+#: (st.dataframe cells, st.pills labels). Text symbols, not colour emoji (︎
+#: forces text presentation), and none of the status glyphs (● ▲ ○ ◐ ⓘ).
+TYPE_SYMBOL = {
+    "overcooling": "❄︎",        # ❄ snowflake
+    "after_hours_ac": "◷",           # ◷ clock
+    "after_hours_light": "☾",        # ☾ moon
+    "short_cycling": "↻",            # ↻
+    "humidity": "≋",                 # ≋
+    "dead_meter": "⊘",               # ⊘
+    "point_offline": "✕",            # ✕
+    "step_change": "⇄",              # ⇄
+}
+
+
+def type_text(rule: str) -> str:
+    """'❄ Overcooling' — the chip's label with a text symbol, for tables and pills."""
+    sym = TYPE_SYMBOL.get(rule, "")
+    return f"{sym} {type_label(rule)}" if sym else type_label(rule)
+
+
+def type_chip(rule: str, state: str = "New") -> str:
+    """Neutral fault-type chip: icon + label, no status colour. Filled grey while
+    New; an outline once Acknowledged / In progress."""
+    label, ic = FAULT_TYPES.get(rule, (type_label(rule), "label"))
+    cls = "type" + ("" if state == "New" else " hollow")
+    return f'<span class="cb-chip {cls}">{icon(ic)}{esc(label)}</span>'
+
+
+def top_type(reg: pd.DataFrame) -> tuple[str, int]:
+    """(label, count) of the most common fault type in a register."""
+    if not len(reg):
+        return "", 0
+    vc = reg.rule.value_counts()
+    return type_label(vc.index[0]), int(vc.iloc[0])
 
 
 def sort_faults(reg: pd.DataFrame) -> pd.DataFrame:
+    """Open first, then by ฿/day (missing last) and days open — never by severity."""
     if not len(reg):
         return reg
-    return reg.assign(_o=reg.priority.map(PRIO_ORDER)).sort_values(
-        ["_o", "cost_per_day_thb"], ascending=[True, False]).drop(columns="_o")
+    closed = (~reg.is_open).astype(int) if "is_open" in reg else 0
+    return (reg.assign(_closed=closed)
+            .sort_values(["_closed", "cost_per_day_thb", "days_open"], ascending=[True, False, False],
+                         na_position="last").drop(columns="_closed"))
 
 
 def set_fault_state(fid: str, state: str, note: str = "") -> None:
@@ -410,6 +484,9 @@ def _css() -> str:
 .cb-chip.info{{background:var(--color-bg-control);border-color:var(--color-bg-control);color:var(--color-text-secondary)}}
 .cb-chip.offline{{background:transparent;border-color:var(--color-status-offline);border-style:dashed;color:var(--color-status-offline-text)}}
 .cb-chip.hollow{{background:transparent}}
+.cb-chip.type{{background:var(--color-bg-control);border-color:var(--color-border-strong);color:var(--color-text-secondary)}}
+.cb-chip.type .cb-ms{{color:var(--color-text-muted)}}
+.cb-chip.type.hollow{{background:transparent}}
 .cb-chip.hollow.critical{{color:var(--color-status-critical-text)}}
 .cb-chip.hollow.warning{{color:var(--color-status-warning-text)}}
 .cb-chip.hollow.info{{border-color:var(--color-border-strong)}}
@@ -420,23 +497,7 @@ def _css() -> str:
 .cb-dot.critical i{{background:var(--color-status-critical)}}
 .cb-dot.offline i{{background:transparent;border:1.5px solid var(--color-status-offline)}}
 .cb-dot.hollow i{{background:transparent;border:1.5px solid currentColor}}
-/* alarm band: one quiet strip; only the counts carry colour */
-.cb-band{{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2) var(--space-6);padding:10px var(--space-4);
-  border:1px solid var(--color-border-default);border-radius:var(--radius-md);background:var(--color-bg-surface)}}
-.cb-band .n{{display:inline-flex;align-items:baseline;gap:6px;{ts('Body/Strong')}color:var(--color-text-secondary);white-space:nowrap}}
-.cb-band .n b{{{ts('Heading/H3')}color:var(--color-text-primary)}}
-.cb-band .n .g{{font-size:13px}}
-.cb-band .n.critical .g,.cb-band .n.critical b{{color:var(--color-status-critical-text)}}
-.cb-band .n.warning .g,.cb-band .n.warning b{{color:var(--color-status-warning-text)}}
-.cb-band .n.offline .g,.cb-band .n.offline b{{color:var(--color-status-offline-text)}}
-.cb-band .n.zero .g,.cb-band .n.zero b{{color:var(--color-text-muted)}}
-.cb-band.inner{{border:0;background:transparent;padding:0}}
-div.st-key-alarmband{{background:var(--color-bg-surface);border:1px solid var(--color-border-default);
-  border-radius:var(--radius-md);padding:10px var(--space-4);overflow:visible}}
-div.st-key-alarmband div[data-testid="stMarkdownContainer"]{{margin-bottom:0 !important}}
-div.st-key-alarmband div[data-testid="stPageLink"]{{display:flex;justify-content:flex-end}}
-.cb-band .sep{{width:1px;align-self:stretch;background:var(--color-border-default)}}
-.cb-band .meta{{{ts('Caption/Regular')}color:var(--color-text-secondary)}}
+.cb-health{{{ts('Caption/Regular')}color:var(--color-text-secondary);margin:-8px 0 4px}}
 /* tiles */
 .cb-tile{{min-height:124px;border:1px solid var(--color-border-strong);border-radius:var(--radius-lg);background:var(--color-bg-surface);
   padding:14px var(--space-5);height:100%}}
@@ -505,9 +566,9 @@ def section(title: str, sub: str = "") -> None:
         md(f'<p class="cb-sub" style="margin-top:-12px">{sub}</p>')
 
 
-#: priority/status -> (chip class, icon). The icon is never optional.
-_CHIP = {"high": ("critical", "error"), "medium": ("warning", "warning"),
-         "low": ("info", "info"), "info": ("info", "info"),
+#: status -> (chip class, icon). Status chips are for data status and target
+#: pass/fail only; alerts use the neutral type_chip(). The icon is never optional.
+_CHIP = {"info": ("info", "info"),
          "critical": ("critical", "error"), "warning": ("warning", "warning"),
          "ok": ("normal", "check_circle"), "normal": ("normal", "check_circle"),
          "good": ("normal", "check_circle"), "neutral": ("info", "info"),
@@ -515,16 +576,16 @@ _CHIP = {"high": ("critical", "error"), "medium": ("warning", "warning"),
 HOLLOW_STATES = {"Acknowledged", "In progress"}
 
 
-def chip(priority: str, label: str | None = None, hollow: bool = False) -> str:
-    """Severity chip. Filled for a new item; hollow (outline) once acknowledged."""
-    cls, ic = _CHIP.get(str(priority).lower(), _CHIP["info"])
+def chip(status: str, label: str | None = None, hollow: bool = False) -> str:
+    """Status chip (data status, target pass/fail). Hollow draws the outline only."""
+    cls, ic = _CHIP.get(str(status).lower(), _CHIP["info"])
     return (f'<span class="cb-chip {cls}{" hollow" if hollow else ""}">{icon(ic)}'
-            f'{esc(label if label is not None else str(priority).capitalize())}</span>')
+            f'{esc(label if label is not None else str(status).capitalize())}</span>')
 
 
 def state_chip(r) -> str:
-    """A fault's severity chip, hollow when it is acknowledged or in progress."""
-    return chip(r.priority, hollow=getattr(r, "state", "New") in HOLLOW_STATES)
+    """An alert's neutral type chip, hollow once acknowledged or in progress."""
+    return type_chip(r.rule, getattr(r, "state", "New"))
 
 
 def dot(status: str, label: str, hollow: bool = False) -> str:
@@ -560,41 +621,8 @@ def tile(label: str, value: str, delta: str = "", sub: str = "", items: list[str
 
 
 # --------------------------------------------------------------------------- #
-# the alarm band — top of every page
+# data health — one plain caption line under the subtitle (Floor, Sensors)
 # --------------------------------------------------------------------------- #
-
-def band_counts(reg: pd.DataFrame, ps: pd.DataFrame) -> dict:
-    op = reg[reg.is_open] if len(reg) else reg
-    return {
-        "critical": int((op.priority == F.HIGH).sum()) if len(op) else 0,
-        "warning": int((op.priority == F.MED).sum()) if len(op) else 0,
-        "down": int(ps.is_down.sum()) if len(ps) else 0,
-        "unack": int((op.state == "New").sum()) if len(op) else 0,
-    }
-
-
-def alarm_band(counts: dict, meta: str = "", link: bool = True) -> None:
-    """● N Critical · ▲ N Warning · ○ N Points down · ◐ N Unacknowledged · meta · All →"""
-    def n(kind, g, v, word):
-        return (f'<span class="n {kind if v else "zero"}"><span class="g">{g}</span>'
-                f'<b>{v}</b>{word}</span>')
-    html = ('<div class="cb-band">'
-            + n("critical", "●", counts["critical"], "Critical")
-            + n("warning", "▲", counts["warning"], "Warning")
-            + n("offline", "○", counts["down"], "Points down")
-            + n("warning", "◐", counts["unack"], "Unacknowledged")
-            + (f'<span class="sep"></span><span class="meta">{meta}</span>' if meta else "")
-            + "</div>")
-    if link:
-        with st.container(key="alarmband"):
-            cols = st.columns([12, 1], vertical_alignment="center", gap="small")
-            with cols[0]:
-                md(html.replace('class="cb-band"', 'class="cb-band inner"'))
-            cols[1].page_link("views/5_faults.py", label="All", icon=":material/arrow_forward:",
-                              icon_position="right")
-    else:
-        md(html)
-
 
 def data_health_line(floor: int, as_of) -> str:
     """'Point health 92/100 · 98% complete today' — or why there is none."""
@@ -608,18 +636,18 @@ def data_health_line(floor: int, as_of) -> str:
     return f"Point health {phi['index']:.0f}/100 · {phi['completeness']:.0f}% complete today"
 
 
-def floor_band(floor: int, as_of, reg: pd.DataFrame | None = None, extra: str = "") -> pd.DataFrame:
-    """The alarm band for one floor, with its down points named and one line of
-    data health. Returns the floor's point status."""
-    reg = register(floor) if reg is None else reg
+def health_caption(floor: int, as_of, extra: str = "") -> pd.DataFrame:
+    """One plain line: the down points by name, point health and completeness
+    today, plus `extra` (Floor's since-yesterday). Returns the point status."""
     ps = point_status(floor, as_of)
     down = ps[ps.is_down]
     names = ", ".join(f"{r.zone} {r.channel} {POINT_GLYPH[r.status][0]} {r.status.lower()}"
                       for r in down.head(3).itertuples())
     if len(down) > 3:
         names += f" +{len(down) - 3} more"
-    meta = " · ".join(x for x in [names, data_health_line(floor, as_of), extra] if x)
-    alarm_band(band_counts(reg, ps), esc(meta).replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>"))
+    lead = f"{len(down)} point(s) down: {names}" if len(down) else "No points down"
+    parts = [esc(lead), esc(data_health_line(floor, as_of))] + ([extra] if extra else [])
+    md(f'<p class="cb-health">{" · ".join(parts)}</p>')
     return ps
 
 
@@ -660,7 +688,7 @@ def _since_register(floor: int, as_of, tariff: float, lo: float) -> pd.DataFrame
 
 
 def since_yesterday(floor: int, as_of, tariff: float, lo: float | None = None) -> dict:
-    """New / cleared alarms on the as-of day, from a fixed 90-day look-back that
+    """New / cleared alerts on the as-of day, from a fixed 90-day look-back that
     ignores the period control (a one-day window would make every fault 'new')."""
     lo = float(R.conv("comfort_lo")) if lo is None else float(lo)
     reg = _since_register(floor, pd.Timestamp(as_of).normalize(), float(tariff), lo)
@@ -671,7 +699,9 @@ def since_yesterday(floor: int, as_of, tariff: float, lo: float | None = None) -
         return {"new": [], "cleared": []}
     fs = pd.to_datetime(reg.first_seen).dt.normalize()
     ls = pd.to_datetime(reg.last_seen).dt.normalize()
-    return {"new": reg.id[fs == day].tolist(), "cleared": reg.id[ls == day - pd.Timedelta(days=1)].tolist()}
+    # Cleared today = it just passed the episode gap (as_of − last_seen = gap + 1 days).
+    became = day - pd.Timedelta(days=int(R.conv("episode_gap_days")) + 1)
+    return {"new": reg.id[fs == day].tolist(), "cleared": reg.id[ls == became].tolist()}
 
 
 def comparison_guard(start, end, floor: int, show: bool = True) -> list:

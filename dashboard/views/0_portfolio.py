@@ -1,5 +1,5 @@
 """Overview — the whole building on one 1440×900 screen: energy, cost, which
-sensors are down, and which floor and alarm to look at first."""
+sensors are down, and which floor and alert to look at first."""
 
 from __future__ import annotations
 
@@ -55,14 +55,10 @@ def _cool_share(h_, s_, e_) -> float:
 h = ui.building_hourly()
 ui.page_header("Overview", "Chulalongkorn University CU-BEMS", f"7 floors | 33 zones | {c['range']}")
 
-# --------------------------------------------------------------------------- #
-# alarm band — every wired floor, the one global period
-# --------------------------------------------------------------------------- #
+# every wired floor's register over the one global period (same as Floor and Alerts)
 reg = ui.building_register(c)
 ps = ui.building_point_status(as_of)
 past_end = [f for f in R.FILE_END if as_of >= R.floor_file_end(f).normalize()]
-ui.alarm_band(ui.band_counts(reg, ps),
-              f"Floors {WIRED[0]}–{WIRED[-1]} · {len(reg[reg.is_open]) if len(reg) else 0} open alarms")
 lo_b, hi_b = (pd.Timestamp(x) for x in R.BLACKOUT)
 
 # --------------------------------------------------------------------------- #
@@ -78,42 +74,33 @@ for f in WIRED:
         act_w, exp_w = act_w + a_, exp_w + x_
     rf = reg[reg.floor == f] if len(reg) else reg
     op = rf[rf.is_open] if len(rf) else rf
-    n_crit = int((op.priority == "high").sum()) if len(op) else 0
-    n_warn = int((op.priority == "medium").sum()) if len(op) else 0
     psf = ps[ps.floor == f]
     down = int(psf.is_down.sum())
     sl = D.slice_hourly(hf, s, e)
     meter_pct = float(sl.kwh_ok.mean() * 100) if len(sl) else np.nan
-    no_file = f in past_end and s >= R.floor_file_end(f).normalize()
-    if no_file or not np.isfinite(tot):
-        status, rank = "○ no data", 3
-    elif n_crit:
-        status, rank = f"● {n_crit} crit", 0
-    elif np.isfinite(meter_pct) and meter_pct < R.conv("completeness_target"):
-        status, rank = "▲ meters", 1
-    elif n_warn:
-        status, rank = f"▲ {n_warn} warn", 1
-    elif down:
-        status, rank = f"○ {down} down", 2
-    else:
-        status, rank = "✓ ok", 4
+    no_data = (f in past_end and s >= R.floor_file_end(f).normalize()) or not np.isfinite(tot)
     fe = R.floor_file_end(f)
-    note = (f"file ends {fe.day} {fe:%b %y}" if fe is not None
-            else "meter gaps" if np.isfinite(meter_pct)
-            and meter_pct < R.conv("completeness_target") else "")
+    notes = (["no data"] if no_data else []) + (
+        [f"file ends {fe.day} {fe:%b %y}"] if fe is not None else
+        ["meter gaps"] if np.isfinite(meter_pct) and meter_pct < R.conv("completeness_target") else [])
     cool = _cool_share(hf, s, e)
-    rows.append({"Floor": f"F{f}", "Status": status, "kWh": tot,
+    t_label, t_n = ui.top_type(op)
+    stake = float(op.cost_per_day_thb.sum()) if len(op) else 0.0
+    rows.append({"Floor": f"F{f}", "kWh": tot,
                  "฿": tot * tariff if tariff and np.isfinite(tot) else np.nan,
                  "vs exp %": (a_ - x_) / x_ * 100 if np.isfinite(a_) and x_ else np.nan,
-                 f"<{LO:g} °C %": cool, "Alarms": len(op), "Down": down, "Note": note,
-                 "_rank": rank, "_crit": n_crit, "_cool": cool if np.isfinite(cool) else -1, "_f": f})
-ft = pd.DataFrame(rows).sort_values(["_rank", "_crit", "_cool"], ascending=[True, False, False])
+                 f"<{LO:g} °C %": cool, "Alerts": len(op),
+                 "Top type": f"{t_label} · {t_n}" if t_n else "", "Down": down,
+                 "Note": " · ".join(notes),
+                 "_nodata": int(no_data), "_stake": stake, "_f": f})
+# Ranked by ฿ at stake per day across open alerts; floors with no data sink to the bottom.
+ft = pd.DataFrame(rows).sort_values(["_nodata", "_stake"], ascending=[True, False])
 other = h[h.floor.isin([1, 2])]
 other_kwh = E.floor_totals(other, s, e)["total"]
 ft = pd.concat([ft, pd.DataFrame([{
-    "Floor": "F1 · F2", "Status": "non-office", "kWh": other_kwh,
+    "Floor": "F1 · F2", "kWh": other_kwh,
     "฿": other_kwh * tariff if tariff and np.isfinite(other_kwh) else np.nan,
-    "vs exp %": np.nan, f"<{LO:g} °C %": np.nan, "Alarms": np.nan, "Down": np.nan,
+    "vs exp %": np.nan, f"<{LO:g} °C %": np.nan, "Alerts": np.nan, "Top type": "", "Down": np.nan,
     "Note": "F1 non-office · F2 n/m", "_f": 0}])], ignore_index=True)
 
 # --------------------------------------------------------------------------- #
@@ -151,7 +138,7 @@ with t3:
     st.page_link("views/2_sensor_health.py", label="Sensors", icon=":material/arrow_forward:")
 
 # --------------------------------------------------------------------------- #
-# floors table + top alarms
+# floors table + top alerts
 # --------------------------------------------------------------------------- #
 left, right = st.columns([7, 5], gap="medium")
 
@@ -171,19 +158,19 @@ with left:
     show.index = ft.index
     _order = list(ft._f)
     st.dataframe(
-        ui.glyph_style(show, ["Status"], {
+        ui.glyph_style(show, [], {
             "kWh": "{:,.0f}", "฿": "{:,.0f}", "vs exp %": "{:+.1f}",
-            f"<{LO:g} °C %": "{:.0f}", "Alarms": "{:.0f}", "Down": "{:.0f}"},
+            f"<{LO:g} °C %": "{:.0f}", "Alerts": "{:.0f}", "Down": "{:.0f}"},
             highlight_row=hi_row),
         hide_index=True, width="stretch", key="floors_tbl", placeholder=ui.DASH,
         on_select=lambda: _open_floor(_order), selection_mode="single-row",
         column_config={
             "Floor": st.column_config.Column(width=58),
-            "Status": st.column_config.Column(width=96),
             "kWh": st.column_config.Column(width=66),
-            "Alarms": st.column_config.Column(width=58),
-            "Down": st.column_config.Column(width=52),
-            "Note": st.column_config.Column(width=150),
+            "Alerts": st.column_config.Column(width=54, help="Open alerts in the period."),
+            "Top type": st.column_config.Column(width=128, help="Most common open alert type."),
+            "Down": st.column_config.Column(width=50),
+            "Note": st.column_config.Column(width=168),
             "฿": st.column_config.Column(help="Energy × tariff. Blank when the rate is 0."),
             "vs exp %": st.column_config.Column(
                 help="Actual vs the floor's weather/calendar-normalised baseline over the period's "
@@ -202,10 +189,10 @@ with left:
                   if s <= hi_b and e >= lo_b else ""))
 
 with right:
-    ui.md('<p class="cb-overline">Top alarms</p>')
+    ui.md('<p class="cb-overline">Top alerts</p>')
     op = ui.sort_faults(reg[reg.is_open]) if len(reg) else reg
     if not len(op):
-        ui.md(f'<div class="cb-list"><div class="item">{ui.chip("ok", "No open alarms")}'
+        ui.md(f'<div class="cb-list"><div class="item">{ui.chip("ok", "No open alerts")}'
               f'<div class="txt cb-cap">Nothing raised on floors F{WIRED[0]}–F{WIRED[-1]} '
               f'in this period.</div></div></div>')
     else:
@@ -218,7 +205,7 @@ with right:
                          '</div>'
                          f'<div class="cost">{cost}<div class="cb-cap cb-muted">{days}</div></div></div>')
         ui.md(f'<div class="cb-list">{"".join(items)}</div>')
-    st.page_link("views/5_faults.py", label=f"All {len(op)} open alarms",
+    st.page_link("views/5_faults.py", label=f"All {len(op)} open alerts",
                  icon=":material/arrow_forward:")
 
 # --------------------------------------------------------------------------- #

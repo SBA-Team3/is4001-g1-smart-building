@@ -1,5 +1,5 @@
-"""Floor — the morning screen for one floor: alarms and data health, today's
-energy and cost, the zones worst first, and the alarms to act on."""
+"""Floor — the morning screen for one floor: data health, today's energy and
+cost, the zones worst first, and the alerts to act on."""
 
 from __future__ import annotations
 
@@ -39,13 +39,13 @@ def _model(floor: int, target: str = "total_kwh") -> dict:
 ui.page_header("Floor", f"Floor {floor}", f"{c['range']} | Comfort band {LO:g}–{HI:g} °C")
 end = ui.file_end_gate(floor, start, end)
 
-# --- alarm band ------------------------------------------------------------- #
+# --- data health, one line (no alert band) ---------------------------------- #
 reg = ui.register(floor, c)
 sy = ui.since_yesterday(floor, as_of, tariff, LO)     # fixed 90-day look-back, not the period
 lost = HL.went_offline(H, as_of)
 since = (f"Since yesterday: <b>{len(sy['new'])}</b> new · <b>{len(sy['cleared'])}</b> cleared · "
          f"<b>{len(lost)}</b> went offline")
-ui.floor_band(floor, as_of, reg, since)
+ui.health_caption(floor, as_of, since)
 ui.status_notes(as_of, floor)
 
 # --- four tiles ------------------------------------------------------------- #
@@ -95,7 +95,7 @@ k[3].metric(f"Cooled <{LO:g} °C MTD", f"{oc_now:.0f}%" if np.isfinite(oc_now) e
             help="Share of cooled, occupied zone-hours below the band on comfort zones, weighted "
                  "by zone AC energy (proposal KPI 1).")
 
-# --- zones (left) + active alarms (right) ----------------------------------- #
+# --- zones (left) + active alerts (right) ----------------------------------- #
 zc = C.zone_comfort(h, start=start, end=end, lo=LO, hi=HI, floor=floor)
 cm = zc.set_index("zone") if len(zc) else pd.DataFrame()
 eu = E.end_use(h, start, end, floor=floor).set_index("zone")
@@ -122,7 +122,7 @@ for z in R.ZONES[floor]:
                  "Mean °C": float(r.mean_c) if r is not None else np.nan,
                  "Cold h %": cold,
                  "AC kWh": eu.loc[z, "ac_kwh"] if has_ac and z in eu.index else np.nan,
-                 "Alarms": nf, "Sensor note": ui.zone_note(floor, z),
+                 "Alerts": nf, "Sensor note": ui.zone_note(floor, z),
                  "_k": (0, -cold) if np.isfinite(cold) else (1, -nf)})
 zt = pd.DataFrame(rows)
 zt = zt.iloc[sorted(range(len(zt)), key=lambda i: zt._k[i])].reset_index(drop=True)
@@ -143,14 +143,14 @@ def _zone_dialog(z: str) -> None:
     ac = eu.loc[z, "ac_kwh"] if R.has_channel(floor, z, "ac") and z in eu.index else np.nan
     d[3].metric("AC energy", f"{ac:,.0f} kWh" if np.isfinite(ac) else "not metered", border=True)
     zf = op[op.zone.astype(str).str.contains(z)] if len(op) else op
-    ui.md('<p class="cb-overline" style="margin-top:8px">Recommended</p>')
+    ui.md('<p class="cb-overline" style="margin-top:8px">Options to consider</p>')
     if len(zf):
         for r in zf.itertuples():
             ui.md(f'<div class="cb-row" style="margin:6px 0">{ui.state_chip(r)}'
                   f'<span class="cb-strong">{ui.esc(r.title)}</span></div>'
                   f'<p class="cb-body">{ui.esc(r.action)}</p>')
     else:
-        st.markdown("No open alarms in this period — no change needed.")
+        st.markdown("No open alerts in this period — no change needed.")
     if st.button("Open in Comfort", icon=":material/arrow_forward:", type="secondary"):
         st.session_state["comfort_zone"] = z
         st.switch_page("views/3_zones.py")
@@ -180,29 +180,28 @@ if _dz:
     _zone_dialog(_dz)
 
 with right:
-    ui.md(f'<p class="cb-overline">Active alarms · {len(op)} open</p>')
+    ui.md(f'<p class="cb-overline">Active alerts · {len(op)} open</p>')
     if not len(op):
-        ui.md(f'<div class="cb-list"><div class="item">{ui.chip("ok", "No open alarms")}'
+        ui.md(f'<div class="cb-list"><div class="item">{ui.chip("ok", "No open alerts")}'
               f'<div class="txt cb-cap">Nothing raised on this floor in the period.</div></div></div>')
     for r in op.head(5).itertuples():
         with st.container(border=True, key=f"card_al_{r.id}"):
-            a, b1, b2, b3 = st.columns([5.8, 2.2, 2.4, 1.1], vertical_alignment="center", gap="small")
+            a, b1, b2, b3 = st.columns([5.4, 2.2, 2.4, 1.7], vertical_alignment="center", gap="small")
             cost = f" · ฿{r.cost_per_day_thb:,.0f}/day" if r.cost_per_day_thb and tariff else ""
             a.markdown(f'<div class="cb-stack" style="gap:2px"><div class="cb-row">{ui.state_chip(r)}'
-                       f'<span class="cb-cap cb-muted">{ui.esc(r.state)}{cost} · {r.days_open:.0f} d open'
+                       f'<span class="cb-cap cb-muted" title="days open">{ui.esc(r.state)}{cost} · {r.days_open:.0f} d'
                        f'</span></div><div class="cb-strong">{ui.esc(r.title)}</div></div>',
                        unsafe_allow_html=True)
             b1.button("Work order", key=f"wo_{r.id}", type="primary", width="stretch",
                       disabled=r.state == "In progress",
                       on_click=ui.set_fault_state, args=(r.id, "In progress", "work order raised"),
-                      help="Sets the alarm In progress with the note 'work order raised'.")
+                      help="Sets the alert In progress with the note 'work order raised'.")
             b2.button("Acknowledge", key=f"ack_{r.id}", width="stretch", disabled=r.state != "New",
                       on_click=ui.set_fault_state, args=(r.id, "Acknowledged"))
-            with b3.popover("", icon=":material/more_horiz:", help="More actions: mute, resolve", width="stretch"):
-                st.button("Mute (this session)", key=f"mute_{r.id}", on_click=ui.mute_fault, args=(r.id,))
-                st.button("Resolve", key=f"res_{r.id}", on_click=ui.set_fault_state,
-                          args=(r.id, "Resolved", "resolved from Floor"))
-    st.page_link("views/5_faults.py", label=f"All {len(op)} open alarms", icon=":material/arrow_forward:")
+            b3.button("Mute", key=f"mute_{r.id}", width="stretch", on_click=ui.mute_fault, args=(r.id,),
+                      help="Hide this alert for this session. Alerts clear by themselves once the "
+                           "condition stops.")
+    st.page_link("views/5_faults.py", label=f"All {len(op)} open alerts", icon=":material/arrow_forward:")
 
 # --- the last 30 days ------------------------------------------------------- #
 ui.section("The last 30 days", "Daily kWh by end use")

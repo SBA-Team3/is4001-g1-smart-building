@@ -53,7 +53,7 @@ if _goto:
     st.switch_page(_goto)
 
 # --------------------------------------------------------------------------- #
-# navigation — flat, in the order the FM asks: energy & cost, alarms, sensors
+# navigation — flat, in the order the FM asks: energy & cost, alerts, sensors
 # --------------------------------------------------------------------------- #
 P = "views"
 OVERVIEW = st.Page(f"{P}/0_portfolio.py", title="Overview", icon=":material/apartment:",
@@ -61,7 +61,7 @@ OVERVIEW = st.Page(f"{P}/0_portfolio.py", title="Overview", icon=":material/apar
 nav = st.navigation(position="top", pages=[
     OVERVIEW,
     st.Page(f"{P}/1_floor_status.py", title="Floor", icon=":material/dashboard:"),
-    st.Page(f"{P}/5_faults.py", title="Alarms", icon=":material/notifications:"),
+    st.Page(f"{P}/5_faults.py", title="Alerts", icon=":material/notifications:"),
     st.Page(f"{P}/2_sensor_health.py", title="Sensors", icon=":material/sensors:"),
     st.Page(f"{P}/3_zones.py", title="Comfort", icon=":material/thermostat:"),
     st.Page(f"{P}/4_energy.py", title="Energy", icon=":material/bolt:"),

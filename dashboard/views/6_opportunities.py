@@ -52,7 +52,6 @@ def _lockout(floor: int) -> dict:
 
 
 ui.page_header("Savings", f"Floor {floor} savings", "Model trained on the whole record")
-ui.floor_band(floor, c["as_of"])
 
 phys = _physics(floor, True)
 reg = _reg(floor)

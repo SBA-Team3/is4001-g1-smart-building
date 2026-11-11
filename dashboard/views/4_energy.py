@@ -31,7 +31,6 @@ def _model(floor: int, target: str) -> dict:
 
 ui.page_header("Energy", f"Floor {floor} energy", c["range"])
 e = ui.file_end_gate(floor, s, e)
-ui.floor_band(floor, as_of)
 
 # --------------------------------------------------------------------------- #
 # KPI row

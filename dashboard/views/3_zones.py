@@ -32,7 +32,6 @@ def _heat(lo: float, hi: float) -> pd.DataFrame:
 
 ui.page_header("Comfort", f"Floor {floor} comfort", f"{c['range']} | Band {lo:g}–{hi:g} °C")
 e = ui.file_end_gate(floor, s, e)
-ui.floor_band(floor, as_of)
 
 ac_on = st.toggle("Only hours with cooling running", value=True,
                   help="ASHRAE G36 suspends fault evaluation when the equipment is off. A zone "

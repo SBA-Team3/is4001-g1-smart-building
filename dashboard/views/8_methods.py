@@ -59,13 +59,18 @@ with t_conv:
 
     st.subheader("Declared methods")
     st.caption("Rules rather than numbers: how each derived figure on the dashboard is computed.")
-    st.dataframe(pd.DataFrame([{"method": k, "definition": v[0], "source": v[1]}
+    # The registry still describes the old manual lifecycle; the dashboard clears alerts itself.
+    _defs = {"Fault lifecycle": "New -> Acknowledged -> In progress, plus Muted, set by people; "
+                                "Cleared is set automatically once the condition has not been seen for "
+                                "more than the episode gap (3 days). No manual Resolve."}
+    st.dataframe(pd.DataFrame([{"method": k, "definition": _defs.get(k, v[0]), "source": v[1]}
                                for k, v in R.METHODS.items()]),
                  width="stretch", hide_index=True,
                  column_config={"definition": st.column_config.TextColumn(width="large")})
     st.markdown(
-        "**Fault lifecycle states** — " + " → ".join(W.STATES[:4]) + f", plus {W.STATES[4]}. "
-        "Open = " + ", ".join(sorted(W.OPEN_STATES)) + ".\n\n"
+        "**Alert states** — people set New → Acknowledged → In progress (a work order), or Mute; "
+        "the system sets **Cleared** (see *How alerts clear* under About the data). Open = not "
+        "cleared and not muted.\n\n"
         "**IPMVP option by measure** — zone-temperature lift and schedule trim: Option B "
         "(the comfort zones have their own AC meters); weekend/holiday lockout and the "
         "combined package: Option C (whole-floor AC). The lockout is verified by direct "
@@ -108,14 +113,14 @@ with t_conv:
     st.subheader("Fault evaluation machinery")
     st.markdown(
         "Three mechanics are taken from **ASHRAE Guideline 36 Addendum u "
-        "§5.16.14**, because an alarm system without them floods the operator:\n\n"
+        "§5.16.14**, because an alert system without them floods the operator:\n\n"
         "- **Persistence** — a condition must hold for `AlarmDelay` (30 min) "
         "before it is reported.\n"
         "- **State-based suppression** — faults are not evaluated while the "
         "equipment is off, nor for `ModeDelay` (30 min) after it starts. This is "
         "why temperature flatline detection runs only during cooling hours: the "
         "only two 60-minute flat runs in the record are overnight with the AC "
-        "off, and reporting them would be manufacturing an alarm.\n"
+        "off, and reporting them would be manufacturing an alert.\n"
         "- **Operator suppression** — every fault can be muted.\n\n"
         "The standard's own stated philosophy governs every threshold: defaults "
         "are *\"intentionally biased toward minimizing false alarms — if "
@@ -190,30 +195,49 @@ with t_about:
     st.caption("Explanations that used to sit on the operational pages, and the project's practice, "
                "corrections, baseline, pilot and exclusion notes — one expander each.")
 
-    with st.expander("Alarm system self-audit (ISA-18.2 / EEMUA 191)"):
+    with st.expander("How alerts clear"):
+        gap = R.conv("episode_gap_days")
+        st.markdown(
+            f"Alerts behave like a BMS: **the system clears an alert automatically** once its condition "
+            f"has not been seen for more than **{gap:.0f} days** (the episode gap — a gap, not 'not seen "
+            "today', so a weekend does not clear an overcooling alert). People acknowledge alerts and "
+            "raise work orders; they do not close them. A cleared alert that is raised again reappears "
+            "as open, keeping its last human state.\n\n"
+            "What makes each type stop appearing:\n"
+            "- **Overcooling** — cooled, occupied hours below the comfort band's low edge stop occurring "
+            "in the zone.\n"
+            "- **AC after hours** — no AC energy outside the measured schedule or on non-workdays.\n"
+            "- **Lights overnight** — overnight lighting falls back to its night baseline.\n"
+            "- **Short cycling** — the AC stops switching on and off faster than the rule's limit.\n"
+            "- **Humidity** — indoor humidity back under the limit.\n"
+            "- **Dead meter** — the meter reports changing values again.\n"
+            "- **Point offline** — the point reports samples again.\n"
+            "- **Meter change** — a dated event; it clears after the gap. Re-train the baseline across it.\n\n"
+            "A saved state of 'Resolved' from earlier versions is ignored (read as New).")
+
+    with st.expander("Alerts are grouped by fault type — why there is no severity"):
+        st.markdown(
+            "Alerts are labelled, filtered and summarised by **fault type** (overcooling, AC after hours, "
+            "lights overnight, short cycling, humidity, dead meter, point offline, meter change) and "
+            "ranked by cost of inaction (฿/day). **Severity is not shown**: the rules' high/medium/low "
+            "thresholds are not aligned with the 40% overcooling target, and some of them depend on the "
+            "length of the period, so the same fault could change severity when the period control "
+            "changes. Status colours are kept for data status and target pass/fail only.")
         if h is not None:
             _reg = ui.register(floor, c)
             active = _reg[_reg.is_open] if len(_reg) else _reg
-            audit = F.alarm_audit(active, c["window"])
-            hs = audit["mix"].get(F.HIGH, 0)
-            k = st.columns(3)
-            k[0].metric("Alarms per day", f"{audit['per_day']:.2f}", border=True,
-                        help="Open alarms ÷ days in the period. Steady-state best practice is under ~2 per "
-                             "operator per hour; this register aggregates episodes rather than events.")
-            k[1].metric("High priority", f"{hs:.0f}%", border=True,
-                        help=f"ISA-18.2 target {audit['target'].get(F.HIGH, 5):.0f}%; "
-                             f"{audit['deviation'].get(F.HIGH, 0):+.0f} pp vs the target mix.")
-            k[2].metric("Standing high", f"{audit['standing']}", border=True,
-                        help=f"Limit {F.ALARM_KPI['max_standing']}.")
-            st.caption(f"Floor {floor}, {c['period_label']}. **{audit['verdict']}** A high-priority share "
-                       "above the 5% convention is a real characteristic of these floors rather than a "
-                       "tuning failure: overcooling is the dominant fault, it affects every sensored zone, "
-                       "and each zone is a separate work order. The first version of this register raised "
-                       "34 alarms at 76% high priority by emitting one alarm per channel for the planned "
-                       "sensor outage; grouping offline points by zone and episode, and tagging the planned "
-                       "window, fixed that.")
+            k = st.columns(2)
+            k[0].metric("Open alerts per day", f"{len(active) / max(c['window'], 1):.2f}", border=True,
+                        help="Open alerts ÷ days in the period. The ISA-18.2 / EEMUA 191 benchmark for an "
+                             "operator is under ~2 per hour; this register aggregates episodes, not events.")
+            t_label, t_n = ui.top_type(active)
+            k[1].metric("Most common type", t_label or "—", delta=f"{t_n} open" if t_n else None,
+                        delta_color="off", delta_arrow="off", border=True)
+            st.caption(f"Floor {floor}, {c['period_label']}. The first version of this register raised one "
+                       "alert per channel for the planned sensor outage; grouping offline points by zone and "
+                       "episode, and tagging the planned window, fixed that.")
 
-    with st.expander("What the alarm register cannot detect, and why"):
+    with st.expander("What the alert register cannot detect, and why"):
         st.markdown(
             "**None of the fifteen ASHRAE Guideline 36 AHU fault conditions (FC1–FC15) are computable on "
             "this data.** Every one needs at least one of: supply, mixed, return or outdoor air "
@@ -251,7 +275,7 @@ with t_about:
             "operating hours** — ASHRAE Guideline 36 §5.16.14.11 suspends fault evaluation when the "
             "equipment is off — and power channels on a 4-hour threshold. Long temperature flatlines "
             "overnight with the AC off are genuine thermal quiescence; reporting them would be "
-            "manufacturing an alarm.")
+            "manufacturing an alert.")
 
     with st.expander("How a savings package is combined"):
         st.markdown(f"{R.METHODS['Combined savings'][0]}  \n*Source: {R.METHODS['Combined savings'][1]}*\n\n"
@@ -271,14 +295,14 @@ with t_about:
             "| **IPMVP / ASHRAE Guideline 14 M&V** | Energy performance, simulator | Daily change-point "
             "baseline with CV(RMSE) and NMBE against G14 limits; 90% uncertainty band with the "
             "autocorrelation correction; IPMVP Option B/C per measure; minimum pilot length |\n"
-            "| **ASHRAE Guideline 36 alarm delays and fault diagnoses** | Faults | AlarmDelay and "
+            "| **ASHRAE Guideline 36 fault delays and diagnoses** | Alerts | AlarmDelay and "
             "ModeDelay persistence, state-based suppression, possible diagnoses on every fault |\n"
-            "| **ISA-18.2 alarm rationalisation** | Faults | Self-audit of alarm rate, priority mix "
-            "and standing alarms; muting as shelving with a note |\n"
-            "| **FDD prioritisation by cost of inaction** | Faults | ฿/day = attributable energy ÷ "
+            "| **ISA-18.2 / EEMUA 191 alert load** | Alerts | Open alerts per day; grouped by fault "
+            "type, no severity; muting as shelving with a note |\n"
+            "| **FDD ranking by cost of inaction** | Alerts | ฿/day = attributable energy ÷ "
             "calendar days since first seen × tariff; zero where there is no defensible attribution |\n"
-            "| **CMMS work-order hand-off** | Faults | Lifecycle states, trade, action, "
-            "verification check, CSV export in import order |\n"
+            "| **CMMS work-order hand-off** | Alerts | Acknowledge / work order / mute, trade, options "
+            "to consider, CSV export in import order; clearing is automatic |\n"
             "| **Portfolio league and heat map** | Portfolio overview | One row per floor, "
             "normalised KPIs, floor × month overcooling map, generated next step per floor |\n")
         st.subheader("Deliberately absent")

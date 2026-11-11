@@ -9,7 +9,7 @@ are decided once here and used everywhere.
 |---|---|
 | Tokens (colours, spacing, radii, type) | `dashboard/design/tokens.json` |
 | Streamlit theme (widgets, alerts, metric deltas, fonts, toolbar) | `.streamlit/config.toml` (repo root) |
-| Components as code (alarm band, chips, dots, tiles, chart chrome, point status, period) | `dashboard/ui.py` |
+| Components as code (fault types, data-health caption, chips, dots, tiles, chart chrome, point status, period) | `dashboard/ui.py` |
 | Logo | `dashboard/design/logo.svg`, `logo_mark.svg` |
 
 Run the app from the repo root (`streamlit run dashboard/app.py`); Streamlit only
@@ -32,12 +32,12 @@ reads `.streamlit/config.toml` from the folder you start it in.
    the Overview's monthly energy chart, with **Bldg** selected, stacks F1–F7 in
    `data/floor-cat-1 … 7` (below).
 5. **Status colours mean status, and always come with an icon and a word**
-   (`ui.chip("high")`, `ui.dot("offline", "…")`, glyph text like `● 3 crit`,
-   `○ OFFLINE`). Never use them for "series 4". `status/normal` appears on chips
+   (`ui.chip("ok")`, `ui.dot("offline", "…")`, glyph text like `● FROZEN`,
+   `○ OFFLINE`). They mark data status and target pass/fail only — never alerts. Never use them for "series 4". `status/normal` appears on chips
    and legends only, never as a large fill. `status/offline` is always a hollow
    ring or a dashed outline.
-6. **Normal is quiet.** The alarm band is one grey strip; only abnormal counts get
-   colour, and a zero count is muted.
+6. **Normal is quiet.** Data health is one plain caption line (Floor, Sensors); there is
+   no alert-count band.
 7. **Text uses text tokens.** `text/primary` for values, `text/secondary` for
    labels and body copy, `text/muted` for units, footnotes and overlines.
 8. **Missing data is shown as missing.** "—", "no data" or the `bg/control` cell
@@ -50,22 +50,39 @@ reads `.streamlit/config.toml` from the folder you start it in.
 10. **Subtitles carry facts, not explanations.** A page subtitle holds only what the
     reader needs to place the numbers: counts, the date range (`ui.ctx()["range"]` —
     the context bar already names the period), a band or a scope. Section headings and
-    overlines are names ("Top alarms", "Floors"). Explanations go in help tooltips.
+    overlines are names ("Top alerts", "Floors"). Explanations go in help tooltips.
 11. **Floor selector.** `Bldg` is offered only on Overview and Carbon; floor pages offer
     F3–F7 and fall back to the last wired floor (default F5).
 12. **A floor past its file end** (`R.FILE_END`): if the whole period is after it, the
     page shows its header and one neutral "No data — …" message and stops
     (`ui.file_end_gate`); if the period overlaps it, one compact note.
 
-## Severity and state
+## Alerts: fault type, not severity
 
-| Fault | Chip | Glyph in tables |
+Alerts are labelled, filtered and summarised by **fault type** (`ui.FAULT_TYPES`,
+from the register's `rule`) and ranked by ฿/day, then days open. **Severity is not
+shown anywhere**: the rule thresholds are not aligned with the 40% target and some
+depend on the period length.
+
+| Type | `rule` | Icon |
 |---|---|---|
-| High | critical, filled red | `● High` |
-| Medium | warning, filled amber | `▲ Medium` |
-| Low | info: grey + icon, no hue of its own | `ⓘ Low` |
-| New (unacknowledged) | filled | — |
-| Acknowledged / In progress | same hue, **hollow** (outline chip, ring dot) | state column |
+| Overcooling | `overcooling` | `ac_unit` |
+| AC after hours | `after_hours_ac` | `schedule` |
+| Lights overnight | `after_hours_light` | `lightbulb` |
+| Short cycling | `short_cycling` | `autorenew` |
+| Humidity | `humidity` | `water_drop` |
+| Dead meter | `dead_meter` | `power_off` |
+| Point offline | `point_offline` | `sensors_off` |
+| Meter change | `step_change` | `swap_horiz` |
+
+**States.** People set New → Acknowledged → In progress (a work order), or Mute. The
+system sets **Cleared** (`ui.with_states`): last seen more than the episode gap (3 days)
+before the as-of day. Open = not cleared and not muted; every count uses that. There is
+no manual Resolve and no "fixed when" text in the UI; how each type clears is on Methods.
+
+`ui.type_chip(rule, state)` is **neutral** — `bg/control` fill, `border/strong` edge,
+`text/secondary`, icon + label — filled while New, an outline once Acknowledged or In
+progress. Unmapped rules fall back to the title-cased rule name.
 
 **Point down** = OFFLINE, FROZEN (`flag_flatline`) or BAD SAMPLES (out of range or
 spikes) on the as-of day — `ui.point_status()`, the one definition every page uses.
@@ -80,7 +97,7 @@ aliases of `status/normal*` and `status/offline*`.
 | Token | Hex | Use |
 |---|---|---|
 | `bg/page` | #0F1113 | page background |
-| `bg/surface` | #171A1D | cards, tiles, the alarm band |
+| `bg/surface` | #171A1D | cards, tiles |
 | `bg/raised` | #202428 | wells, table headers (no inputs on it) |
 | `bg/control` | #282D32 | inputs; "no data" cells |
 | `bg/accent-subtle` | #12343A | selected-row wash |
@@ -151,12 +168,13 @@ H3 15/22, Body 14/20, Caption 12/16, Overline 11/16 uppercase.
 
 | Component | In code |
 |---|---|
-| Top nav (flat: Overview · Floor · Alarms · Sensors · Comfort · Energy · Carbon · Savings · Methods) | `st.navigation(position="top")` in `app.py` |
+| Top nav (flat: Overview · Floor · Alerts · Sensors · Comfort · Energy · Carbon · Savings · Methods) | `st.navigation(position="top")` in `app.py` |
 | Context bar (floor, as-of date, period, Assumptions popover: tariff, building floor area; on Carbon the popover is replaced by the grid emission factor, key `ef`) | `app.py`, keys `floor_select`, `as_of`, `period`; read via `ui.ctx()` |
-| Alarm band | `ui.alarm_band(counts, meta)`; `ui.floor_band(floor, as_of)` for one floor |
+| Data-health caption | `ui.health_caption(floor, as_of, extra)` (Floor, Sensors) |
 | Page header | `ui.page_header(overline, title, sub_html)` |
 | KPI tile | `st.metric(..., border=True)`, or `ui.tile()` when it needs a list or sub-line |
-| Severity chip | `ui.chip(priority, label, hollow=)`, `ui.state_chip(row)` |
+| Fault-type chip | `ui.type_chip(rule, state)`, `ui.state_chip(row)` |
+| Status chip | `ui.chip(status, label, hollow=)` — data status and target pass/fail only |
 | Status dot | `ui.dot(status, label, hollow=)` |
 | Status text in tables | glyph text + `ui.glyph_style(df, cols)` |
 | Row → detail | `st.dataframe(on_select=callback)` + `st.dialog` |

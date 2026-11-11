@@ -29,7 +29,7 @@ Carbon; `F3 … F7` on floor pages, which fall back to the last wired floor, def
 default MTD) and an **Assumptions** popover (tariff, building floor area — 11,700 m²
 by default; per-floor figures use ÷7; the comfort band, default 23–26 °C). Assumptions
 persist across pages. A custom comfort band flows into every band-dependent figure
-(overcooled shares, overcooling alarms and their "fixed when" text, Comfort, levers,
+(overcooled shares, overcooling alerts, Comfort, levers,
 the simulator's comfort after) through optional `lo`/`hi` arguments; the 40% target
 stays fixed. When the band is not the default the button reads "Assumptions · custom band".
 On the Carbon page the Assumptions popover is replaced by the grid emission
@@ -41,19 +41,21 @@ The navigation is flat, in the order the FM asks:
 
 | Page | Question |
 |---|---|
-| **Overview** *(default)* | How much energy and money this period, against expected? Which sensors are down? Which floor and which alarm first? |
-| **Floor** | For one floor: alarms and data health, energy today, cost MTD vs expected, peak, cooled <23 °C vs 40%; zones worst first; act on alarms (Work order / Acknowledge / Mute / Resolve) |
-| **Alarms** | The fault register as a dense, filterable queue: severity, ฿/day, days open, days in state, aging; detail dialog with action, "fixed when", causes, note and state buttons; CSV export for a CMMS |
+| **Overview** *(default)* | How much energy and money this period, against expected? Which sensors are down? Which floor and which alert first? |
+| **Floor** | For one floor: data health, energy today, cost MTD vs expected, peak, cooled <23 °C vs 40%; zones worst first; act on open alerts (Work order / Acknowledge / Mute) |
+| **Alerts** | The fault register as a queue of Type · Zone · Description · Cost / day · State, filtered by fault type, trade and state (Open / Cleared / Muted / All); a pop-up with the facts, possible causes, options to consider, a note and Acknowledge / Work order / Mute; CSV export for a CMMS. No severity, and no manual Resolve: **alerts clear automatically** once the condition has not been seen for more than 3 days (the episode gap) |
 | **Sensors** | Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; point × day status map; per-point record; cross-sensor checks; raw trace |
 | **Comfort** | Which zones are too cold, by how much (degree-hours); floor × month overcooling map; zone detail |
 | **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, CUSUM, signature and outlier days, peak demand, profiles |
 | **Carbon** | Scope 2, location-based emissions for the period (building-level; a selected floor is highlighted): tCO₂e, vs expected (F3–F7), intensity, trailing 12 months; monthly emissions; by floor and by end use; reporting-year summary |
 | **Savings** | The intervention simulator: package inputs → kWh/yr and ฿/yr ranges, tCO₂e, comfort trade-off, IPMVP M&V plan; measures, tornado, control-stability lever, and how each lever is sized |
-| **Methods** | Conventions, point registry, change-points, and "About the data" (ISA-18.2 self-audit, what cannot be detected, why not UMLH, flatline rationale, combination rule, practice, corrections, baseline, pilot, exclusions) |
+| **Methods** | Conventions, point registry, change-points, and "About the data" (why alerts have no severity, what cannot be detected, why not UMLH, flatline rationale, combination rule, practice, corrections, baseline, pilot, exclusions) |
 
-Every page opens with the **alarm band**: ● critical · ▲ warning · ○ points down ·
-◐ unacknowledged, plus one line of data health. "Point down" is OFFLINE, FROZEN
-or BAD SAMPLES on the as-of day (`ui.point_status`); PARTIAL is degraded, not down.
+Floor and Sensors carry one plain line of data health under the subtitle (points down
+by name, point health, completeness today; on Floor also new / cleared / went offline
+since yesterday). "Point down" is OFFLINE, FROZEN or BAD SAMPLES on the as-of day
+(`ui.point_status`); PARTIAL is degraded, not down. Alerts are labelled by fault type,
+never severity.
 
 ## Design
 
@@ -67,7 +69,8 @@ hard-code a colour in a page.
 app.py              flat top navigation, context bar (floor, as-of date, period,
                     assumptions)
 ui.py               cached loaders, design tokens, the global period, point status,
-                    fault register, alarm band, chips, tiles, chart theme
+                    fault register, fault types, data-health caption, chips, tiles,
+                    chart theme
 design/             tokens.json, logo
 views/              one file per page; analytics come from ../src/sbanalytics/,
                     the same code the analysis notebooks use
@@ -81,7 +84,7 @@ Analytics modules (pure pandas, no Streamlit):
 | `portfolio` | building KPIs, floor league, floor × month overcooling, meter-outage episodes, per-floor levers and the generated "biggest lever" sentence |
 | `mv` | daily change-point baseline per floor, G14 summary, roll-up with uncertainty band, segmented CUSUM, energy signature, peak demand |
 | `scenario` | intervention simulator: lift / trim / lockout, combined without double counting, comfort after, IPMVP plan, tornado |
-| `workorders` | fault lifecycle store (append-only CSV) and CMMS export |
+| `workorders` | alert-state store (append-only CSV) and CMMS export; the dashboard ignores saved "Resolved" states and derives Cleared itself |
 | `faults` | stable ids, cost of inaction, days open, recurrence, trade, action, verification (`PLAYBOOK`) |
 | `kpis` | `cooled_occupied` + `overcooled_share` — the one definition of the overcooling KPI |
 
@@ -164,7 +167,8 @@ Added for v2 (all in `R.CONVENTIONS`, with sources, on the Methods page):
 Rules (in `R.METHODS`): overcooled share = AC-kWh-weighted cooled occupied
 hours (notebook 01); combined savings = S × (1 − T/B0) + T + L per case;
 IPMVP Option B for zone-metered measures, C for floor-wide; CUSUM restarts at
-each blocking change-point; fault lifecycle states.
+each blocking change-point; alert states (the dashboard overrides the registry's manual
+lifecycle: people set Acknowledged / In progress / Muted, the system sets Cleared).
 
 Deliberately **not** used: the term "Unmet Load Hours" (it is defined relative to
 a setpoint, which this building does not expose) and the ASHRAE 55 adaptive
