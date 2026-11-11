@@ -70,14 +70,19 @@ nav = st.navigation(position="top", pages=[
     st.Page(f"{P}/8_methods.py", title="Methods", icon=":material/science:"),
 ])
 on_overview = nav.url_path == OVERVIEW.url_path
-#: Building-level pages: "Bldg" is valid there; a selected floor is highlighted, not filtered.
-on_building_page = on_overview or nav.url_path == "carbon"
+#: Pages that offer "Bldg" (ui.BUILDING_PAGES): Overview and Carbon highlight a selected
+#: floor; Alerts narrows to it.
+on_building_page = nav.url_path in ui.BUILDING_PAGES
+#: Arriving at Alerts from another page (top nav, Overview link) starts at Bldg: the
+#: morning queue is building-wide. Picking a floor there narrows it until you leave.
+entering_alerts = nav.url_path == "faults" and st.session_state.get("_prev_page") != "faults"
+st.session_state["_prev_page"] = nav.url_path
 
 # --------------------------------------------------------------------------- #
 # context bar — set once, read by every page through ui.ctx()
 # --------------------------------------------------------------------------- #
 WIRED = [f"F{f}" for f in R.wired_floors()]
-# Bldg only on Overview / Carbon; F1 (lobby, reporting only) on Overview, Carbon,
+# Bldg on Overview, Alerts and Carbon; F1 (lobby, reporting only) on Overview, Carbon,
 # Floor and Energy; the office floors everywhere (ui.floor_options).
 FLOOR_OPTS = ui.floor_options(nav.url_path)
 on_carbon = nav.url_path == "carbon"
@@ -87,6 +92,8 @@ st.session_state.setdefault("floor_select", "Bldg" if on_building_page else f"F{
 # Older sessions (and the Overview's row click) may hold a bare int.
 if isinstance(st.session_state["floor_select"], int):
     st.session_state["floor_select"] = f"F{st.session_state['floor_select']}"
+if entering_alerts:
+    st.session_state["floor_select"] = "Bldg"
 # Anything not offered here ("Bldg" on a floor page, F1 on an office-only page) falls
 # back to the last office floor (default F5).
 if st.session_state["floor_select"] not in FLOOR_OPTS:
@@ -144,8 +151,9 @@ with st.container(key="ctxbar"):
     sel = cb[0].segmented_control(
         "Floor", FLOOR_OPTS, key="floor_select", required=True,
         help=("Bldg = the whole building. " if on_building_page else "")
-             + ("F1 is the lobby (reporting only: energy, cost, carbon). " if "F1" in FLOOR_OPTS else "")
-             + "F2 is not monitored; F1 and F2 are in the building totals.")
+             + ("F1 is the lobby (reporting only: energy, cost, carbon); it is in the building totals."
+                if "F1" in FLOOR_OPTS else
+                "F1 is the lobby (reporting only), so it is not offered here; it is in the building totals."))
     if sel != "Bldg":
         st.session_state["floor"] = int(sel[1:])
         if int(sel[1:]) in R.wired_floors():

@@ -228,7 +228,8 @@ def ctx() -> dict:
 REPORTING_ONLY = {1: "lobby"}
 #: Pages that accept a reporting-only floor (by URL path); the rest need an office floor.
 REPORTING_PAGES = {"", "carbon", "floor_status", "energy"}
-BUILDING_PAGES = {"", "carbon"}
+#: Pages that offer "Bldg" (Alerts starts there on entry; app.py).
+BUILDING_PAGES = {"", "carbon", "faults"}
 
 
 def floor_options(url_path: str) -> list[str]:
@@ -382,9 +383,10 @@ def register(floor: int, c: dict | None = None, show_planned: bool = False) -> p
     return with_states(raw.copy(), show_planned, c["as_of"])
 
 
-def building_register(c: dict | None = None) -> pd.DataFrame:
+def building_register(c: dict | None = None, show_planned: bool = False) -> pd.DataFrame:
+    """Every wired floor's register(), stacked; Overview and Alerts (Bldg) share it."""
     c = c or ctx()
-    regs = [register(f, c) for f in R.wired_floors()]
+    regs = [register(f, c, show_planned) for f in R.wired_floors()]
     regs = [r for r in regs if len(r)]
     return pd.concat(regs, ignore_index=True) if regs else pd.DataFrame()
 

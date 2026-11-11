@@ -24,8 +24,9 @@ channels cannot run on a page load.
 
 ## Layout
 
-One **context bar** sits above every page: floor (`Bldg · F3 … F7` on Overview and
-Carbon; `F3 … F7` on floor pages, which fall back to the last wired floor, default F5), the as-of date, the **period** (`Today · 7d · 30d · MTD · 12m · Record`,
+One **context bar** sits above every page: floor (`Bldg · F1 … F7` on Overview and
+Carbon; `Bldg · F2 … F7` on Alerts, which starts at `Bldg` on entry; `F2 … F7` on the other
+floor pages, plus F1 on Floor and Energy; they fall back to the last office floor, default F5), the as-of date, the **period** (`Today · 7d · 30d · MTD · 12m · Record`,
 default MTD) and an **Assumptions** popover (tariff, building floor area — 11,700 m²
 by default; per-floor figures use ÷7; the comfort band, default 23–26 °C). Assumptions
 persist across pages. A custom comfort band flows into every band-dependent figure
@@ -43,7 +44,7 @@ The navigation is flat, in the order the FM asks:
 |---|---|
 | **Overview** *(default)* | How much energy and money this period, against expected? Which sensors are down? Which floor and which alert first? |
 | **Floor** | For one floor: data health, a zones **Map / Table** (the map adds open alerts per zone; the table opens each zone's detail), energy today, cost MTD vs expected, peak, cooled <23 °C vs 40%; zones worst first; act on open alerts (Work order / Acknowledge / Mute) |
-| **Alerts** | The fault register as a queue of Type · Zone · Description · Cost / day · State, filtered by fault type, trade and state (Open / Cleared / Muted / All); a pop-up with the facts, possible causes, options to consider, a note and Acknowledge / Work order / Mute; CSV export for a CMMS. No severity, and no manual Resolve: **alerts clear automatically** once the condition has not been seen for more than 3 days (the episode gap) |
+| **Alerts** | The fault register — the whole building (`Bldg`, the default on entry; the count matches the Overview's "All N open alerts") or one floor — as a queue of Type · Zone · Description · Cost / day · State, filtered by fault type, trade and state (Open / Cleared / Muted / All); a pop-up with the facts, possible causes, options to consider, a note and Acknowledge / Work order / Mute; CSV export for a CMMS. No severity, and no manual Resolve: **alerts clear automatically** once the condition has not been seen for more than 3 days (the episode gap) |
 | **Sensors** | A neutral zone map (green / red multi-sensor markers, "● N meters down" per zone) beside the Not OK table; Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; point × day status map; per-point record; cross-sensor checks; raw trace |
 | **Comfort** | Which zones are too cold, by how much (degree-hours): a **Map / Table** toggle (default Map — a schematic plan of the floor filled by % of cooled hours below the band, with green / red sensor markers); floor × month overcooling map; zone detail |
 | **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, CUSUM, signature and outlier days, peak demand, profiles |

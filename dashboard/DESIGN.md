@@ -51,7 +51,9 @@ reads `.streamlit/config.toml` from the folder you start it in.
     reader needs to place the numbers: counts, the date range (`ui.ctx()["range"]` —
     the context bar already names the period), a band or a scope. Section headings and
     overlines are names ("Top alerts", "Floors"). Explanations go in help tooltips.
-11. **Floor selector.** `Bldg` is offered only on Overview and Carbon. **F1 (lobby)** is a
+11. **Floor selector.** `Bldg` is offered on Overview, Alerts and Carbon (`ui.BUILDING_PAGES`);
+    Alerts starts at `Bldg` whenever you arrive from another page, and a floor picked there
+    narrows it. **F1 (lobby)** is a
     reporting-only floor (`ui.REPORTING_ONLY`, a frontend notion — the registry still marks it
     unwired): offered on Overview, Carbon, Floor and Energy, with energy, cost and carbon only
     (no comfort, alerts, baseline or savings). The office floors F2–F7 (`registry.FLOORS` wired)

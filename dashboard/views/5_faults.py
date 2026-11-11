@@ -1,6 +1,7 @@
 """Alerts — the fault register as a dense work queue, labelled and filtered by
 fault type (never severity), with a CMMS hand-off. Same register and period as
-the Floor page, so the counts agree."""
+the Floor page, so the counts agree. With Bldg selected (the default on entry) it
+is every wired floor's register, the same one the Overview counts."""
 
 from __future__ import annotations
 
@@ -14,18 +15,25 @@ import ui
 
 c = ui.ctx()
 floor, as_of, tariff = c["floor"], c["as_of"], c["tariff"]
-if not ui.require_wired(floor):
+bldg = st.session_state.get("building_view", False)
+WIRED = R.wired_floors()
+scope = "Bldg" if bldg else f"F{floor}"
+if not bldg and not ui.require_wired(floor):
     st.stop()
 st.session_state.setdefault("muted", set())
 
 hd = st.columns([5, 1], vertical_alignment="bottom")
 with hd[0]:
-    ui.page_header("Alerts", f"Floor {floor} alerts", c["range"])
+    ui.page_header("Alerts", "Building alerts" if bldg else f"Floor {floor} alerts", c["range"])
 export_slot = hd[1].empty()
-ui.file_end_gate(floor, c["start"], c["end"])
+# One floor's file end does not stop the building queue, and it carries no note there.
+if not bldg:
+    ui.file_end_gate(floor, c["start"], c["end"])
 
 # Session keys keep their historical "alarms_" names; only the UI says "alerts".
-reg = ui.register(floor, c, st.session_state.get("alarms_planned", False))
+planned = st.session_state.get("alarms_planned", False)
+reg = ui.building_register(c, planned) if bldg else ui.register(floor, c, planned)
+EMPTY_BLDG = f"No open alerts on F{WIRED[0]}–F{WIRED[-1]} in this period."
 f1, f2, f3, f4 = st.columns([4.2, 2.6, 2.6, 1.2], vertical_alignment="bottom")
 STATE_VIEWS = ["Open", "Cleared", "Muted", "All"]
 if st.session_state.get("alarms_state") not in STATE_VIEWS:      # e.g. an old "Resolved"
@@ -38,7 +46,8 @@ f4.toggle("Planned", value=False, key="alarms_planned",
                "are hidden by default so they do not crowd out real faults.")
 
 if not len(reg):
-    st.info("No alerts raised on this floor in this period.", icon=":material/check_circle:")
+    st.info(EMPTY_BLDG if bldg else "No alerts raised on this floor in this period.",
+            icon=":material/check_circle:")
     st.stop()
 
 shown = {"Open": reg[reg.is_open], "Cleared": reg[reg.cleared & (reg.state != "Muted")],
@@ -80,7 +89,7 @@ ex = pd.DataFrame({
     "note": ex["state_note"] if "state_note" in ex else ""})
 export_slot.download_button(
     "Export CSV", ex.to_csv(index=False).encode("utf-8"), type="secondary",
-    file_name=f"work_orders_F{floor}_{as_of.date()}.csv", mime="text/csv",
+    file_name=f"work_orders_{scope}_{as_of.date()}.csv", mime="text/csv",
     icon=":material/download:", width="stretch",
     help="One row per alert in the current view, in CMMS import order.")
 
@@ -140,7 +149,7 @@ def _detail(fid: str) -> None:
 
 
 # Keyed per view so a selection never carries over to a different set of rows.
-TBL_KEY = f"alarms_tbl_{view}_{floor}_{as_of:%Y%m%d}_{c['period']}"
+TBL_KEY = f"alarms_tbl_{view}_{scope}_{as_of:%Y%m%d}_{c['period']}"
 
 
 def _pick() -> None:
@@ -150,7 +159,8 @@ def _pick() -> None:
 
 
 if not len(tbl):
-    st.info("No alerts in this view.", icon=":material/info:")
+    st.info(EMPTY_BLDG if bldg and view == "Open" and not (types or trade) else "No alerts in this view.",
+            icon=":material/info:")
 else:
     st.dataframe(
         tbl.style.format({"Cost / day": "฿{:,.0f}"}, na_rep=ui.DASH),
@@ -166,7 +176,7 @@ else:
                      f"system once the condition has not been seen for more than "
                      f"{R.conv('episode_gap_days'):.0f} days."),
         })
-    st.caption("Click a row for the details, possible causes, options and the state buttons.")
+    st.caption("Select a row for the details, possible causes, options and the state buttons.")
 _da = st.session_state.pop("_alarm_dialog", None)
 if _da is not None and (reg.id == _da).any():
     _detail(_da)
