@@ -43,9 +43,7 @@ def _usable(floor: int, s_=None, e_=None) -> pd.DataFrame:
 
 
 h = ui.building_hourly()
-ui.page_header("Carbon", "Carbon",
-               f"{ui.esc(c['period_label'])} · Scope 2 · location-based · purchased electricity, "
-               "submetered zone loads")
+ui.page_header("Carbon", "Carbon", f"Scope 2 · location-based | {c['range']}")
 
 # --------------------------------------------------------------------------- #
 # (1) tiles
@@ -57,7 +55,7 @@ exp_kwh = float(dev.expected.sum()) if len(dev) else np.nan
 ts0, ts1 = D.window(as_of, 365)
 ts0 = max(ts0, D.RECORD_START)
 t12 = P.building_kpis(h, ts0, ts1, ef=EF)
-total_area = AREA * 7
+total_area = float(c["building_area"])
 
 k = st.columns(4)
 with k[0]:
@@ -77,7 +75,7 @@ with k[2]:
     inten = bk["tco2e"] * 1000 / total_area * 365 / n_days if bk["kwh"] else np.nan
     ui.tile("Intensity", f"{inten:,.1f} kgCO₂e/m²·yr" if np.isfinite(inten) else ui.DASH,
             sub=f"annualised from {n_days} day(s) · {total_area:,.0f} m² assumed",
-            help=f"Assumed floor area: {AREA:,.0f} m² per floor × 7 (11,700 m² ÷ 7; the dataset gives no "
+            help=f"Building floor area {total_area:,.0f} m² (Assumptions; the dataset gives no "
                  "per-floor split). Submetered zone loads only, so not comparable with a whole-building "
                  "benchmark.")
 with k[3]:
@@ -89,9 +87,7 @@ with k[3]:
 # --------------------------------------------------------------------------- #
 # (2) monthly emissions
 # --------------------------------------------------------------------------- #
-ui.section("Monthly emissions", "Building total, whole record, tCO₂e. "
-           + (f"F{sel_floor} highlighted; the rest of the building in grey. " if sel_floor else "")
-           + "Dashed: expected, where the F3–F7 baseline exists.")
+ui.section("Monthly emissions", "Whole record · tCO₂e")
 mo = P.monthly_energy(h)
 mo["tCO2e"] = t(mo.kWh)
 if sel_floor:
@@ -142,7 +138,7 @@ st.caption("Grey column: the as-of month. Expected = building actual minus the F
 # --------------------------------------------------------------------------- #
 left, right = st.columns([3, 2], gap="large")
 with left:
-    ui.md(f'<p class="cb-overline">By floor · {ui.esc(c["period_label"])}</p>')
+    ui.md('<p class="cb-overline">By floor</p>')
     rows = []
     for f in sorted(R.FLOORS):
         kwh = E.floor_totals(h[h.floor == f], s, e)["total"]
@@ -161,10 +157,10 @@ with left:
                  hide_index=True, width="stretch", placeholder=ui.DASH,
                  column_config={"Note": st.column_config.Column(width="medium"),
                                 "kgCO₂e/m²·yr": st.column_config.Column(
-                                    help=f"Annualised, on the assumed {AREA:,.0f} m² per floor.")})
+                                    help=f"Annualised, on {AREA:,.0f} m² per floor (building area ÷ 7).")})
     st.caption(f"Total {bf['tCO₂e'].sum():,.2f} tCO₂e. '—' = not metered in the period, not zero.")
 with right:
-    ui.md(f'<p class="cb-overline">By end use · {ui.esc(c["period_label"])}</p>')
+    ui.md('<p class="cb-overline">By end use</p>')
     d = D.slice_hourly(h, s, e)
     eu = pd.DataFrame({"end_use": ["ac", "light", "plug"],
                        "tCO₂e": [t(d[col].sum()) for col in E.END_USES]})
@@ -182,7 +178,7 @@ with right:
 # --------------------------------------------------------------------------- #
 # (4) reporting-year summary (ignores the period control)
 # --------------------------------------------------------------------------- #
-ui.section("Reporting-year summary", "Calendar years, independent of the period control.")
+ui.section("Reporting-year summary", "Calendar years")
 yr = []
 for label, a, b, note in [
         ("2018 (Jul–Dec, part year)", "2018-07-01", "2018-12-31", "record starts 1 Jul 2018"),

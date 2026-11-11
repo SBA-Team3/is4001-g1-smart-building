@@ -123,12 +123,13 @@ def lockout_measure(h: pd.DataFrame, floor: int) -> dict:
 # comfort impact
 # --------------------------------------------------------------------------- #
 
-def comfort_after(h: pd.DataFrame, d_temp: dict, floor: int) -> dict:
+def comfort_after(h: pd.DataFrame, d_temp: dict, floor: int,
+                  lo: float | None = None, hi: float | None = None) -> dict:
     """Projected overcooled / overheated share after the lift, same definition
     as the portfolio KPI (AC-kWh-weighted cooled occupied hours)."""
     d = K.cooled_occupied(h)
-    now = K.overcooled_share(d, by=())
-    after = K.overcooled_share(d, by=(), shift={z: float(v) for z, v in d_temp.items()})
+    now = K.overcooled_share(d, by=(), lo=lo, hi=hi)
+    after = K.overcooled_share(d, by=(), shift={z: float(v) for z, v in d_temp.items()}, lo=lo, hi=hi)
     get = lambda f, c: float(f[c].iloc[0] * 100) if len(f) else np.nan
     return {"below_now": get(now, "share_below"), "above_now": get(now, "share_above"),
             "below_after": get(after, "share_below"), "above_after": get(after, "share_above")}
@@ -147,7 +148,8 @@ def _payback(cost: float, thb_per_year: float) -> float:
 def simulate(h: pd.DataFrame, est: pd.DataFrame, phys: dict, floor: int, *,
              d_temp: dict, trim_n: int = 0, lockout: bool = False,
              cost: dict | None = None, tariff: float | None = None,
-             ef: float | None = None, parts: dict | None = None) -> dict:
+             ef: float | None = None, parts: dict | None = None,
+             lo: float | None = None, hi: float | None = None) -> dict:
     """Size every selected measure and the combined package.
 
     `parts` lets a caller pass pre-computed measure results (the tornado chart
@@ -163,7 +165,7 @@ def simulate(h: pd.DataFrame, est: pd.DataFrame, phys: dict, floor: int, *,
                                 else {c: 0.0 for c in CASES})
     if not lockout:
         lock = {c: 0.0 for c in CASES}
-    comfort = p.get("comfort") or comfort_after(h, d_temp, floor)
+    comfort = p.get("comfort") or comfort_after(h, d_temp, floor, lo=lo, hi=hi)
 
     b0 = lift["base_kwh"]
     combined = {c: lift[c] * (1 - (trim[c] / b0 if b0 else 0)) + trim[c] + lock[c] for c in CASES}
@@ -175,8 +177,8 @@ def simulate(h: pd.DataFrame, est: pd.DataFrame, phys: dict, floor: int, *,
     rows = []
     for key, name, r, conf, comfort_txt in (
         ("lift", "Zone-temperature lift", lift, lift_conf,
-         f"{comfort['below_after']:.0f}% below {R.conv('comfort_lo'):g} °C, "
-         f"{comfort['above_after']:.0f}% above {R.conv('comfort_hi'):g} °C"),
+         f"{comfort['below_after']:.0f}% below {R.conv('comfort_lo') if lo is None else lo:g} °C, "
+         f"{comfort['above_after']:.0f}% above {R.conv('comfort_hi') if hi is None else hi:g} °C"),
         ("trim", "Schedule trim", trim, trim_conf,
          f"zones reach ≈{trim['end_temp_c']:.1f} °C at end of trimmed gap"
          if np.isfinite(trim.get("end_temp_c", np.nan)) else "—"),

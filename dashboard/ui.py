@@ -49,6 +49,10 @@ NO_DATA = C["bg/control"]
 PRIMARY, SERIES_2, SERIES_3, CONTEXT = (C["data/primary"], C["data/series-2"],
                                         C["data/series-3"], C["data/context"])
 SEQ = [C[f"data/seq-{i}"] for i in range(1, 6)]
+#: Overview monthly stack only: one hue per floor, chosen clear of the status hues
+#: and the accent (DESIGN.md). Everywhere else floors are identified by label.
+FLOOR_CAT = alt.Scale(domain=[f"F{f}" for f in range(1, 8)],
+                      range=[C[f"data/floor-cat-{i}"] for i in range(1, 8)])
 #: Ink that clears 4.5:1 on each sequential step (light on the two dark steps).
 SEQ_INK = [INK, INK, C["text/on-accent"], C["text/on-accent"], C["text/on-accent"]]
 
@@ -67,7 +71,7 @@ OVERCOOL_COLOR = alt.Scale(type="threshold", domain=OVERCOOL_BINS, range=SEQ)
 #: Point-day status in the health map. Offline is the empty control fill.
 POINT_STATUS = ["OK", "PARTIAL", "BAD SAMPLES", "FROZEN", "OFFLINE"]
 POINT_STATUS_COLOR = alt.Scale(domain=POINT_STATUS,
-                               range=[C["status/normal-bg"], C["status/warning-bg"], WARN, BAD, NO_DATA])
+                               range=[C["status/normal-fill"], C["status/warning-bg"], WARN, BAD, NO_DATA])
 #: Cell outlines: PARTIAL is the dark amber step outlined in amber (degraded); BAD
 #: SAMPLES is solid amber (down); OFFLINE is the empty control fill with a grey ring.
 POINT_STATUS_STROKE = alt.Scale(domain=POINT_STATUS,
@@ -87,7 +91,7 @@ def highlight(field: str, value) -> alt.condition:
 
 
 #: Fault lifecycle store. dashboard/cache/ is gitignored, so states stay local.
-#: FM_FAULT_STATES overrides it (the smoke test points it at a temp file).
+#: FM_FAULT_STATES overrides the path (e.g. to keep a demo's states separate).
 FAULT_STATES = os.environ.get(
     "FM_FAULT_STATES",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "fault_states.csv"))
@@ -163,20 +167,58 @@ def period_bounds(as_of, period: str | None = None) -> tuple[pd.Timestamp, pd.Ti
     return start, end, f"{names.get(period, period)} · {label}"
 
 
+#: User assumptions live in these non-widget keys, so they survive pages that
+#: don't render their inputs (Streamlit drops an unrendered widget's key).
+#: app.py copies each into its widget key before rendering and back on change.
+N_FLOORS = 7
+ASSUMPTIONS = {"tariff": ("_tariff", lambda: float(R.conv("tariff_thb"))),
+               "building_area": ("_building_area", lambda: float(R.conv("floor_area_m2")) * N_FLOORS),
+               "ef": ("_ef", lambda: float(R.conv("co2_kg_per_kwh"))),
+               "comfort_lo": ("_comfort_lo", lambda: float(R.conv("comfort_lo"))),
+               "comfort_hi": ("_comfort_hi", lambda: float(R.conv("comfort_hi")))}
+
+
+def band_is_custom(lo: float, hi: float) -> bool:
+    return (lo, hi) != (float(R.conv("comfort_lo")), float(R.conv("comfort_hi")))
+
+
+def assumption(name: str) -> float:
+    key, default = ASSUMPTIONS[name]
+    return float(st.session_state.get(key, default()))
+
+
+def date_range(start, end) -> str:
+    """'8 – 14 Nov 2019', '28 Oct – 3 Nov 2019', '15 Nov 2018 – 14 Nov 2019' or '14 Nov 2019'."""
+    s, e = pd.Timestamp(start), pd.Timestamp(end)
+    if s.normalize() == e.normalize():
+        return f"{e.day} {e:%b %Y}"
+    if (s.year, s.month) == (e.year, e.month):
+        return f"{s.day} – {e.day} {e:%b %Y}"
+    if s.year == e.year:
+        return f"{s.day} {s:%b} – {e.day} {e:%b %Y}"
+    return f"{s.day} {s:%b %Y} – {e.day} {e:%b %Y}"
+
+
 def ctx() -> dict:
     """Context-bar selections, set once in app.py and read by every page."""
     as_of = pd.Timestamp(st.session_state.get("as_of", D.DEFAULT_AS_OF))
     period = st.session_state.get("period", DEFAULT_PERIOD)
     start, end, label = period_bounds(as_of, period)
+    building_area = assumption("building_area")
     return {
         "floor": st.session_state.get("floor", 5),
         "as_of": as_of,
-        "tariff": st.session_state.get("tariff", R.conv("tariff_thb")),
-        "area": st.session_state.get("area", R.conv("floor_area_m2")),
+        "tariff": assumption("tariff"),
+        "building_area": building_area,
+        "area": building_area / N_FLOORS,              # per floor: the paper gives no split
         "window": int((end - start).days) + 1,
-        "ef": st.session_state.get("ef", R.conv("co2_kg_per_kwh")),   # set on Carbon; TGO default
-        "demand_charge": st.session_state.get("demand_charge", R.conv("demand_charge_thb_per_kw")),
+        "ef": assumption("ef"),                        # set on Carbon; TGO default
+        # Comfort band from Assumptions (default 23–26 °C). Passed explicitly to every
+        # band-dependent sbanalytics call; R.CONVENTIONS is never mutated.
+        "lo": assumption("comfort_lo"), "hi": assumption("comfort_hi"),
+        "custom_band": band_is_custom(assumption("comfort_lo"), assumption("comfort_hi")),
         "period": period, "start": start, "end": end, "period_label": label,
+        "range": date_range(start, end),
     }
 
 
@@ -256,9 +298,9 @@ def short_point(row) -> str:
 # --------------------------------------------------------------------------- #
 
 @st.cache_data(show_spinner="Building the fault register…")
-def _raw_register(floor: int, start, end, as_of, tariff: float) -> pd.DataFrame:
+def _raw_register(floor: int, start, end, as_of, tariff: float, lo: float) -> pd.DataFrame:
     return F.build_register(D.load_hourly(floor), D.load_health(floor), start=start, end=end,
-                            floor=floor, tariff=tariff, as_of=as_of)
+                            floor=floor, tariff=tariff, as_of=as_of, lo=lo)
 
 
 def with_states(reg: pd.DataFrame, show_planned: bool = False) -> pd.DataFrame:
@@ -282,7 +324,7 @@ FILE_END_RULES = ("point_offline", "dead_meter", "metering_step_change")
 def register(floor: int, c: dict | None = None, show_planned: bool = False) -> pd.DataFrame:
     """The floor's register over the global period, with states applied."""
     c = c or ctx()
-    raw = _raw_register(floor, c["start"], c["end"], c["as_of"], float(c["tariff"]))
+    raw = _raw_register(floor, c["start"], c["end"], c["as_of"], float(c["tariff"]), float(c["lo"]))
     fe = R.floor_file_end(floor)
     if fe is not None and len(raw):
         # Points "going offline" on or after the file end are the file ending, not
@@ -582,11 +624,54 @@ def floor_band(floor: int, as_of, reg: pd.DataFrame | None = None, extra: str = 
 
 
 def status_notes(as_of, floor: int = 5) -> None:
-    """Blackout / outage / change-point warnings for the chosen date."""
+    """Blackout / outage / change-point warnings for the chosen date. The file-end
+    note is left to file_end_gate(), so a floor past its file end says so once."""
     for note in D.data_status(as_of, floor):
+        if note["title"].startswith("Past the end"):
+            continue
         fn = st.error if note["level"] == "error" else st.warning
         fn(f"**{note['title']}** — {note['detail']}",
            icon=":material/error:" if note["level"] == "error" else ":material/warning:")
+
+
+def file_end_gate(floor: int, start, end) -> pd.Timestamp:
+    """For a floor whose source file ends early: if the whole period lies after the
+    file end, show one neutral message and stop the page; if it only overlaps,
+    show one compact note. Returns the last day with data in the period."""
+    fe = R.floor_file_end(floor)
+    if fe is None or pd.Timestamp(end) < fe.normalize():
+        return pd.Timestamp(end)
+    if pd.Timestamp(start) > fe.normalize():
+        st.info(f"No data — Floor {floor}'s file ends {fe.day} {fe:%b %Y}. Choose an earlier date.",
+                icon=":material/info:")
+        st.stop()
+    st.caption(f"Floor {floor}'s file ends {fe.day} {fe:%b %Y} {fe:%H:%M}; this period shows data up to "
+               "then. Later days are not metered, not zero.")
+    return fe.normalize()
+
+
+SINCE_LOOKBACK_DAYS = 90
+
+
+@st.cache_data(show_spinner=False)
+def _since_register(floor: int, as_of, tariff: float, lo: float) -> pd.DataFrame:
+    s, e = D.window(as_of, SINCE_LOOKBACK_DAYS)
+    return _raw_register(floor, s, e, as_of, tariff, lo)
+
+
+def since_yesterday(floor: int, as_of, tariff: float, lo: float | None = None) -> dict:
+    """New / cleared alarms on the as-of day, from a fixed 90-day look-back that
+    ignores the period control (a one-day window would make every fault 'new')."""
+    lo = float(R.conv("comfort_lo")) if lo is None else float(lo)
+    reg = _since_register(floor, pd.Timestamp(as_of).normalize(), float(tariff), lo)
+    if len(reg):
+        reg = reg[~reg.planned]
+    day = pd.Timestamp(as_of).normalize()
+    if not len(reg):
+        return {"new": [], "cleared": []}
+    fs = pd.to_datetime(reg.first_seen).dt.normalize()
+    ls = pd.to_datetime(reg.last_seen).dt.normalize()
+    return {"new": reg.id[fs == day].tolist(), "cleared": reg.id[ls == day - pd.Timedelta(days=1)].tolist()}
 
 
 def comparison_guard(start, end, floor: int, show: bool = True) -> list:

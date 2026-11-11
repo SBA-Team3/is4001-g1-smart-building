@@ -11,8 +11,8 @@ matplotlib
 jupyter
 
 # Dashboard
-# 1.66.x: the test harness (AppTest) drops the sidebar on every rerun, so the
-# smoke test fails before rendering a page. <=1.50 lacks altair_chart(width=).
+# <=1.50 lacks altair_chart(width=); 1.65 is the version the dashboard was built
+# and checked on.
 streamlit>=1.65,<1.66
 altair
 

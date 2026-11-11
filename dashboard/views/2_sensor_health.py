@@ -18,9 +18,8 @@ start, end = c["start"], c["end"]
 if not ui.require_wired(floor):
     st.stop()
 
-ui.page_header("Sensors", f"Floor {floor} sensors",
-               f"Status on {ui.day_txt(as_of)} · history over {ui.esc(c['period_label'])}. A rule cannot "
-               "tell that its input has gone stale, so every other page is conditional on this one.")
+ui.page_header("Sensors", f"Floor {floor} sensors", f"Status on {ui.day_txt(as_of)} | history {c['range']}")
+end = ui.file_end_gate(floor, start, end)
 
 H = ui.health(floor)
 S = ui.scored(floor)
@@ -43,11 +42,12 @@ def _tbl(d: pd.DataFrame) -> pd.DataFrame:
                          "Days stale": d.days_stale})
 
 
-ui.section(f"Not OK ({len(bad)})",
-           "○ OFFLINE no samples · ● FROZEN flatline · ▲ BAD SAMPLES out of range or spikes — these "
-           "three are down. ◐ PARTIAL is below the completeness target: degraded, not down.")
+STATUS_HELP = ("○ OFFLINE no samples · ● FROZEN flatline · ▲ BAD SAMPLES out of range or spikes — "
+               "these three are down. ◐ PARTIAL is below the completeness target: degraded, not down.")
+ui.section(f"Not OK ({len(bad)})")
 if len(bad):
     st.dataframe(ui.glyph_style(_tbl(bad), ["Status"], {"Days stale": "{:.0f}"}),
+                 column_config={"Status": st.column_config.Column(help=STATUS_HELP)},
                  hide_index=True, width="stretch", placeholder=ui.DASH,
                  height=min(35 * len(bad) + 38, 420))
 else:
@@ -61,8 +61,6 @@ tab_map, tab_points, tab_cross, tab_trace = st.tabs(
 
 # --------------------------------------------------------------------------- #
 with tab_map:
-    st.caption("Status per point per day over the period. Intermittent comms loss shows as vertical "
-               "stripes, a dead point as a horizontal band. Pick 12m or Record for the long view.")
     ch = st.multiselect("Channels", sorted(S.channel.unique()),
                         default=[x for x in ["temp", "rh", "ac", "light", "plug"] if x in set(S.channel)])
     hm = S[(S.day >= start) & (S.day <= end)]
@@ -121,7 +119,7 @@ with tab_points:
         column_config={"complete %": st.column_config.NumberColumn(format="%.1f")})
     st.caption("Whole record. Health is a number here on purpose: a bar would read as data.")
 
-    ui.md('<p class="cb-overline" style="margin-top:12px">Frozen points — ranked</p>')
+    ui.md('<p class="cb-overline" style="margin-top:12px">Frozen points</p>')
     ss = HL.stuck_summary(H)
     ss = ss[ss.flat_day_share > 0].head(10)
     st.dataframe(

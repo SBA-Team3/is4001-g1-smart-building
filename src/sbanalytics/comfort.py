@@ -29,8 +29,8 @@ from . import data as D
 from . import registry as R
 
 
-def band() -> tuple[float, float]:
-    return R.conv("comfort_lo"), R.conv("comfort_hi")
+def band(lo: float | None = None, hi: float | None = None) -> tuple[float, float]:
+    return (R.conv("comfort_lo") if lo is None else lo), (R.conv("comfort_hi") if hi is None else hi)
 
 
 def zone_comfort(h: pd.DataFrame, zones=None, start=None, end=None,

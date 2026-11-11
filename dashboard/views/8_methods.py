@@ -18,8 +18,7 @@ c = ui.ctx()
 floor = c["floor"]
 h = ui.hourly(floor) if R.FLOORS[floor]["wired"] else None
 
-ui.page_header("Methods", "Methods & assumptions", "Every threshold this dashboard applies, where it comes from, what "
-               "we corrected, and what we cannot compute.")
+ui.page_header("Methods", "Methods & assumptions")
 
 def _gaps(f: int) -> str:
     """This floor's per-zone exclusions, from the registry."""
@@ -50,7 +49,10 @@ with t_conv:
     st.caption("These are project decisions with sources, not standards. Where a "
                "standard exists we cite it; where it does not we say so.")
     conv = pd.DataFrame([
-        {"parameter": k, "value": v[0], "unit": v[1], "basis": v[2]}
+        {"parameter": k, "value": v[0], "unit": v[1],
+         "basis": v[2] + (" — not used in the dashboard" if k == "demand_charge_thb_per_kw"
+                          else " — default; adjustable in Assumptions (comfort band)"
+                          if k in ("comfort_lo", "comfort_hi") else "")}
         for k, v in R.CONVENTIONS.items()])
     st.dataframe(conv, width="stretch", hide_index=True,
                  column_config={"basis": st.column_config.TextColumn(width="large")})

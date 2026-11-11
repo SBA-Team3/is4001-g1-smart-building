@@ -20,8 +20,7 @@ reads `.streamlit/config.toml` from the folder you start it in.
 1. **Dark only.** Light variants are specified below but not built. Don't add them
    to `tokens.json` or `config.toml`.
 2. **No hex codes in `views/`.** Use the names in `ui.py`: `ui.C["text/primary"]`,
-   `ui.PRIMARY`, `ui.CONTEXT`, `ui.END_USE_COLOR`, `ui.chip()`, … `tests/test_design_tokens.py`
-   fails if a page hard-codes a colour.
+   `ui.PRIMARY`, `ui.CONTEXT`, `ui.END_USE_COLOR`, `ui.chip()`, …
 3. **Cyan is for the interface, never for data.** `accent/default` (#2EB4C8) marks
    selection, focus and the primary button — nothing else. It is never decoration
    and never a chart mark. Page-header overlines are `text/muted`, not accent.
@@ -29,7 +28,9 @@ reads `.streamlit/config.toml` from the folder you start it in.
    five zone hues are retired, so the dashboard no longer colour-matches the
    notebooks. In a chart, the selected floor or zone is `data/primary` and every
    other one `data/context`. A chart that used to stack floors shows the building
-   total with the selected floor highlighted, or small multiples.
+   total with the selected floor highlighted, or small multiples. One exception:
+   the Overview's monthly energy chart, with **Bldg** selected, stacks F1–F7 in
+   `data/floor-cat-1 … 7` (below).
 5. **Status colours mean status, and always come with an icon and a word**
    (`ui.chip("high")`, `ui.dot("offline", "…")`, glyph text like `● 3 crit`,
    `○ OFFLINE`). Never use them for "series 4". `status/normal` appears on chips
@@ -46,6 +47,15 @@ reads `.streamlit/config.toml` from the folder you start it in.
    `start`, `end`, `period_label`). A page never adds its own period control; a
    window a model fixes for itself (the baseline's training window) is shown as
    text.
+10. **Subtitles carry facts, not explanations.** A page subtitle holds only what the
+    reader needs to place the numbers: counts, the date range (`ui.ctx()["range"]` —
+    the context bar already names the period), a band or a scope. Section headings and
+    overlines are names ("Top alarms", "Floors"). Explanations go in help tooltips.
+11. **Floor selector.** `Bldg` is offered only on Overview and Carbon; floor pages offer
+    F3–F7 and fall back to the last wired floor (default F5).
+12. **A floor past its file end** (`R.FILE_END`): if the whole period is after it, the
+    page shows its header and one neutral "No data — …" message and stops
+    (`ui.file_end_gate`); if the period overlaps it, one compact note.
 
 ## Severity and state
 
@@ -87,6 +97,9 @@ aliases of `status/normal*` and `status/offline*`.
 | `status/normal` | #3FAE6E | #72D198 | #15301F |
 | `status/offline` | #8E97A1 | #B9C1CA | #23272C |
 
+`status/normal-fill` #25613F: OK cells in status maps (the Sensors point × day map) —
+quieter than `status/normal`, visible on `bg/surface` (2.4:1).
+
 | Data | Hex | Use |
 |---|---|---|
 | `data/primary` | #4F8DF6 | AC, cold, actual, the selected floor/zone |
@@ -94,16 +107,25 @@ aliases of `status/normal*` and `status/offline*`.
 | `data/series-3` | #A6CBFB | plug |
 | `data/context` | #5A636D | non-selected floors or zones; other configuration |
 | `data/seq-1 … 5` | #24406E #3567B8 #4F8DF6 #86B4F8 #BBD7FD | overcooled share, 20-pp steps |
+| `data/floor-cat-1 … 7` | #3D84EA #A9C8F8 #7258D2 #C9A6F5 #A3457F #D98CC4 #5568BC | **Overview monthly stack only** (F1 … F7) |
 
 - Expected / baseline lines: `text/secondary`, dashed (`ui.expected_line`).
 - Change-point annotations: `text/muted`, dotted (`ui.cps_rules`).
-- The point × day health map *is* status: `status/normal-bg` (OK, quiet),
+- The point × day health map *is* status: `status/normal-fill` (OK),
   warning (PARTIAL, BAD SAMPLES), critical (FROZEN), `bg/control` with "—" (OFFLINE).
 - Overcooled share vs its 40% target is a blue magnitude plus a target tick; pass
   or fail goes in a chip beside it, never in the bar colour.
 - Heatmap cell labels clear 4.5:1 on every ramp step: `text/primary` on seq-1/2,
   `text/on-accent` on seq-3/4/5 (`ui.SEQ_INK`).
 - `chartCategoricalColors` = `[data/primary, data/series-2, data/series-3, data/context]`.
+- `data/floor-cat-*` stays in the blue → violet → magenta arc: no red, amber, green or
+  cyan, so it never reads as status or as the accent. A lightness ladder separates
+  neighbours. Checked with the dataviz validator on `bg/surface` (dark): adjacent
+  ΔE (OKLab×100) normal 20.6 / protan 15.9 / deutan 20.1 / tritan 19.4, all ≥ 3:1. It
+  fails the validator's lightness band and chroma floor by design, because the ladder
+  is what separates seven hues inside one arc. Non-adjacent pairs are closer (deutan
+  ≥ 4.0), so the stack order, the legend and the tooltips carry identity. Min ΔE vs
+  status: critical 13.9 (protan), warning 5.9 (tritan), normal 5.8 (tritan).
 
 ### Light variants (specified, not built)
 
@@ -130,7 +152,7 @@ H3 15/22, Body 14/20, Caption 12/16, Overline 11/16 uppercase.
 | Component | In code |
 |---|---|
 | Top nav (flat: Overview · Floor · Alarms · Sensors · Comfort · Energy · Carbon · Savings · Methods) | `st.navigation(position="top")` in `app.py` |
-| Context bar (floor, as-of date, period, Assumptions popover: tariff, area, demand charge; on Carbon the popover is replaced by the grid emission factor, key `ef`) | `app.py`, keys `floor_select`, `as_of`, `period`; read via `ui.ctx()` |
+| Context bar (floor, as-of date, period, Assumptions popover: tariff, building floor area; on Carbon the popover is replaced by the grid emission factor, key `ef`) | `app.py`, keys `floor_select`, `as_of`, `period`; read via `ui.ctx()` |
 | Alarm band | `ui.alarm_band(counts, meta)`; `ui.floor_band(floor, as_of)` for one floor |
 | Page header | `ui.page_header(overline, title, sub_html)` |
 | KPI tile | `st.metric(..., border=True)`, or `ui.tile()` when it needs a list or sub-line |
@@ -145,5 +167,5 @@ H3 15/22, Body 14/20, Caption 12/16, Overline 11/16 uppercase.
 
 1. Update `dashboard/design/tokens.json`.
 2. If it is a theme colour, update `.streamlit/config.toml` too — TOML can't read the
-   JSON, so `tests/test_design_tokens.py` checks the two agree.
+   JSON, so keep the two in step by hand.
 3. Restart Streamlit; it caches `ui.py` and the theme.

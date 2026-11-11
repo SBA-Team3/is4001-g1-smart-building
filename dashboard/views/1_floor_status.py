@@ -27,7 +27,7 @@ if not ui.require_wired(floor):
 h = ui.hourly(floor)
 H = ui.health(floor)
 target = R.conv("overcooled_target_pct")
-LO = R.conv("comfort_lo")
+LO, HI = c["lo"], c["hi"]                  # comfort band from Assumptions
 m0 = as_of.replace(day=1)
 
 
@@ -36,26 +36,17 @@ def _model(floor: int, target: str = "total_kwh") -> dict:
     return M.daily_model(D.load_hourly(floor), floor, target)
 
 
-ui.page_header("Floor", f"Floor {floor}", f"{c['period_label']} · as of {ui.day_txt(as_of)}")
+ui.page_header("Floor", f"Floor {floor}", f"{c['range']} | Comfort band {LO:g}–{HI:g} °C")
+end = ui.file_end_gate(floor, start, end)
 
 # --- alarm band ------------------------------------------------------------- #
 reg = ui.register(floor, c)
-day = as_of.normalize()
-if len(reg):
-    fs, ls = pd.to_datetime(reg.first_seen).dt.normalize(), pd.to_datetime(reg.last_seen).dt.normalize()
-    new_ids = reg.id[fs == day].tolist()
-    cleared_ids = reg.id[ls == day - pd.Timedelta(days=1)].tolist()
-else:
-    new_ids, cleared_ids = [], []
+sy = ui.since_yesterday(floor, as_of, tariff, LO)     # fixed 90-day look-back, not the period
 lost = HL.went_offline(H, as_of)
-since = (f"Since yesterday: <b>{len(new_ids)}</b> new · <b>{len(cleared_ids)}</b> cleared · "
+since = (f"Since yesterday: <b>{len(sy['new'])}</b> new · <b>{len(sy['cleared'])}</b> cleared · "
          f"<b>{len(lost)}</b> went offline")
 ui.floor_band(floor, as_of, reg, since)
 ui.status_notes(as_of, floor)
-detail = ([f"new: `{x}`" for x in new_ids] + [f"cleared: `{x}`" for x in cleared_ids]
-          + [f"offline: `{x}`" for x in lost.column])
-if detail:
-    st.caption(" · ".join(detail))
 
 # --- four tiles ------------------------------------------------------------- #
 day_tot = E.floor_totals(h, as_of, as_of)
@@ -64,7 +55,7 @@ dem = E.demand_stats(h, start, end)
 ex = M.month_excess(_model(floor), as_of, tariff)
 t_, l_ = ex["this"], ex["last"]
 mtd_kwh = E.floor_totals(h, m0, as_of)["total"]
-oc = K.overcooled_share(K.cooled_occupied(D.slice_hourly(h, m0, as_of)), by=())
+oc = K.overcooled_share(K.cooled_occupied(D.slice_hourly(h, m0, as_of)), by=(), lo=LO, hi=HI)
 oc_now = float(oc.share_below.iloc[0] * 100) if len(oc) else np.nan
 
 k = st.columns(4)
@@ -105,7 +96,7 @@ k[3].metric(f"Cooled <{LO:g} °C MTD", f"{oc_now:.0f}%" if np.isfinite(oc_now) e
                  "by zone AC energy (proposal KPI 1).")
 
 # --- zones (left) + active alarms (right) ----------------------------------- #
-zc = C.zone_comfort(h, start=start, end=end, floor=floor)
+zc = C.zone_comfort(h, start=start, end=end, lo=LO, hi=HI, floor=floor)
 cm = zc.set_index("zone") if len(zc) else pd.DataFrame()
 eu = E.end_use(h, start, end, floor=floor).set_index("zone")
 op = ui.sort_faults(reg[reg.is_open]) if len(reg) else reg
@@ -173,7 +164,7 @@ def _pick_zone() -> None:
 
 left, right = st.columns([6, 5], gap="medium")
 with left:
-    ui.md(f'<p class="cb-overline">Zones · worst first · {ui.esc(c["period_label"])}</p>')
+    ui.md('<p class="cb-overline">Zones</p>')
     st.dataframe(
         ui.glyph_style(zt.drop(columns="_k"), ["Status"],
                        {"Mean °C": "{:.1f}", "Cold h %": "{:.0f}", "AC kWh": "{:,.0f}"}),
@@ -182,7 +173,7 @@ with left:
         column_config={"Cold h %": st.column_config.Column(
             help=f"Cooled, occupied hours below {LO:g} °C. Above {target:.0f}% reads ● overcooled."),
             "Sensor note": st.column_config.Column(width="medium")})
-    st.caption("Click a row for the zone's detail and recommended action. '—' is a point that does "
+    st.caption("Click a row for the zone's detail. '—' is a point that does "
                "not exist or has no data, never zero.")
 _dz = st.session_state.pop("_zone_dialog", None)
 if _dz:
@@ -214,8 +205,7 @@ with right:
     st.page_link("views/5_faults.py", label=f"All {len(op)} open alarms", icon=":material/arrow_forward:")
 
 # --- the last 30 days ------------------------------------------------------- #
-ui.section("The last 30 days", "Daily energy by end use, kWh. Weekends and holidays should sit near "
-                               "zero — except plug load.")
+ui.section("The last 30 days", "Daily kWh by end use")
 dl = E.daily(h, as_of - pd.Timedelta(days=29), as_of)
 if not len(dl) or dl[E.END_USES].isna().all().all():
     st.info("No metered energy in these 30 days — the meters were offline.", icon=":material/info:")

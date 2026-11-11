@@ -24,10 +24,14 @@ channels cannot run on a page load.
 
 ## Layout
 
-One **context bar** sits above every page: floor (`Bldg · F3 … F7`; Bldg is the
-Overview's building view, floor pages fall back to the last wired floor, default
-F5), the as-of date, the **period** (`Today · 7d · 30d · MTD · 12m · Record`,
-default MTD) and an **Assumptions** popover (tariff, floor area, demand charge).
+One **context bar** sits above every page: floor (`Bldg · F3 … F7` on Overview and
+Carbon; `F3 … F7` on floor pages, which fall back to the last wired floor, default F5), the as-of date, the **period** (`Today · 7d · 30d · MTD · 12m · Record`,
+default MTD) and an **Assumptions** popover (tariff, building floor area — 11,700 m²
+by default; per-floor figures use ÷7; the comfort band, default 23–26 °C). Assumptions
+persist across pages. A custom comfort band flows into every band-dependent figure
+(overcooled shares, overcooling alarms and their "fixed when" text, Comfort, levers,
+the simulator's comfort after) through optional `lo`/`hi` arguments; the 40% target
+stays fixed. When the band is not the default the button reads "Assumptions · custom band".
 On the Carbon page the Assumptions popover is replaced by the grid emission
 factor (default: the TGO 2022 figure in `R.CONVENTIONS["co2_kg_per_kwh"]`),
 editable so it can be updated to a newer TGO figure; a custom value is flagged. Every page reads that one period, so counts agree across pages.
@@ -55,7 +59,7 @@ or BAD SAMPLES on the as-of day (`ui.point_status`); PARTIAL is degraded, not do
 
 Dark only. Colours, type and components are in [DESIGN.md](DESIGN.md); the tokens
 live in `design/tokens.json` and `.streamlit/config.toml` (repo root). Don't
-hard-code a colour in a page — `tests/test_design_tokens.py` checks.
+hard-code a colour in a page.
 
 ## Structure
 
@@ -80,11 +84,6 @@ Analytics modules (pure pandas, no Streamlit):
 | `workorders` | fault lifecycle store (append-only CSV) and CMMS export |
 | `faults` | stable ids, cost of inaction, days open, recurrence, trade, action, verification (`PLAYBOOK`) |
 | `kpis` | `cooled_occupied` + `overcooled_share` — the one definition of the overcooling KPI |
-
-Smoke test: `python3 tests/test_dashboard_smoke.py` renders every page for every
-wired floor on 2019-06-14, 2018-11-15 (sensor gap), 2019-09-27 (change-point) and
-2019-12-31, setting floor and date through the context bar, and checks the
-Overview's F1 / F6 annotations and that the Floor and Alarms open counts agree.
 
 ## The registry is the important bit
 
@@ -120,7 +119,7 @@ wired; 1 and 2 are not. To wire one:
    untagged history is Floor 5's and must not leak
 3. Check each page renders sensibly for its zones, and that the thermal model is identified
    (Savings → "How each lever is sized" → thermal-model tab)
-4. Set `wired: True` in `registry.FLOORS` and run the smoke test, which covers every wired floor
+4. Set `wired: True` in `registry.FLOORS` and open every page for that floor, including the dates of its outages
 
 What is still open:
 
@@ -152,7 +151,7 @@ Added for v2 (all in `R.CONVENTIONS`, with sources, on the Methods page):
 |---|---|---|
 | Overcooling target | < 40% of cooled occupied hours below 23 °C | Project proposal KPI |
 | Grid emission factor | 0.4999 kgCO₂e/kWh (default; editable on Carbon, custom value flagged) | Thailand GHG Management Organization (TGO) — verify current figure before external reporting |
-| Demand charge | 0 ฿/kW/month (adjustable) | MEA large-customer tariffs carry one; enter the contract rate |
+| Demand charge | — | Not used in the dashboard (Energy shows the kW peaks only) |
 | Cost of inaction | attributable kWh ÷ calendar days since first seen × tariff | FDD prioritisation practice; zero where no defensible attribution |
 | Fault episode gap | 3 days | Same rule that groups offline points |
 | Verification windows | 2 weeks (schedule/metering), 4 weeks (comfort) | Project convention |

@@ -51,10 +51,7 @@ def _lockout(floor: int) -> dict:
     return SC.lockout_measure(D.load_hourly(floor), floor)
 
 
-ui.page_header("Savings", f"Floor {floor} savings",
-               "Build a package of operational changes and see what it saves as a range, what it does "
-               "to comfort, and how you would prove it. The tariff comes from Assumptions; the "
-               "grid emission factor is set on the Carbon page (TGO 2022 default).")
+ui.page_header("Savings", f"Floor {floor} savings", "Model trained on the whole record")
 ui.floor_band(floor, c["as_of"])
 
 phys = _physics(floor, True)
@@ -64,7 +61,7 @@ cz = R.comfort_zones(floor)
 cap = float(R.conv("max_lift_c"))
 max_trim = SC.max_trim(h, floor)
 target = R.conv("overcooled_target_pct")
-LO = R.conv("comfort_lo")
+LO, HI = c["lo"], c["hi"]                  # comfort band from Assumptions
 t_loc, ef_loc = float(tariff), float(c["ef"])
 
 
@@ -103,7 +100,7 @@ with left:
         st.caption(f"Tariff {t_loc:.2f} ฿/kWh (Assumptions).")
 
 res = SC.simulate(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
-                  cost=cost, tariff=t_loc, ef=ef_loc,
+                  cost=cost, tariff=t_loc, ef=ef_loc, lo=LO, hi=HI,
                   parts={"lockout": _lockout(floor)} if lockout else None)
 tbl, comb, cf = res["table"], res["combined"], res["comfort"]
 
@@ -120,7 +117,7 @@ with right:
                 help=f"Mid case × the grid factor {ef_loc:.4f} kgCO₂e/kWh, set on the Carbon page "
                      "(TGO 2022 default).",
                 border=True)
-    k[2].page_link("views/7_carbon.py", label="Grid factor set on Carbon (TGO 2022 default)",
+    k[2].page_link("views/7_carbon.py", label="Factor set on Carbon",
                    icon=":material/arrow_forward:")
     k[3].metric(f"Cooled <{LO:g} °C", f"{cf['below_now']:.0f}% → {cf['below_after']:.0f}%",
                 delta=f"{'meets' if cf['below_after'] <= target else 'above'} {target:.0f}% target",
@@ -130,7 +127,7 @@ with right:
     warm = cf["above_after"]
     (st.warning if warm > cf["above_now"] else st.info)(
         f"**Comfort trade-off.** Cooled hours below {LO:g} °C go from {cf['below_now']:.0f}% to "
-        f"{cf['below_after']:.0f}% (target {target:.0f}%); hours above {R.conv('comfort_hi'):g} °C from "
+        f"{cf['below_after']:.0f}% (target {target:.0f}%); hours above {HI:g} °C from "
         f"{cf['above_now']:.0f}% to {warm:.0f}%. The projection shifts the observed distribution; it does "
         "not narrow it — that is a control-loop retune, not a setpoint change.",
         icon=":material/warning:" if warm > cf["above_now"] else ":material/info:")
@@ -161,8 +158,7 @@ with right:
 # --------------------------------------------------------------------------- #
 # below: measures, sensitivity, second lever, engine
 # --------------------------------------------------------------------------- #
-ui.section("Measures", f"One row per measure plus the combined package. The lift and trim act on the "
-                       f"comfort-sensored zones ({', '.join(cz)}); the lockout is floor-wide.")
+ui.section("Measures", f"Lift and trim: {', '.join(cz)} | lockout: whole floor")
 st.dataframe(
     tbl, width="stretch", hide_index=True,
     column_config={
@@ -173,7 +169,7 @@ st.dataframe(
         "comfort after": st.column_config.TextColumn(width="medium"),
     })
 
-ui.section("Which assumption moves the answer most")
+ui.section("Sensitivity")
 tor = SC.tornado(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
                  tariff=t_loc, max_trim=max_trim)
 if comb["mid"] > 0 and t_loc:
@@ -193,10 +189,8 @@ elif not t_loc:
 else:
     st.caption("The package saves nothing yet — set a lift, a trim or the lockout.")
 
-ui.section("The second lever: control stability",
-           "Raising the setpoint moves the distribution; tightening the control deadband narrows it. "
-           "They are different work orders and only one of them is a setpoint change.")
-lo_b, hi_b = C.band()
+ui.section("Control stability")
+lo_b, hi_b = LO, HI
 f1, f2 = st.columns(2)
 shift = f1.slider("Setpoint rise (°C)", 0.0, 4.0, 1.5, 0.25, key="frontier_shift")
 sd_scale = f2.slider("Deadband tightening", 0.4, 1.0, 1.0, 0.05, key="frontier_sd",
@@ -416,7 +410,7 @@ with tab_sched:
                     delta=f"{net - gross:,.0f} recovery", border=True)
         k[2].metric("Cost saved (net)", f"฿{net * tariff:,.0f}/yr", border=True)
         k[3].metric("Temp at end of gap", f"{tr.end_temp_c.mean():.1f} °C",
-                    help=f"From the calibrated drift rate. Above {R.conv('comfort_hi'):g} °C is a "
+                    help=f"From the calibrated drift rate. Above {HI:g} °C is a "
                          "complaint risk.", border=True)
 
         st.dataframe(

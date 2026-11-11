@@ -65,13 +65,13 @@ def completeness(h: pd.DataFrame, start=None, end=None) -> pd.DataFrame:
 
 
 def building_kpis(h: pd.DataFrame, start=None, end=None, tariff: float | None = None,
-                  ef: float | None = None) -> dict:
+                  ef: float | None = None, lo: float | None = None, hi: float | None = None) -> dict:
     """Headline numbers for the whole building over a window."""
     tariff = R.conv("tariff_thb") if tariff is None else tariff
     ef = R.conv("co2_kg_per_kwh") if ef is None else ef
     d = D.slice_hourly(h, start, end)
     kwh = float(d[["ac_kwh", "light_kwh", "plug_kwh"]].sum().sum())
-    oc = K.overcooled_share(K.cooled_occupied(d[d.floor.isin(office_floors())]), by=())
+    oc = K.overcooled_share(K.cooled_occupied(d[d.floor.isin(office_floors())]), by=(), lo=lo, hi=hi)
     comp = completeness(h, start, end)
     truncated = [f for f in R.FILE_END
                  if end is None or pd.Timestamp(end) >= R.floor_file_end(f).normalize()]
@@ -198,7 +198,7 @@ def floor_league(h: pd.DataFrame, area_m2: float | None = None,
                          na_position="last").reset_index(drop=True)
 
 
-def overcooled_by_month(h: pd.DataFrame) -> pd.DataFrame:
+def overcooled_by_month(h: pd.DataFrame, lo: float | None = None, hi: float | None = None) -> pd.DataFrame:
     """Floor x month overcooled share — the 'where do I send the team' view.
 
     Office floors with sensors only. Months with no valid cooled hours (the
@@ -207,7 +207,7 @@ def overcooled_by_month(h: pd.DataFrame) -> pd.DataFrame:
     """
     d = K.cooled_occupied(h[h.floor.isin(office_floors())])
     d = d.assign(month=d.ts.dt.to_period("M").dt.to_timestamp())
-    s = K.overcooled_share(d, by=("floor", "month"))
+    s = K.overcooled_share(d, by=("floor", "month"), lo=lo, hi=hi)
     months = pd.period_range(D.RECORD_START, D.RECORD_END, freq="M").to_timestamp()
     floors = [f for f in office_floors() if R.sensored_zones(f)]
     grid = pd.MultiIndex.from_product([floors, months], names=["floor", "month"]).to_frame(index=False)
@@ -231,7 +231,7 @@ def setpoint_range(est: pd.DataFrame) -> tuple[float, float, int] | None:
     return (min(keep), max(keep), len(keep)) if keep else None
 
 
-def floor_levers(h: pd.DataFrame) -> pd.DataFrame:
+def floor_levers(h: pd.DataFrame, lo: float | None = None, hi: float | None = None) -> pd.DataFrame:
     """Annualised kWh for the levers this data can size, per office floor.
 
     * +1 degC zone-temperature lift — notebook 06's estimator range
@@ -246,7 +246,7 @@ def floor_levers(h: pd.DataFrame) -> pd.DataFrame:
     if len(ah):
         ah["off_day"] = ah.day_type.isin(["weekend", "holiday", "closure"])
     co = K.cooled_occupied(h)
-    zs = K.overcooled_share(co, by=("floor", "zone"))
+    zs = K.overcooled_share(co, by=("floor", "zone"), lo=lo, hi=hi)
     rows = []
     for f in office_floors():
         hf = h[h.floor == f]
@@ -273,7 +273,7 @@ def floor_levers(h: pd.DataFrame) -> pd.DataFrame:
 
 
 def what_to_look_at(floor: int, league_row: dict, levers: pd.DataFrame,
-                    tariff: float | None = None) -> str:
+                    tariff: float | None = None, lo: float | None = None) -> str:
     """One generated sentence per floor. Data problems outrank energy levers,
     because a lever sized on a broken meter is not a lever."""
     tariff = R.conv("tariff_thb") if tariff is None else tariff
@@ -306,7 +306,7 @@ def what_to_look_at(floor: int, league_row: dict, levers: pd.DataFrame,
     else:
         size = f"≈{kwh:,.0f} kWh/yr metered, ฿{kwh * tariff:,.0f}"
     where = (f"; start in {lv.worst_zone} ({lv.worst_zone_pct:.0f}% of its cooled hours below "
-             f"{R.conv('comfort_lo'):g} °C)" if lv.worst_zone else "")
+             f"{R.conv('comfort_lo') if lo is None else lo:g} °C)" if lv.worst_zone else "")
     tail = ""
     fe = R.floor_file_end(floor)
     if fe is not None:

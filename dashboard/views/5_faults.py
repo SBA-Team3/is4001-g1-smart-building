@@ -20,10 +20,9 @@ st.session_state.setdefault("muted", set())
 
 hd = st.columns([5, 1], vertical_alignment="bottom")
 with hd[0]:
-    ui.page_header("Alarms", f"Floor {floor} alarms",
-                   f"{c['period_label']} · what is broken, what it costs per day, who fixes it, "
-                   "and how we know it's fixed")
+    ui.page_header("Alarms", f"Floor {floor} alarms", c["range"])
 export_slot = hd[1].empty()
+ui.file_end_gate(floor, c["start"], c["end"])
 
 reg = ui.register(floor, c, st.session_state.get("alarms_planned", False))
 ui.floor_band(floor, as_of, reg)

@@ -29,11 +29,9 @@ def _model(floor: int, target: str) -> dict:
     return M.daily_model(D.load_hourly(floor), floor, target)
 
 
-ui.page_header("Energy", f"Floor {floor} energy",
-               f"{ui.esc(c['period_label'])} · are we using more than the weather explains, and when "
-               "did it drift?")
+ui.page_header("Energy", f"Floor {floor} energy", c["range"])
+e = ui.file_end_gate(floor, s, e)
 ui.floor_band(floor, as_of)
-ui.file_end_note(floor, e)
 
 # --------------------------------------------------------------------------- #
 # KPI row
@@ -44,8 +42,6 @@ mt = _model(floor, "total_kwh")
 dd = mt["daily"]
 dd = dd[(dd.date >= s) & (dd.date <= e) & dd.actual.notna() & dd.expected.notna()]
 act, expd = (dd.actual.sum(), dd.expected.sum()) if len(dd) else (np.nan, np.nan)
-charge = c["demand_charge"]
-dc = M.demand_cost(h, s, e, charge)
 
 metered = np.isfinite(tot["total"])
 k = st.columns(4)
@@ -54,11 +50,7 @@ k[0].metric("Energy", f"{tot['total']:,.0f} kWh" if metered else "no data", bord
             delta_color="off", delta_arrow="off",
             help=f"Submetered zone loads (AC + lighting + plug), {c['period_label']}.")
 k[1].metric("Cost", ui.thb(tot["total"], tariff) if metered else "no data", border=True,
-            delta=(f"+ ฿{dc.charge_thb.sum():,.0f} demand charge" if charge and len(dc)
-                   else "demand charge: set rate in Assumptions" if not charge else None),
-            delta_color="off", delta_arrow="off",
-            help=f"Energy × {tariff:.2f} ฿/kWh. The demand charge (monthly max kW × "
-                 f"{charge:,.0f} ฿/kW) is billed separately.")
+            help=f"Energy × {tariff:.2f} ฿/kWh.")
 if len(dd) and expd:
     k[2].metric("฿ vs expected", ui.signed_thb((act - expd) * tariff) if tariff else
                 f"{act - expd:+,.0f} kWh",
@@ -208,15 +200,13 @@ with tabs[2]:
             st.caption(f"Workday line: {p_w['b0']:,.0f} kWh/day below a balance point of {p_w['cp']:.1f} °C, "
                        f"then +{p_w['b1']:,.0f} kWh/day per °C above it. The lower line is non-workdays.")
         ol = sig["outliers"]
-        ui.md(f'<p class="cb-overline">Workdays well above the line — more than '
-              f'{R.conv("signature_outlier_z"):g} training SDs: {len(ol)} day(s)</p>')
+        ui.md(f'<p class="cb-overline">Workdays above the line ({len(ol)})</p>')
         if len(ol):
             st.dataframe(ui.round_numeric(ol.assign(**{"฿ excess": ol.resid * tariff})[
                 ["date", "out_temp", "actual", "expected", "resid", "฿ excess"]].rename(
                     columns={"out_temp": "outdoor °C", "resid": "excess kWh"})).head(20),
                 width="stretch", hide_index=True)
-            st.caption("Check the carpet plot (Profiles) and the alarms for these dates: late finishes, "
-                       "overrides, events.")
+            st.caption(f"More than {R.conv('signature_outlier_z'):g} training SDs above the workday line.")
     else:
         st.info("No usable days in this period.", icon=":material/info:")
 
@@ -227,19 +217,11 @@ with tabs[3]:
             x=alt.X("date:T", title=None), y=alt.Y("peak_kw:Q", title="daily peak (kW, hourly mean)"),
             tooltip=[alt.Tooltip("date:T"), alt.Tooltip("peak_kw:Q", format=".1f"),
                      alt.Tooltip("peak_at:T", format="%H:%M")]), height=220), width="stretch")
-        pc = st.columns([3, 2], gap="large")
-        with pc[0]:
-            ui.md('<p class="cb-overline">Top 10 demand hours</p>')
-            st.dataframe(ui.round_numeric(M.top_peaks(h, s, e).rename(columns={
-                "out_temp": "outdoor °C", "out_rh": "outdoor RH %", "day_type": "day"})),
-                width="stretch", hide_index=True)
-        with pc[1]:
-            st.metric("Demand charges in period",
-                      f"฿{dc.charge_thb.sum():,.0f}" if charge else "set rate in Assumptions",
-                      help=f"Monthly maximum demand × {charge:,.0f} ฿/kW/month. "
-                           + R.CONVENTIONS["demand_charge_thb_per_kw"][2] + ".", border=True)
-            st.caption("Peaks are hourly means; MEA bills on the 15-minute maximum, which is higher. "
-                       "The peak hour is usually the morning pull-down, not the hottest afternoon.")
+        st.markdown("The daily peak is the morning AC start-up; staggering zone start times lowers it.")
+        ui.md('<p class="cb-overline">Top 10 demand hours</p>')
+        st.dataframe(ui.round_numeric(M.top_peaks(h, s, e).rename(columns={
+            "out_temp": "outdoor °C", "out_rh": "outdoor RH %", "day_type": "day"})),
+            width="stretch", hide_index=True)
     else:
         st.info("No metered hours in this period.", icon=":material/info:")
 
@@ -248,7 +230,7 @@ with tabs[4]:
     eu = E.end_use(h, s, e, floor=floor)
     left, right = st.columns([3, 2], gap="large")
     with left:
-        ui.md('<p class="cb-overline">Carpet plot — when the floor uses energy</p>')
+        ui.md('<p class="cb-overline">Carpet plot</p>')
         val = st.segmented_control("Channel", ["ac_kwh", "light_kwh", "plug_kwh"], default="ac_kwh",
                                    required=True, key="energy_carpet",
                                    format_func=lambda v: ui.END_USE_NAME[v.replace("_kwh", "")])
@@ -294,7 +276,7 @@ with tabs[4]:
                f"submetered zone loads only, on an assumed floor area, so not comparable with the Bangkok "
                f"benchmarks ({ei['good']:.0f} good practice, {ei['typical']:.0f} typical) without that caveat.")
 
-    ui.md('<p class="cb-overline" style="margin-top:12px">Off-hours energy — the quick wins</p>')
+    ui.md('<p class="cb-overline" style="margin-top:12px">Off-hours energy</p>')
     b1, b2 = st.columns(2, gap="large")
     with b1:
         bl = E.baseload(h, s, e, floor).dropna(subset=["ratio_pct"])

@@ -144,13 +144,14 @@ def _in_blackout(start, end) -> bool:
 # rules
 # --------------------------------------------------------------------------- #
 
-def overcooling(h: pd.DataFrame, start=None, end=None, floor: int = 5) -> list[dict]:
+def overcooling(h: pd.DataFrame, start=None, end=None, floor: int = 5,
+                lo: float | None = None) -> list[dict]:
     """Cooling delivered into a zone already below the comfort band.
 
     Simultaneously a comfort fault and an energy fault — the one that matters
     most on this floor, and the reason the whole project exists.
     """
-    lo = R.conv("comfort_lo")
+    lo = R.conv("comfort_lo") if lo is None else lo
     zones = R.comfort_zones(floor)
     d = D.occupied(D.slice_hourly(h, start, end, zones), zones=zones,
                    require_temp=True, ac_on=True)
@@ -169,7 +170,7 @@ def overcooling(h: pd.DataFrame, start=None, end=None, floor: int = 5) -> list[d
              "Thermostat sensor mislocated", "Zone oversized for its load"],
             cold.ts.min(), cold.ts.max(), cold.ac_kwh.sum(),
             f"mean {cold.temp_c.mean():.1f} °C while cooling", dates=cold.date,
-            verify=_verify("overcooling", zone=z, share=share)))
+            verify=_verify("overcooling", zone=z, share=share, comfort_lo=lo)))
     return out
 
 
@@ -372,7 +373,7 @@ def humidity_faults(h: pd.DataFrame, start=None, end=None,
 
 def build_register(h: pd.DataFrame, H: pd.DataFrame, start=None, end=None,
                    floor: int = 5, tariff: float | None = None,
-                   as_of=None) -> pd.DataFrame:
+                   as_of=None, lo: float | None = None) -> pd.DataFrame:
     """Every rule's output as one work-order-ready table.
 
     Beyond the alarm itself each row carries what a CMMS hand-off needs: a
@@ -382,7 +383,7 @@ def build_register(h: pd.DataFrame, H: pd.DataFrame, start=None, end=None,
     rule has no defensible attribution.
     """
     tariff = R.conv("tariff_thb") if tariff is None else tariff
-    rules = (overcooling(h, start, end, floor)
+    rules = (overcooling(h, start, end, floor, lo=lo)
              + after_hours_operation(h, start, end, floor)
              + dead_meters(H, start, end, floor)
              + short_cycling(h, start, end, floor)

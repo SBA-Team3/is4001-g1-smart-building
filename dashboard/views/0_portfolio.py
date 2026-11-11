@@ -3,8 +3,6 @@ sensors are down, and which floor and alarm to look at first."""
 
 from __future__ import annotations
 
-import time
-
 import altair as alt
 import numpy as np
 import pandas as pd
@@ -18,11 +16,10 @@ from sbanalytics import portfolio as P
 from sbanalytics import registry as R
 import ui
 
-_t0 = time.perf_counter()
 c = ui.ctx()
 as_of, tariff, ef = c["as_of"], c["tariff"], c["ef"]
 s, e = c["start"], c["end"]
-LO = R.conv("comfort_lo")
+LO, HI = c["lo"], c["hi"]                  # comfort band from Assumptions
 target = R.conv("overcooled_target_pct")
 sel_floor = None if st.session_state.get("building_view", True) else c["floor"]
 WIRED = R.wired_floors()
@@ -34,8 +31,8 @@ def _model(floor: int) -> dict:
 
 
 @st.cache_resource(show_spinner="Sizing each floor's levers…")
-def _levers() -> pd.DataFrame:
-    return P.floor_levers(D.load_hourly(None))
+def _levers(lo: float, hi: float) -> pd.DataFrame:
+    return P.floor_levers(D.load_hourly(None), lo=lo, hi=hi)
 
 
 @st.cache_data(show_spinner="Ranking floors…")
@@ -51,13 +48,12 @@ def _vs_expected(floor: int, s_, e_) -> tuple[float, float]:
 
 
 def _cool_share(h_, s_, e_) -> float:
-    o = K.overcooled_share(K.cooled_occupied(D.slice_hourly(h_, s_, e_)), by=())
+    o = K.overcooled_share(K.cooled_occupied(D.slice_hourly(h_, s_, e_)), by=(), lo=LO, hi=HI)
     return float(o.share_below.iloc[0] * 100) if len(o) else np.nan
 
 
 h = ui.building_hourly()
-ui.page_header("Overview", "Building overview",
-               f"CU-BEMS · 7 floors · 33 zones · {c['period_label']}")
+ui.page_header("Overview", "Chulalongkorn University CU-BEMS", f"7 floors | 33 zones | {c['range']}")
 
 # --------------------------------------------------------------------------- #
 # alarm band — every wired floor, the one global period
@@ -123,7 +119,7 @@ ft = pd.concat([ft, pd.DataFrame([{
 # --------------------------------------------------------------------------- #
 # three tiles
 # --------------------------------------------------------------------------- #
-bk = P.building_kpis(h, s, e, tariff, ef)
+bk = P.building_kpis(h, s, e, tariff, ef, lo=LO, hi=HI)
 dev_pct = (act_w - exp_w) / exp_w * 100 if exp_w else np.nan
 t1, t2, t3 = st.columns(3)
 with t1:
@@ -143,25 +139,15 @@ with t1:
                  "floor's weather- and calendar-normalised baseline (Energy page).")
 with t2:
     ex_thb = (act_w - exp_w) * tariff if np.isfinite(dev_pct) else np.nan
-    dc = c["demand_charge"]
     ui.tile("Cost · " + c["period"], ui.thb(bk["kwh"], tariff),
             (f"{ui.signed_thb(ex_thb)} vs expected" if tariff and np.isfinite(ex_thb) else ""),
-            sub="demand charge " + ("shown on Energy" if dc else "— set rate in Assumptions"),
-            help=f"Energy × {tariff:.2f} ฿/kWh. The demand charge is billed separately.")
+            help=f"Energy × {tariff:.2f} ฿/kWh.")
 with t3:
     live = ps[ps.status != "NO FILE"]
     down = live[live.is_down]
-    items = [f"{ui.short_point(r)} {ui.POINT_GLYPH[r.status][0]} {r.status.lower()}"
-             for r in down.head(3).itertuples()]
-    tail_ = ([f"+{len(down) - 3} more"] if len(down) > 3 else []) + [
-        f"○ F{f} no data since {R.floor_file_end(f).day} {R.floor_file_end(f):%b}" for f in past_end]
-    if tail_:
-        items.append(" · ".join(tail_))
     ui.tile("Sensors down · today", f"{len(down)} of {len(live)} points",
-            "offline, frozen or bad samples on " + ui.day_txt(as_of),
-            items=[ui.esc(i) for i in items] or ["✓ every point reporting"],
-            help="Down = OFFLINE, FROZEN or BAD SAMPLES on the as-of day (Sensors page). "
-                 "PARTIAL points are degraded, not down.")
+            help="Down = OFFLINE, FROZEN or BAD SAMPLES on the as-of day (Sensors page). PARTIAL "
+                 "points are degraded, not down. Floors past their file end are not counted.")
     st.page_link("views/2_sensor_health.py", label="Sensors", icon=":material/arrow_forward:")
 
 # --------------------------------------------------------------------------- #
@@ -179,7 +165,7 @@ def _open_floor(order: list[int]) -> None:
 
 
 with left:
-    ui.md('<p class="cb-overline">Floors · worst first · click a row to open it</p>')
+    ui.md('<p class="cb-overline">Floors</p>')
     show = ft.drop(columns=[x for x in ft.columns if x.startswith("_")])
     hi_row = ft.index[ft._f == sel_floor][0] if sel_floor in ft._f.values else None
     show.index = ft.index
@@ -216,7 +202,7 @@ with left:
                   if s <= hi_b and e >= lo_b else ""))
 
 with right:
-    ui.md('<p class="cb-overline">Top alarms · open, by severity then ฿/day</p>')
+    ui.md('<p class="cb-overline">Top alarms</p>')
     op = ui.sort_faults(reg[reg.is_open]) if len(reg) else reg
     if not len(op):
         ui.md(f'<div class="cb-list"><div class="item">{ui.chip("ok", "No open alarms")}'
@@ -229,7 +215,7 @@ with right:
             days = f"{r.days_open:.0f} d open" if np.isfinite(r.days_open) else ""
             items.append(f'<div class="item">{ui.state_chip(r)}<div class="txt">'
                          f'<div class="cb-strong">F{r.floor} {ui.esc(r.title)}</div>'
-                         f'<div class="cb-cap cb-muted">{ui.esc(r.state)} · {ui.esc(r.trade)}</div></div>'
+                         '</div>'
                          f'<div class="cost">{cost}<div class="cb-cap cb-muted">{days}</div></div></div>')
         ui.md(f'<div class="cb-list">{"".join(items)}</div>')
     st.page_link("views/5_faults.py", label=f"All {len(op)} open alarms",
@@ -238,35 +224,40 @@ with right:
 # --------------------------------------------------------------------------- #
 # below the fold
 # --------------------------------------------------------------------------- #
-ui.section("Building energy by month",
-           "Submetered kWh, whole record. " + (f"F{sel_floor} highlighted; the rest of the building in grey."
-                                               if sel_floor else "Pick a floor above to highlight it."))
+ui.section("Building energy by month", "Whole record · kWh")
 mo = P.monthly_energy(h)
-mo["part"] = np.where(mo.floor == sel_floor, f"F{sel_floor}", "Rest of building") if sel_floor \
-    else "Building"
-mo = mo.groupby(["month", "part"], as_index=False).kWh.sum()
-mo["order"] = (mo.part == "Rest of building").astype(int)
-dom = [f"F{sel_floor}", "Rest of building"] if sel_floor else ["Building"]
-rng = [ui.PRIMARY, ui.CONTEXT] if sel_floor else [ui.PRIMARY]
+if sel_floor:
+    # A floor is selected: it in data/primary, the rest of the building in data/context.
+    mo["part"] = np.where(mo.floor == sel_floor, f"F{sel_floor}", "Rest of building")
+    mo = mo.groupby(["month", "part"], as_index=False).kWh.sum()
+    mo["order"] = (mo.part == "Rest of building").astype(int)
+    color = alt.Color("part:N", scale=alt.Scale(domain=[f"F{sel_floor}", "Rest of building"],
+                                                range=[ui.PRIMARY, ui.CONTEXT]),
+                      legend=alt.Legend(orient="top", title=None, symbolType="square"))
+    tip = ["part"]
+else:
+    # Bldg: stacked by floor, one categorical hue per floor (Overview only; DESIGN.md).
+    mo["part"] = "F" + mo.floor.astype(str)
+    mo["order"] = mo.floor
+    color = alt.Color("part:N", scale=ui.FLOOR_CAT,
+                      legend=alt.Legend(orient="top", title=None, symbolType="square", columns=7))
+    tip = [alt.Tooltip("part:N", title="floor")]
 st.altair_chart(ui.chart(alt.Chart(mo).mark_bar(stroke=ui.SURFACE, strokeWidth=1).encode(
     x=alt.X("yearmonth(month):O", title=None, axis=alt.Axis(labelAngle=0, format="%b %y")),
-    y=alt.Y("kWh:Q", title="kWh / month",
+    y=alt.Y("sum(kWh):Q", title="kWh / month",
             axis=alt.Axis(format="~s", labelExpr="datum.value == 0 ? '0' : datum.label")),
-    color=alt.Color("part:N", scale=alt.Scale(domain=dom, range=rng),
-                    legend=alt.Legend(orient="top", title=None, symbolType="square")),
-    order=alt.Order("order:Q"),
-    tooltip=["part", alt.Tooltip("month:T", format="%b %Y"), alt.Tooltip("kWh:Q", format=",.0f")]),
-    height=240), width="stretch")
+    color=color, order=alt.Order("order:Q"),
+    tooltip=tip + [alt.Tooltip("month:T", format="%b %Y"), alt.Tooltip("kWh:Q", format=",.0f")]),
+    height=260), width="stretch")
 st.caption("Floor 6 has nothing after October 2019 because its file ends, not because it used nothing.")
 
 with st.expander("Biggest lever per floor", icon=":material/lightbulb:"):
-    L, lv = _league(c["area"]), _levers()
+    L, lv = _league(c["area"]), _levers(LO, HI)     # per-floor area = building area ÷ 7
     for _, r in L.iterrows():
         f = int(r.floor)
         if f in R.NON_OFFICE_FLOORS:
             continue
         ui.md(f'<p class="cb-body" style="margin:0 0 8px"><b>F{f}</b> — '
-              f'{ui.esc(P.what_to_look_at(f, r.to_dict(), lv, tariff))}</p>')
+              f'{ui.esc(P.what_to_look_at(f, r.to_dict(), lv, tariff, lo=LO))}</p>')
     st.caption("Whole-record figures. Sized on the Savings page.")
 
-st.caption(f"Page computed in {time.perf_counter() - _t0:.1f} s.")
