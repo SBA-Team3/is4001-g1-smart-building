@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import altair as alt
 import numpy as np
 import pandas as pd
@@ -13,6 +15,8 @@ from sbanalytics import faults as F
 from sbanalytics import registry as R
 from sbanalytics import workorders as W
 import ui
+
+DESIGN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "design")
 
 c = ui.ctx()
 floor = c["floor"]
@@ -194,6 +198,21 @@ with t_cps:
 with t_about:
     st.caption("Explanations that used to sit on the operational pages, and the project's practice, "
                "corrections, baseline, pilot and exclusion notes — one expander each.")
+
+    with st.expander("Floor plans — CU-BEMS Fig. 2", icon=":material/map:"):
+        with st.container(key="figure_fig2"):
+            st.image(os.path.join(DESIGN_DIR, "cubems_fig2_floorplans.png"), width="stretch")
+        st.caption("Source: Pipattanasomporn et al., CU-BEMS, smart building electricity consumption and "
+                   "indoor environmental sensor datasets, Scientific Data (2020), Fig. 2 — CC BY 4.0. "
+                   "Floors 1–2 (left) and 3–7 (right); red dots are approximate multi-sensor locations.")
+        st.markdown(
+            "The Comfort zone map is traced from the right-hand plan (`design/floorplans.json`, schematic, "
+            "not to scale). Data and caveats always come from the registry, not the figure. "
+            "**Where the data differs from the figure:**\n"
+            "- **F2 z3** has a full sensor (temperature, RH, light index) that the figure does not mark.\n"
+            "- **On F5, z3 is a stairwell with no cooling** — the purple areas include the stair and "
+            "service cores — and **z1's sensor reads supply air**, so z1 has no valid room-comfort figure.\n"
+            "- **Energy meters are not shown** in the figure, including the zones with four AC channels.")
 
     with st.expander("How alerts clear"):
         gap = R.conv("episode_gap_days")

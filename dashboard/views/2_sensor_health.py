@@ -44,14 +44,26 @@ def _tbl(d: pd.DataFrame) -> pd.DataFrame:
 
 STATUS_HELP = ("○ OFFLINE no samples · ● FROZEN flatline · ▲ BAD SAMPLES out of range or spikes — "
                "these three are down. ◐ PARTIAL is below the completeness target: degraded, not down.")
-ui.section(f"Not OK ({len(bad)})")
-if len(bad):
-    st.dataframe(ui.glyph_style(_tbl(bad), ["Status"], {"Days stale": "{:.0f}"}),
-                 column_config={"Status": st.column_config.Column(help=STATUS_HELP)},
-                 hide_index=True, width="stretch", placeholder=ui.DASH,
-                 height="auto" if len(bad) <= 12 else 420)
-else:
-    st.caption(f"✓ All {len(ps)} points OK on {ui.day_txt(as_of)}.")
+# Map (5/12) beside the Not OK table (7/12): both stay near the fold at 1440.
+mcol, tcol = st.columns([5, 7], gap="large")
+with mcol:
+    ui.md('<p class="cb-overline">Zones</p>')
+    meters = ps[ps.channel.isin(["ac", "light", "plug"]) & ps.is_down]
+    n_down = meters.groupby("zone").size().to_dict()
+    tips = {z: "; ".join(f"{r.point} {r.channel} {r.status}" for r in g.itertuples())
+            for z, g in ps.groupby("zone")}
+    ui.zone_map(floor, as_of=as_of, neutral=True, height=320, zone_tips=tips,
+                sublabel={z: f"● {n} meter{'s' if n != 1 else ''} down" for z, n in n_down.items()})
+    st.caption("Schematic, not to scale.")
+with tcol:
+    ui.section(f"Not OK ({len(bad)})")
+    if len(bad):
+        st.dataframe(ui.glyph_style(_tbl(bad), ["Status"], {"Days stale": "{:.0f}"}),
+                     column_config={"Status": st.column_config.Column(help=STATUS_HELP)},
+                     hide_index=True, width="stretch", placeholder=ui.DASH,
+                     height="auto" if len(bad) <= 12 else 420)
+    else:
+        st.caption(f"✓ All {len(ps)} points OK on {ui.day_txt(as_of)}.")
 with st.expander(f"OK points ({len(ok)})", icon=":material/check:"):
     st.dataframe(ui.glyph_style(_tbl(ok), ["Status"], {"Days stale": "{:.0f}"}),
                  hide_index=True, width="stretch", placeholder=ui.DASH)

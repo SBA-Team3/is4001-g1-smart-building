@@ -17,8 +17,8 @@ reads `.streamlit/config.toml` from the folder you start it in.
 
 ## Rules
 
-1. **Dark only.** Light variants are specified below but not built. Don't add them
-   to `tokens.json` or `config.toml`.
+1. **Dark only.** There is no light theme and none is specified; don't add light
+   colours to `tokens.json`, `config.toml` or this file.
 2. **No hex codes in `views/`.** Use the names in `ui.py`: `ui.C["text/primary"]`,
    `ui.PRIMARY`, `ui.CONTEXT`, `ui.END_USE_COLOR`, `ui.chip()`, …
 3. **Cyan is for the interface, never for data.** `accent/default` (#2EB4C8) marks
@@ -56,6 +56,11 @@ reads `.streamlit/config.toml` from the folder you start it in.
 12. **A floor past its file end** (`R.FILE_END`): if the whole period is after it, the
     page shows its header and one neutral "No data — …" message and stops
     (`ui.file_end_gate`); if the period overlaps it, one compact note.
+13. **Zone map.** Schematic from CU-BEMS Fig. 2; fills use the blue data ramp (Comfort, Floor)
+    or a neutral `bg/raised` (Sensors); no zone hues; data and caveats come from the registry.
+    Sensor markers use status colours and differ by shape too: hollow green ring = OK,
+    amber ◐ = PARTIAL (working but under the completeness target), filled red = down
+    (OFFLINE, FROZEN or BAD SAMPLES). Maps are not clickable; tooltips only.
 
 ## Alerts: fault type, not severity
 
@@ -144,20 +149,6 @@ quieter than `status/normal`, visible on `bg/surface` (2.4:1).
   ≥ 4.0), so the stack order, the legend and the tooltips carry identity. Min ΔE vs
   status: critical 13.9 (protan), warning 5.9 (tritan), normal 5.8 (tritan).
 
-### Light variants (specified, not built)
-
-| Token | Light |
-|---|---|
-| `bg/page` / `surface` / `raised` / `control` / `accent-subtle` | #F3F4F6 / #FFFFFF / #EDEFF2 / #E4E7EB / #DCF0F3 |
-| `border/default` / `strong` | #D5DAE0 / #848D97 |
-| `text/primary` / `secondary` / `muted` | #15181B / #474F58 / #5E6670 |
-| `accent/default` / `hover` | #0B7F90 / #096A78 |
-| `status/critical` (mark / text / bg) | #D12C2F / #A51C20 / #FCEBEB |
-| `status/warning` | #C27C00 / #7F5000 / #FFF2D9 |
-| `status/normal` | #1F8A4D / #16673A / #E4F3E9 |
-| `status/offline` | #7A838D / #474F58 / #EDEFF2 |
-| `data/primary` / `series-2` / `series-3` / `context` | #2F6FDB / #B0956A / #7EA6E6 / #B8C0C8 |
-
 Spacing `space/1…10` = 4, 8, 12, 16, 20, 24, 32, 40 px. Radii `sm` 6, `md` 8 (controls),
 `lg` 12 (cards), `full` (chips).
 
@@ -180,6 +171,7 @@ H3 15/22, Body 14/20, Caption 12/16, Overline 11/16 uppercase.
 | Row → detail | `st.dataframe(on_select=callback)` + `st.dialog` |
 | Banner | `st.info` / `st.warning` / `st.error`, always with an `icon=`; `st.info` is a quiet grey note |
 | Charts | Altair, wrapped in `ui.chart(c, height)` for axis and grid tokens |
+| Zone map | `ui.zone_map(floor, values, value_col, …)` — Altair geoshapes (identity projection) from `design/floorplans.json`; zones on `data/seq-1…5` with the heat map's bins and per-step ink; no-value zones `bg/control` + dashed edge with the reason; lift core `bg/raised`; outline `border/strong`; multi-sensor markers `status/normal` hollow ring (OK), `status/warning` ◐ (partial) or `status/critical` filled dot (down); optional extra label text and a red second line (Sensors: "● N meters down"); `neutral=True` for a `bg/raised` fill; not interactive |
 
 ## Changing a token
 

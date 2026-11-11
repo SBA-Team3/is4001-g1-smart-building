@@ -525,6 +525,7 @@ div[data-testid="stMetric"]{{min-height:118px;background:var(--color-bg-surface)
   padding:3px 7px !important}}
 div[data-testid="stMetricLabel"] p{{{ts('Caption/Strong')}color:var(--color-text-secondary)}}
 div[class*="st-key-card_"]{{background:var(--color-bg-surface);border-radius:var(--radius-lg)}}
+div[class*="st-key-figure_"]{{background:var(--color-bg-raised);border-radius:var(--radius-lg);padding:var(--space-4)}}
 div.st-key-ctxbar{{border-bottom:1px solid var(--color-border-default);padding-bottom:10px;margin-bottom:4px}}
 h1{{letter-spacing:-0.2px}}
 div[data-testid="stHeading"]:has(h3){{margin-top:12px}}
@@ -884,6 +885,183 @@ def seq_legend() -> str:
     sw = "".join(f'<span class="cb-legend"><i style="background:{SEQ[i]}"></i>'
                  f'{edges[i]}–{edges[i + 1]}%</span>' for i in range(5))
     return sw + legend([("No data", NO_DATA)])
+
+
+# --------------------------------------------------------------------------- #
+# zone map — schematic plan of floors 3-7, traced from CU-BEMS Fig. 2
+# --------------------------------------------------------------------------- #
+
+with open(os.path.join(_HERE, "design", "floorplans.json"), encoding="utf-8") as _f:
+    FLOORPLAN = json.load(_f)
+
+
+def _ring(pts: list, aspect: float) -> list:
+    """Closed ring in plan units (x scaled by the aspect ratio, y down)."""
+    ring = [[x * aspect, y] for x, y in pts]
+    return ring + ring[:1]
+
+
+def zone_map_reason(floor: int, zone: str) -> str:
+    """Why a zone has no valid comfort value ('' when it can have one)."""
+    has_ac = R.has_channel(floor, zone, "ac")
+    tp = R.point_for(floor, zone, "temp")
+    if tp is None and not has_ac:
+        return "no AC / sensor"
+    if tp is None:
+        return "no sensor"
+    if tp.role != R.ROLE_ZONE_TEMP:
+        return "supply-air sensor" if tp.role == R.ROLE_SUPPLY_TEMP else "not a room sensor"
+    return ""
+
+
+SENSOR_CHANNELS = ("temp", "rh", "lux")
+
+
+def zone_sensor_status(floor: int, as_of) -> dict:
+    """zone -> (down: bool, word) for each zone's multi-sensor (temp / RH / lux),
+    by ui.point_status: OFFLINE, FROZEN or BAD SAMPLES is down; PARTIAL works."""
+    ps = point_status(floor, as_of)
+    out = {}
+    for z, g in ps[ps.channel.isin(SENSOR_CHANNELS)].groupby("zone"):
+        down = g[g.is_down]
+        out[z] = ((True, down.status.iloc[0]) if len(down)
+                  else (False, "PARTIAL") if (g.status == "PARTIAL").any() else (False, "OK"))
+    return out
+
+
+def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | None = None, as_of=None,
+             label_fmt: str = "{:.0f}%", height: int = 340, tooltip_cols: tuple = (),
+             label_extra: dict | None = None, sublabel: dict | None = None,
+             zone_tips: dict | None = None, neutral: bool = False) -> None:
+    """Schematic plan of a wired floor (CU-BEMS Fig. 2), not interactive.
+
+    Ramp mode: each zone filled by `value_col` on the blue data ramp (the overcooling
+    heat map's bins); zones without a valid value are `bg/control` with a dashed edge
+    and say why. Neutral mode (`neutral=True`): every zone `bg/raised`.
+    `label_extra` {zone: text} is appended to the label; `sublabel` {zone: text} is a
+    second line in status/critical-text (e.g. "● 2 meters down"); `zone_tips`
+    {zone: text} adds a tooltip line. Sensor markers are status: a hollow green ring
+    when the zone's multi-sensor works, a filled red dot when it is down."""
+    fp = FLOORPLAN
+    k = float(fp["aspect"])
+    as_of = as_of if as_of is not None else ctx()["as_of"]
+    v = values.set_index("zone") if values is not None and "zone" in values else values
+    label_extra, sublabel, zone_tips = label_extra or {}, sublabel or {}, zone_tips or {}
+    zones = []
+    for z, d in fp["zones"].items():
+        if neutral:
+            reason, val, valid = "", np.nan, False
+            text = z if R.point_for(floor, z, "temp") is not None else f"{z} · no sensor"
+        else:
+            reason = zone_map_reason(floor, z)
+            val = (float(v.loc[z, value_col]) if v is not None and z in v.index
+                   and pd.notna(v.loc[z, value_col]) else np.nan)
+            if not reason and not np.isfinite(val):
+                reason = "no data"
+            valid = not reason
+            text = f"{z}  {label_fmt.format(val)}" if valid else f"{z} · {reason}"
+        step = seq_step(val) if valid else -1
+        props = {"zone": z, "valid": valid, "value": val if valid else None,
+                 "ink": "dark" if valid and SEQ_INK[step] != INK else "light", "label": text,
+                 "note": zone_note(floor, z) or reason or "", "points": zone_tips.get(z, "")}
+        for col in tooltip_cols:
+            x = v.loc[z, col] if v is not None and z in v.index and col in v.columns else np.nan
+            props[col] = None if pd.isna(x) else (round(float(x), 1) if isinstance(x, (int, float, np.floating)) else x)
+        zones.append({"type": "Feature", "properties": props,
+                      "geometry": {"type": "MultiPolygon",
+                                   "coordinates": [[_ring(p, k)] for p in d["polygons"]]}})
+    base = alt.Chart(alt.Data(values=zones)).transform_calculate(valid="datum.properties.valid",
+                                                                 value="datum.properties.value")
+    tips = [alt.Tooltip("properties.zone:N", title="zone")] + [
+        alt.Tooltip(f"properties.{c}:N", title=c) for c in tooltip_cols]
+    tips += ([alt.Tooltip("properties.points:N", title="points")] if zone_tips
+             else [alt.Tooltip("properties.note:N", title="sensor note")])
+    edge = dict(stroke=C["border/strong"], strokeWidth=1.2)
+    if neutral:
+        layers = [base.mark_geoshape(fill=RAISED, **edge).encode(tooltip=tips)]
+    else:
+        layers = [base.transform_filter("datum.valid").mark_geoshape(**edge).encode(
+                      color=alt.Color("value:Q", scale=OVERCOOL_COLOR, legend=None), tooltip=tips),
+                  base.transform_filter("!datum.valid").mark_geoshape(
+                      fill=NO_DATA, strokeDash=[5, 4], **edge).encode(tooltip=tips)]
+    layers.append(alt.Chart(alt.Data(values=[{"type": "Feature", "properties": {},
+                                              "geometry": {"type": "Polygon", "coordinates": [_ring(p, k)]}}
+                                             for p in fp["core"]])).mark_geoshape(
+        fill=RAISED if not neutral else C["bg/control"], stroke=GRID, strokeWidth=1))
+    layers.append(alt.Chart(alt.Data(values=[{"type": "Feature", "properties": {},
+                                              "geometry": {"type": "Polygon",
+                                                           "coordinates": [_ring(fp["outline"], k)]}}])
+                            ).mark_geoshape(filled=False, stroke=C["border/strong"], strokeWidth=2))
+
+    # labels (and the red second line) in plan units
+    sens = {s["zone"]: s["xy"] for s in fp["sensors"] if s.get("zone")}
+    rows = []
+    for f in zones:
+        z = f["properties"]["zone"]
+        lx, ly = fp["zones"][z]["label"]
+        if z in sens and abs(sens[z][0] - lx) < 12 and abs(sens[z][1] - ly) < 9:
+            ly = sens[z][1] + 9            # keep the label clear of the sensor marker
+        rows.append({"x": lx * k, "y": ly, "label": f["properties"]["label"],
+                     "ink": f["properties"]["ink"], "extra": label_extra.get(z, "") or "",
+                     "sub": sublabel.get(z, ""), "zone": z})
+    ldf = pd.DataFrame(rows)
+    ink = alt.Color("ink:N", scale=alt.Scale(domain=["dark", "light"],
+                                             range=[C["text/on-accent"], INK]), legend=None)
+    layers.append(alt.Chart(ldf).mark_text(fontSize=12, fontWeight=600).encode(
+        longitude="x:Q", latitude="y:Q", text="label:N", color=ink))
+    if (ldf["extra"] != "").any():            # second line, same ink (e.g. "1 alert")
+        layers.append(alt.Chart(ldf[ldf["extra"] != ""]).mark_text(fontSize=11, fontWeight=500, dy=15).encode(
+            longitude="x:Q", latitude="y:Q", text="extra:N", color=ink))
+    if (ldf["sub"] != "").any():              # status line in red (e.g. "● 2 meters down")
+        layers.append(alt.Chart(ldf[ldf["sub"] != ""]).mark_text(
+            fontSize=11, fontWeight=600, dy=15, color=C["status/critical-text"]).encode(
+            longitude="x:Q", latitude="y:Q", text="sub:N"))
+
+    # sensor markers: status colours, and the shape changes too
+    st_ = zone_sensor_status(floor, as_of)
+    srows = []
+    for z, (sx, sy) in sens.items():
+        if R.point_for(floor, z, "temp") is None or z not in st_:
+            continue
+        down, word = st_[z]
+        srows.append({"x": sx * k, "y": sy, "zone": z, "down": down, "sensor": f"Sensor {word}"})
+    sdf = pd.DataFrame(srows)
+    if len(sdf):
+        stips = [alt.Tooltip("zone:N"), alt.Tooltip("sensor:N", title="multi-sensor")]
+        partial = ~sdf.down & sdf.sensor.eq("Sensor PARTIAL")
+        ok = ~sdf.down & ~partial
+        if ok.any():
+            layers.append(alt.Chart(sdf[ok]).mark_point(
+                shape="circle", size=90, filled=False, strokeWidth=2, color=OK).encode(
+                longitude="x:Q", latitude="y:Q", tooltip=stips))
+        if partial.any():
+            # Degraded, not down: amber, and the half-filled ◐ the Sensors tables use,
+            # so it differs from OK and down by shape as well as colour.
+            layers.append(alt.Chart(sdf[partial]).mark_text(
+                text=POINT_STATUS_MARK["PARTIAL"], fontSize=17, color=WARN,
+                align="center", baseline="middle").encode(
+                longitude="x:Q", latitude="y:Q", tooltip=stips))
+        if sdf.down.any():
+            layers.append(alt.Chart(sdf[sdf.down]).mark_point(
+                shape="circle", size=110, filled=True, opacity=1, color=BAD).encode(
+                longitude="x:Q", latitude="y:Q", tooltip=stips))
+    chart = alt.layer(*layers).project(type="identity").properties(height=height)
+    st.altair_chart(chart.configure(background="transparent").configure_view(strokeWidth=0),
+                    width="stretch")
+    sensor_key = (f'<span class="cb-legend"><span style="color:{OK}">○</span>sensor OK</span>'
+                  f'<span class="cb-legend"><span style="color:{WARN}">◐</span>sensor partial</span>'
+                  f'<span class="cb-legend"><span style="color:{BAD}">●</span>sensor down</span>')
+    if neutral:
+        md(f'<div style="margin-top:-6px">{sensor_key}</div>')
+        return
+    edges = [0] + OVERCOOL_BINS + [100]
+    steps = "".join(f'<span class="cb-legend"><i style="background:{SEQ[i]}"></i>'
+                    f'{edges[i]}–{edges[i + 1]}%</span>' for i in range(5))
+    md(f'<div style="margin-top:-6px">{steps}'
+       f'<span class="cb-legend"><i style="background:{NO_DATA};border:1px dashed {C["border/strong"]}">'
+       f'</i>— no data / not metered</span>{sensor_key}'
+       f'<span class="cb-legend cb-muted">target &lt; {R.conv("overcooled_target_pct"):.0f}% = '
+       f'boundary of the 2nd and 3rd step</span></div>')
 
 
 def file_end_note(floor: int, end=None) -> None:

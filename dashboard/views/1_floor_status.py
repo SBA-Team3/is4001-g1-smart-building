@@ -164,17 +164,37 @@ def _pick_zone() -> None:
 
 left, right = st.columns([6, 5], gap="medium")
 with left:
-    ui.md('<p class="cb-overline">Zones</p>')
-    st.dataframe(
-        ui.glyph_style(zt.drop(columns="_k"), ["Status"],
-                       {"Mean °C": "{:.1f}", "Cold h %": "{:.0f}", "AC kWh": "{:,.0f}"}),
-        hide_index=True, width="stretch", key="zones_tbl", on_select=_pick_zone,
-        selection_mode="single-row", placeholder=ui.DASH,
-        column_config={"Cold h %": st.column_config.Column(
-            help=f"Cooled, occupied hours below {LO:g} °C. Above {target:.0f}% reads ● overcooled."),
-            "Sensor note": st.column_config.Column(width="medium")})
-    st.caption("Click a row for the zone's detail. '—' is a point that does "
-               "not exist or has no data, never zero.")
+    # Map / Table, persisted in its own non-widget key (survives other pages).
+    st.session_state.setdefault("_floor_view", "Map")
+    st.session_state["floor_view"] = st.session_state["_floor_view"]
+    hl, hr = st.columns([3, 2], vertical_alignment="center")
+    hl.markdown('<p class="cb-overline">Zones</p>', unsafe_allow_html=True)
+    fview = hr.segmented_control("View", ["Map", "Table"], key="floor_view", required=True,
+                                 label_visibility="collapsed", width="stretch",
+                                 on_change=lambda: st.session_state.__setitem__(
+                                     "_floor_view", st.session_state["floor_view"]))
+if fview == "Map":
+    with left:
+        COLD = f"% < {LO:g} °C"
+        vals = pd.DataFrame({"zone": zt.Zone, COLD: zt["Cold h %"], "mean °C": zt["Mean °C"],
+                             "AC kWh": zt["AC kWh"]})
+        n_al = dict(zip(zt.Zone, zt.Alerts))
+        ui.zone_map(floor, vals, COLD, as_of=as_of, height=300,
+                    tooltip_cols=("mean °C", COLD, "AC kWh"),
+                    label_extra={z: f"{n} alert{'s' if n != 1 else ''}" for z, n in n_al.items() if n})
+        st.caption("Schematic, not to scale. Switch to Table for each zone's detail.")
+else:
+    with left:
+        st.dataframe(
+            ui.glyph_style(zt.drop(columns="_k"), ["Status"],
+                           {"Mean °C": "{:.1f}", "Cold h %": "{:.0f}", "AC kWh": "{:,.0f}"}),
+            hide_index=True, width="stretch", key="zones_tbl", on_select=_pick_zone,
+            selection_mode="single-row", placeholder=ui.DASH,
+            column_config={"Cold h %": st.column_config.Column(
+                help=f"Cooled, occupied hours below {LO:g} °C. Above {target:.0f}% reads ● overcooled."),
+                "Sensor note": st.column_config.Column(width="medium")})
+        st.caption("Click a row for the zone's detail. '—' is a point that does "
+                   "not exist or has no data, never zero.")
 _dz = st.session_state.pop("_zone_dialog", None)
 if _dz:
     _zone_dialog(_dz)

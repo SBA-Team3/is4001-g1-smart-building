@@ -42,10 +42,10 @@ The navigation is flat, in the order the FM asks:
 | Page | Question |
 |---|---|
 | **Overview** *(default)* | How much energy and money this period, against expected? Which sensors are down? Which floor and which alert first? |
-| **Floor** | For one floor: data health, energy today, cost MTD vs expected, peak, cooled <23 °C vs 40%; zones worst first; act on open alerts (Work order / Acknowledge / Mute) |
+| **Floor** | For one floor: data health, a zones **Map / Table** (the map adds open alerts per zone; the table opens each zone's detail), energy today, cost MTD vs expected, peak, cooled <23 °C vs 40%; zones worst first; act on open alerts (Work order / Acknowledge / Mute) |
 | **Alerts** | The fault register as a queue of Type · Zone · Description · Cost / day · State, filtered by fault type, trade and state (Open / Cleared / Muted / All); a pop-up with the facts, possible causes, options to consider, a note and Acknowledge / Work order / Mute; CSV export for a CMMS. No severity, and no manual Resolve: **alerts clear automatically** once the condition has not been seen for more than 3 days (the episode gap) |
-| **Sensors** | Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; point × day status map; per-point record; cross-sensor checks; raw trace |
-| **Comfort** | Which zones are too cold, by how much (degree-hours); floor × month overcooling map; zone detail |
+| **Sensors** | A neutral zone map (green / red multi-sensor markers, "● N meters down" per zone) beside the Not OK table; Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; point × day status map; per-point record; cross-sensor checks; raw trace |
+| **Comfort** | Which zones are too cold, by how much (degree-hours): a **Map / Table** toggle (default Map — a schematic plan of the floor filled by % of cooled hours below the band, with green / red sensor markers); floor × month overcooling map; zone detail |
 | **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, CUSUM, signature and outlier days, peak demand, profiles |
 | **Carbon** | Scope 2, location-based emissions for the period (building-level; a selected floor is highlighted): tCO₂e, vs expected (F3–F7), intensity, trailing 12 months; monthly emissions; by floor and by end use; reporting-year summary |
 | **Savings** | The intervention simulator: package inputs → kWh/yr and ฿/yr ranges, tCO₂e, comfort trade-off, IPMVP M&V plan; measures, tornado, control-stability lever, and how each lever is sized |
@@ -71,7 +71,8 @@ app.py              flat top navigation, context bar (floor, as-of date, period,
 ui.py               cached loaders, design tokens, the global period, point status,
                     fault register, fault types, data-health caption, chips, tiles,
                     chart theme
-design/             tokens.json, logo
+design/             tokens.json, logo; floorplans.json (floors 3–7 zone polygons traced
+                    from CU-BEMS Fig. 2, schematic, not to scale) and the source figure
 views/              one file per page; analytics come from ../src/sbanalytics/,
                     the same code the analysis notebooks use
 cache/              local state (fault_states.csv) — gitignored

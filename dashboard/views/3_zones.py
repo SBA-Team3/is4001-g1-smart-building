@@ -41,9 +41,25 @@ zc = C.zone_comfort(h, start=s, end=e, lo=lo, hi=hi, ac_on=ac_on, floor=floor)
 # --------------------------------------------------------------------------- #
 left, right = st.columns([5, 6], gap="large")
 with left:
-    ui.md('<p class="cb-overline">League table</p>')
-    if len(zc):
-        show = zc.sort_values("cold_dh", ascending=False)
+    # Map / Table, persisted in a non-widget key so it survives other pages.
+    st.session_state.setdefault("_comfort_view", "Map")
+    st.session_state["comfort_view"] = st.session_state["_comfort_view"]
+    hl, hr = st.columns([3, 2], vertical_alignment="center")
+    hl.markdown('<p class="cb-overline">Zones</p>', unsafe_allow_html=True)
+    view = hr.segmented_control("View", ["Map", "Table"], key="comfort_view", required=True,
+                                label_visibility="collapsed", width="stretch",
+                                on_change=lambda: st.session_state.__setitem__(
+                                    "_comfort_view", st.session_state["comfort_view"]))
+    show = zc.sort_values("cold_dh", ascending=False) if len(zc) else zc
+    if view == "Map":
+        COLD = f"% < {lo:g} °C"
+        vals = pd.DataFrame({"zone": zc.zone, COLD: zc.cold_pct, "mean °C": zc.mean_c,
+                             "°C·h below": zc.cold_dh, "AC kWh": zc.ac_kwh}) if len(zc) else \
+            pd.DataFrame(columns=["zone", COLD, "mean °C", "°C·h below", "AC kWh"])
+        ui.zone_map(floor, vals, COLD, as_of=as_of, height=330,
+                    tooltip_cols=("mean °C", COLD, "°C·h below", "AC kWh"))
+        st.caption("Schematic, not to scale — traced from CU-BEMS Fig. 2 (Methods).")
+    elif len(zc):
         st.dataframe(pd.DataFrame({
             "Zone": [ui.zone_label(floor, z) for z in show.zone],
             "Mean °C": show.mean_c, f"% < {lo:g} °C": show.cold_pct,
