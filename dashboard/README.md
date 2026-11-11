@@ -27,8 +27,10 @@ channels cannot run on a page load.
 One **context bar** sits above every page: floor (`Bldg · F3 … F7`; Bldg is the
 Overview's building view, floor pages fall back to the last wired floor, default
 F5), the as-of date, the **period** (`Today · 7d · 30d · MTD · 12m · Record`,
-default MTD) and an **Assumptions** popover (tariff, floor area, emission factor,
-demand charge). Every page reads that one period, so counts agree across pages.
+default MTD) and an **Assumptions** popover (tariff, floor area, demand charge).
+On the Carbon page the Assumptions popover is replaced by the grid emission
+factor (default: the TGO 2022 figure in `R.CONVENTIONS["co2_kg_per_kwh"]`),
+editable so it can be updated to a newer TGO figure; a custom value is flagged. Every page reads that one period, so counts agree across pages.
 There is no sidebar.
 
 The navigation is flat, in the order the FM asks:
@@ -41,6 +43,7 @@ The navigation is flat, in the order the FM asks:
 | **Sensors** | Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; point × day status map; per-point record; cross-sensor checks; raw trace |
 | **Comfort** | Which zones are too cold, by how much (degree-hours); floor × month overcooling map; zone detail |
 | **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, CUSUM, signature and outlier days, peak demand, profiles |
+| **Carbon** | Scope 2, location-based emissions for the period (building-level; a selected floor is highlighted): tCO₂e, vs expected (F3–F7), intensity, trailing 12 months; monthly emissions; by floor and by end use; reporting-year summary |
 | **Savings** | The intervention simulator: package inputs → kWh/yr and ฿/yr ranges, tCO₂e, comfort trade-off, IPMVP M&V plan; measures, tornado, control-stability lever, and how each lever is sized |
 | **Methods** | Conventions, point registry, change-points, and "About the data" (ISA-18.2 self-audit, what cannot be detected, why not UMLH, flatline rationale, combination rule, practice, corrections, baseline, pilot, exclusions) |
 
@@ -116,14 +119,14 @@ wired; 1 and 2 are not. To wire one:
 2. Tag its outages and change-points with the floor (`KNOWN_OUTAGES`, `CHANGE_POINTS.floors`) —
    untagged history is Floor 5's and must not leak
 3. Check each page renders sensibly for its zones, and that the thermal model is identified
-   (Opportunities → thermal-model tab)
+   (Savings → "How each lever is sized" → thermal-model tab)
 4. Set `wired: True` in `registry.FLOORS` and run the smoke test, which covers every wired floor
 
 What is still open:
 
 | Floor | Status |
 |---|---|
-| F1 | Not wired: no sensors, so Sensor health, Opportunities and Methods fail; not an office floor anyway. |
+| F1 | Not wired: no sensors, so Sensors, Savings and Methods fail; not an office floor anyway. |
 | F2 | Not wired: renders, but has no lunch shutdown, so the thermal model has no AC-off hour, and its 14-unit z2 needs its own triage view. |
 | F4, F7 | Wired. The physics fit is not identified (1/C CI reaches zero), so the setpoint estimate is the regression alone and the page says so. |
 | F6 | Wired. Unconfirmed z1/z5 meter-transfer candidate in Jun 2019 (00a §7), not yet in `CHANGE_POINTS`. |
@@ -148,7 +151,7 @@ Added for v2 (all in `R.CONVENTIONS`, with sources, on the Methods page):
 | Parameter | Value | Basis |
 |---|---|---|
 | Overcooling target | < 40% of cooled occupied hours below 23 °C | Project proposal KPI |
-| Grid emission factor | 0.4999 kgCO₂e/kWh | Thailand GHG Management Organization (TGO) — verify current figure |
+| Grid emission factor | 0.4999 kgCO₂e/kWh (default; editable on Carbon, custom value flagged) | Thailand GHG Management Organization (TGO) — verify current figure before external reporting |
 | Demand charge | 0 ฿/kW/month (adjustable) | MEA large-customer tariffs carry one; enter the contract rate |
 | Cost of inaction | attributable kWh ÷ calendar days since first seen × tariff | FDD prioritisation practice; zero where no defensible attribution |
 | Fault episode gap | 3 days | Same rule that groups offline points |

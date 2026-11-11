@@ -174,7 +174,7 @@ def ctx() -> dict:
         "tariff": st.session_state.get("tariff", R.conv("tariff_thb")),
         "area": st.session_state.get("area", R.conv("floor_area_m2")),
         "window": int((end - start).days) + 1,
-        "ef": st.session_state.get("ef", R.conv("co2_kg_per_kwh")),
+        "ef": st.session_state.get("ef", R.conv("co2_kg_per_kwh")),   # set on Carbon; TGO default
         "demand_charge": st.session_state.get("demand_charge", R.conv("demand_charge_thb_per_kw")),
         "period": period, "start": start, "end": end, "period_label": label,
     }
@@ -651,7 +651,8 @@ def glyph_style(df: pd.DataFrame, cols: list[str], fmt: dict | None = None, high
         s = str(v).strip()
         k = _GLYPH_KIND.get(s[:1]) if s else None
         return f"color:{_KIND_TEXT[k]}" if k else ""
-    sty = df.style.map(f, subset=[c for c in cols if c in df.columns])
+    sub = [c for c in cols if c in df.columns]
+    sty = df.style.map(f, subset=sub) if sub else df.style
     if highlight_row is not None:
         sty = sty.apply(lambda r: [f"color:{C['accent/hover']}" if r.name == highlight_row else ""
                                    for _ in r], axis=1, subset=df.columns[:1])

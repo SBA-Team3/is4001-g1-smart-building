@@ -146,8 +146,7 @@ with t2:
     dc = c["demand_charge"]
     ui.tile("Cost · " + c["period"], ui.thb(bk["kwh"], tariff),
             (f"{ui.signed_thb(ex_thb)} vs expected" if tariff and np.isfinite(ex_thb) else ""),
-            sub=f"{bk['tco2e']:,.1f} tCO₂e · demand charge "
-                + ("shown on Energy" if dc else "— set rate in Assumptions"),
+            sub="demand charge " + ("shown on Energy" if dc else "— set rate in Assumptions"),
             help=f"Energy × {tariff:.2f} ฿/kWh. The demand charge is billed separately.")
 with t3:
     live = ps[ps.status != "NO FILE"]

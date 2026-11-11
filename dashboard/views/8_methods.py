@@ -70,6 +70,23 @@ with t_conv:
         "metering, because a weekend run is too small against a daily model's noise to "
         "detect statistically.")
 
+    st.subheader("Carbon accounting")
+    _ef = R.CONVENTIONS["co2_kg_per_kwh"]
+    _fe = ", ".join(f"F{f} after {R.floor_file_end(f):%d %b %Y}" for f in R.FILE_END)
+    st.markdown(
+        f"- **Scope:** Scope 2, location-based — purchased grid electricity only.\n"
+        f"- **Boundary:** the submetered zone loads (AC, lighting, plug) on all seven floors. Excluded: "
+        f"central plant, lifts, risers and common areas; {_fe} (no file).\n"
+        f"- **Formula:** tCO₂e = kWh × {_ef[0]:g} {_ef[1]} ÷ 1000. A grid-average factor, not a marginal one.\n"
+        f"- **Factor:** {_ef[2]}. The default is the TGO 2022 figure; it is editable on the Carbon page "
+        "so it can be updated to a newer TGO publication, and a custom value is flagged there and in "
+        "the Carbon footnote.\n"
+        "- **Not reported — data gaps:**\n"
+        "  - *Scope 1* (refrigerant leakage, standby generators): no refrigerant or fuel data.\n"
+        "  - *Market-based Scope 2*: no supply contract, green tariff or REC data.\n"
+        "  - *Whole-building inventory*: needs main-meter data; the submeters cover zone loads only.")
+    st.page_link("views/7_carbon.py", label="Carbon page", icon=":material/arrow_forward:")
+
     st.subheader("The measured schedule")
     st.markdown(
         f"Cooling runs **{R.AC_SCHEDULE['start']}–{R.AC_SCHEDULE['lunch_off']}** "

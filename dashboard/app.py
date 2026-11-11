@@ -65,10 +65,13 @@ nav = st.navigation(position="top", pages=[
     st.Page(f"{P}/2_sensor_health.py", title="Sensors", icon=":material/sensors:"),
     st.Page(f"{P}/3_zones.py", title="Comfort", icon=":material/thermostat:"),
     st.Page(f"{P}/4_energy.py", title="Energy", icon=":material/bolt:"),
+    st.Page(f"{P}/7_carbon.py", title="Carbon", icon=":material/eco:"),
     st.Page(f"{P}/6_opportunities.py", title="Savings", icon=":material/savings:"),
     st.Page(f"{P}/8_methods.py", title="Methods", icon=":material/science:"),
 ])
 on_overview = nav.url_path == OVERVIEW.url_path
+#: Building-level pages: "Bldg" is valid there; a selected floor is highlighted, not filtered.
+on_building_page = on_overview or nav.url_path == "carbon"
 
 # --------------------------------------------------------------------------- #
 # context bar — set once, read by every page through ui.ctx()
@@ -76,30 +79,40 @@ on_overview = nav.url_path == OVERVIEW.url_path
 WIRED = [f"F{f}" for f in R.wired_floors()]
 FLOOR_OPTS = ["Bldg"] + WIRED
 st.session_state.setdefault("floor", 5)
-st.session_state.setdefault("floor_select", "Bldg" if on_overview else f"F{st.session_state['floor']}")
+st.session_state.setdefault("floor_select", "Bldg" if on_building_page else f"F{st.session_state['floor']}")
 # Older sessions (and the Overview's row click) may hold a bare int.
 if isinstance(st.session_state["floor_select"], int):
     st.session_state["floor_select"] = f"F{st.session_state['floor_select']}"
 if st.session_state["floor_select"] not in FLOOR_OPTS:
     st.session_state["floor_select"] = f"F{st.session_state['floor']}"
 # Floor pages need a wired floor: "Bldg" there falls back to the last one used.
-if not on_overview and st.session_state["floor_select"] == "Bldg":
+if not on_building_page and st.session_state["floor_select"] == "Bldg":
     st.session_state["floor_select"] = f"F{st.session_state['floor']}"
 st.session_state.setdefault("period", ui.DEFAULT_PERIOD)
 st.session_state.setdefault("as_of", D.DEFAULT_AS_OF.date())
 if isinstance(st.session_state["as_of"], pd.Timestamp):
     st.session_state["as_of"] = st.session_state["as_of"].date()
-for k, name in [("tariff", "tariff_thb"), ("area", "floor_area_m2"), ("ef", "co2_kg_per_kwh"),
+for k, name in [("tariff", "tariff_thb"), ("area", "floor_area_m2"),
                 ("demand_charge", "demand_charge_thb_per_kw")]:
     st.session_state.setdefault(k, float(R.conv(name)))
+# The grid factor's widget only renders on Carbon. Re-assigning the key every run
+# keeps a custom value alive while other pages (Savings) are open.
+EF_DEFAULT = float(R.conv("co2_kg_per_kwh"))
+st.session_state["ef"] = float(st.session_state.get("ef", EF_DEFAULT))
+on_carbon = nav.url_path == "carbon"
+
+
+def _reset_ef() -> None:
+    st.session_state["ef"] = EF_DEFAULT
 
 with st.container(key="ctxbar"):
-    cb = st.columns([3.3, 1.7, 4.2, 1.6], vertical_alignment="bottom", gap="medium")
+    cb = st.columns([2.9, 1.45, 3.55, 3.9] if on_carbon else [3.3, 1.7, 4.2, 1.6],
+                    vertical_alignment="top" if on_carbon else "bottom", gap="medium")
     sel = cb[0].segmented_control(
         "Floor", FLOOR_OPTS, key="floor_select", required=True,
-        help="Bldg = the whole building (Overview only). F1 is not an office floor and F2 is "
+        help="Bldg = the whole building (Overview and Carbon). F1 is not an office floor and F2 is "
              "not wired; both are in the building totals.")
-    if sel == "Bldg" and not on_overview:
+    if sel == "Bldg" and not on_building_page:
         st.switch_page(OVERVIEW)
     if sel != "Bldg":
         st.session_state["floor"] = int(sel[1:])
@@ -111,16 +124,27 @@ with st.container(key="ctxbar"):
         "Period", ui.PERIODS, key="period", required=True,
         help="Every page reads this one period. MTD = month to date; Record = from 1 Jul 2018 "
              "to the as-of date.")
-    with cb[3].popover("Assumptions", icon=":material/tune:", width="stretch"):
-        st.number_input("Tariff (฿/kWh)", 0.0, 20.0, step=0.10, key="tariff",
-                        help="0 hides every ฿ figure behind 'set rate in Assumptions'.")
-        st.number_input("Floor area (m²)", 100.0, 5000.0, step=10.0, key="area",
-                        help="11,700 m² total ÷ 7 floors. The paper gives no per-floor split.")
-        st.number_input("Grid emission factor (kgCO₂e/kWh)", 0.0, 1.5, step=0.01, key="ef",
-                        format="%.4f", help=R.CONVENTIONS["co2_kg_per_kwh"][2])
-        st.number_input("Demand charge (฿/kW/month)", 0.0, 1000.0, step=10.0, key="demand_charge",
-                        help=R.CONVENTIONS["demand_charge_thb_per_kw"][2])
-        st.caption("Full list with sources on the Methods page.")
+    if on_carbon:
+        # Carbon reports on the grid factor, so it replaces Assumptions here.
+        e1, e2 = cb[3].columns([1.7, 1], vertical_alignment="top", gap="small")
+        e1.number_input("Grid emission factor", 0.0, 1.5, step=0.0001, format="%.4f", key="ef",
+                        help="kgCO₂e/kWh. " + R.CONVENTIONS["co2_kg_per_kwh"][2]
+                             + ". Change it only to a newer TGO figure.")
+        if abs(st.session_state["ef"] - EF_DEFAULT) > 1e-9:
+            e2.markdown('<p class="cb-cap cb-muted" style="margin:0 0 6px;line-height:20px">custom factor</p>',
+                        unsafe_allow_html=True)
+            e2.button("Reset to TGO", on_click=_reset_ef, key="ef_reset", width="stretch")
+        e1.caption("kgCO₂e/kWh · last updated 2022 (TGO)")
+    else:
+        with cb[3].popover("Assumptions", icon=":material/tune:", width="stretch"):
+            st.number_input("Tariff (฿/kWh)", 0.0, 20.0, step=0.10, key="tariff",
+                            help="0 hides every ฿ figure behind 'set rate in Assumptions'.")
+            st.number_input("Floor area (m²)", 100.0, 5000.0, step=10.0, key="area",
+                            help="11,700 m² total ÷ 7 floors. The paper gives no per-floor split.")
+            st.number_input("Demand charge (฿/kW/month)", 0.0, 1000.0, step=10.0, key="demand_charge",
+                            help=R.CONVENTIONS["demand_charge_thb_per_kw"][2])
+            st.caption("The grid emission factor is set on the Carbon page. Full list with sources on "
+                       "the Methods page.")
 
 st.session_state["building_view"] = sel == "Bldg"
 _s, _e, _ = ui.period_bounds(st.session_state["as_of"], st.session_state["period"])

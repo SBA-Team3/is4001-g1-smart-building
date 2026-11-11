@@ -36,7 +36,7 @@ from sbanalytics import registry as R  # noqa: E402
 APP = str(ROOT / "dashboard" / "app.py")
 PAGES = ["views/0_portfolio.py", "views/1_floor_status.py", "views/5_faults.py",
          "views/3_zones.py", "views/2_sensor_health.py", "views/4_energy.py",
-         "views/6_opportunities.py", "views/8_methods.py"]
+         "views/7_carbon.py", "views/6_opportunities.py", "views/8_methods.py"]
 DATES = [dt.date(2019, 6, 14), dt.date(2018, 11, 15), dt.date(2019, 9, 27), dt.date(2019, 12, 31)]
 FLOORS = R.wired_floors()
 TIMEOUT = 300
@@ -140,6 +140,43 @@ def test_portfolio_flags_f1_and_f6():
         assert "F6" in txt and "file ends" in txt, f"{as_of}: Floor 6 file-end flag missing"
 
 
+def test_carbon_page():
+    """Carbon reports Scope 2, location-based, and flags F6 past its file end."""
+    txt = _text(_render("views/7_carbon.py", dt.date(2019, 12, 31)))
+    assert "Scope 2" in txt and "location-based" in txt, "Carbon page does not state its scope"
+    assert "file ends 22 Oct 19" in txt, "Carbon by-floor table does not flag F6's file end"
+
+
+def _carbon_numbers(at: AppTest) -> tuple[float, float]:
+    """(Emissions tile, by-floor total) in tCO2e, as rendered."""
+    txt = _text(at)
+    tile = re.search(r'Emissions · \w+</div><div class="v">([\d,.]+) tCO₂e', txt)
+    total = re.search(r"Total ([\d,.]+) tCO₂e", txt)
+    assert tile and total, "Carbon emissions tile or by-floor total not found"
+    return float(tile.group(1).replace(",", "")), float(total.group(1).replace(",", ""))
+
+
+def test_carbon_emission_factor():
+    """The grid factor is a context-bar input on Carbon (key `ef`, TGO default 0.4999); a custom
+    value scales every figure and is flagged in the footnote."""
+    at = _render("views/7_carbon.py", dt.date(2019, 11, 14))
+    at.segmented_control(key="floor_select").set_value("Bldg").run()
+    ef = at.number_input(key="ef")
+    assert abs(ef.value - 0.4999) < 1e-9, f"default factor {ef.value}, expected 0.4999"
+    tile0, tot0 = _carbon_numbers(at)
+    assert abs(tile0 - tot0) < 0.051, f"tile {tile0} != by-floor total {tot0}"
+    ef.set_value(0.5).run()
+    assert not _errors(at), _errors(at)
+    tile1, tot1 = _carbon_numbers(at)
+    # Both totals are rounded to 0.01, so allow two half-steps of rounding.
+    assert abs(tot1 - tot0 * 0.5 / 0.4999) < 0.011, f"total {tot0} -> {tot1}, not proportional"
+    assert abs(tile1 - tot1) < 0.051, f"tile {tile1} != by-floor total {tot1}"
+    at.number_input(key="ef").set_value(0.25).run()       # a change big enough to see
+    tile2, tot2 = _carbon_numbers(at)
+    assert abs(tot2 - tot0 * 0.25 / 0.4999) < 0.011, f"total {tot0} -> {tot2} at 0.25, not proportional"
+    assert "custom factor" in _text(at), "custom factor not flagged in the footnote"
+
+
 if __name__ == "__main__":
     t0 = time.time()
     n_fail = n_run = 0
@@ -157,7 +194,9 @@ if __name__ == "__main__":
                      ("no floor inherits F5's history", test_no_floor_inherits_floor5_history),
                      ("F3 outage / F6 file-end notes", test_floor_specific_notes),
                      ("outage reads as no data", test_outage_reads_as_no_data),
-                     ("open-fault counts agree", test_open_fault_counts_agree)]:
+                     ("open-fault counts agree", test_open_fault_counts_agree),
+                     ("carbon scope and F6 note", test_carbon_page),
+                     ("carbon emission factor input", test_carbon_emission_factor)]:
         n_run += 1
         try:
             fn()

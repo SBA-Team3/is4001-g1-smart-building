@@ -129,8 +129,8 @@ H3 15/22, Body 14/20, Caption 12/16, Overline 11/16 uppercase.
 
 | Component | In code |
 |---|---|
-| Top nav (flat: Overview · Floor · Alarms · Sensors · Comfort · Energy · Savings · Methods) | `st.navigation(position="top")` in `app.py` |
-| Context bar (floor, as-of date, period, Assumptions popover) | `app.py`, keys `floor_select`, `as_of`, `period`; read via `ui.ctx()` |
+| Top nav (flat: Overview · Floor · Alarms · Sensors · Comfort · Energy · Carbon · Savings · Methods) | `st.navigation(position="top")` in `app.py` |
+| Context bar (floor, as-of date, period, Assumptions popover: tariff, area, demand charge; on Carbon the popover is replaced by the grid emission factor, key `ef`) | `app.py`, keys `floor_select`, `as_of`, `period`; read via `ui.ctx()` |
 | Alarm band | `ui.alarm_band(counts, meta)`; `ui.floor_band(floor, as_of)` for one floor |
 | Page header | `ui.page_header(overline, title, sub_html)` |
 | KPI tile | `st.metric(..., border=True)`, or `ui.tile()` when it needs a list or sub-line |

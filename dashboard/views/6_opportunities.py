@@ -53,7 +53,8 @@ def _lockout(floor: int) -> dict:
 
 ui.page_header("Savings", f"Floor {floor} savings",
                "Build a package of operational changes and see what it saves as a range, what it does "
-               "to comfort, and how you would prove it. Tariff and emission factor come from Assumptions.")
+               "to comfort, and how you would prove it. The tariff comes from Assumptions; the "
+               "grid emission factor is set on the Carbon page (TGO 2022 default).")
 ui.floor_band(floor, c["as_of"])
 
 phys = _physics(floor, True)
@@ -99,7 +100,7 @@ with left:
                                             help="0 for an operational change made at the BMS."),
                     "trim": st.number_input("Schedule trim (฿)", 0.0, 1e7, 0.0, 1000.0),
                     "lockout": st.number_input("Lockout (฿)", 0.0, 1e7, 0.0, 1000.0)}
-        st.caption(f"Tariff {t_loc:.2f} ฿/kWh · {ef_loc:.4f} kgCO₂e/kWh (Assumptions).")
+        st.caption(f"Tariff {t_loc:.2f} ฿/kWh (Assumptions).")
 
 res = SC.simulate(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
                   cost=cost, tariff=t_loc, ef=ef_loc,
@@ -116,7 +117,11 @@ with right:
                 delta=f"mid ฿{comb['mid'] * t_loc:,.0f}" if t_loc else None, delta_color="off",
                 delta_arrow="off", border=True)
     k[2].metric("Emissions avoided", f"{comb['mid'] * ef_loc / 1000:,.1f} tCO₂e/yr",
-                help="Mid case × emission factor.", border=True)
+                help=f"Mid case × the grid factor {ef_loc:.4f} kgCO₂e/kWh, set on the Carbon page "
+                     "(TGO 2022 default).",
+                border=True)
+    k[2].page_link("views/7_carbon.py", label="Grid factor set on Carbon (TGO 2022 default)",
+                   icon=":material/arrow_forward:")
     k[3].metric(f"Cooled <{LO:g} °C", f"{cf['below_now']:.0f}% → {cf['below_after']:.0f}%",
                 delta=f"{'meets' if cf['below_after'] <= target else 'above'} {target:.0f}% target",
                 delta_color="off" if cf["below_after"] <= target else "inverse", delta_arrow="off",
