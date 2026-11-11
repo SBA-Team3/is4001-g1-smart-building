@@ -54,9 +54,22 @@ def _lockout(floor: int) -> dict:
 ui.page_header("Savings", f"Floor {floor} savings", "Model trained on the whole record")
 
 phys = _physics(floor, True)
+# Regression-only? Say why, once, where the result is read (the engine tab repeats it).
+if phys.get("pooled"):
+    REG_ONLY = ""
+elif phys.get("n", 0) < 50:
+    REG_ONLY = (f"Regression-only estimate: Floor {floor} has no lunch shutdown, so the physics model "
+                "cannot be calibrated.")
+else:
+    REG_ONLY = (f"Regression-only estimate: the physics model is not identified on Floor {floor} (its "
+                "capacitance interval reaches zero), so the lift is the regression's upper bound.")
 reg = _reg(floor)
 est = A.estimator_range(phys, reg)
 cz = R.comfort_zones(floor)
+# Comfort zones that also have an AC meter: the lift and trim act on these only (F2 z3 has a
+# room sensor but no AC meter). scenario.mv_plan lists every comfort zone in its boundary text,
+# so the boundary shown below is corrected to these.
+cz_ac = [z for z in cz if R.has_channel(floor, z, "ac")]
 cap = float(R.conv("max_lift_c"))
 max_trim = SC.max_trim(h, floor)
 target = R.conv("overcooled_target_pct")
@@ -87,9 +100,9 @@ with left:
             per_zone = st.toggle("Set the lift per zone", value=False)
             if per_zone:
                 d_temp = {z: st.slider(f"{ui.zone_label(floor, z)} lift (°C)", 0.0, cap, lift, 0.25,
-                                       key=f"lift_{z}") for z in cz}
+                                       key=f"lift_{z}") for z in cz_ac}
             else:
-                d_temp = {z: lift for z in cz}
+                d_temp = {z: lift for z in cz_ac}
                 st.caption("Off: every comfort zone takes the lift above.")
         with st.expander("Implementation costs"):
             cost = {"lift": st.number_input("Lift (฿)", 0.0, 1e7, 0.0, 1000.0,
@@ -104,6 +117,8 @@ res = SC.simulate(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=loc
 tbl, comb, cf = res["table"], res["combined"], res["comfort"]
 
 with right:
+    if REG_ONLY:
+        st.caption(f":material/info: {REG_ONLY}")
     k = st.columns(4)
     k[0].metric("Saving, kWh/yr", f"{comb['low'] / 1e3:,.1f}k–{comb['high'] / 1e3:,.1f}k",
                 help=f"Mid {comb['mid']:,.0f} kWh/yr. Low and high come from the two estimators "
@@ -136,6 +151,9 @@ with right:
     floor_cv = float(fm["metrics"].query("split == 'test'").cv_rmse.iloc[0])
     floor_ac = M.annual_kwh(fm)
     plan = SC.mv_plan(floor, res, _zone_cv(floor), floor_cv, lockout, trim_n, floor_ac)
+    if len(plan) and cz_ac != cz:
+        plan["measurement boundary"] = plan["measurement boundary"].str.replace(
+            f"AC meters of {', '.join(cz)}", f"AC meters of {', '.join(cz_ac)}", regex=False)
     if not len(plan):
         st.caption("Select at least one measure to see its M&V plan.")
     for _, p in plan.iterrows():
@@ -157,7 +175,7 @@ with right:
 # --------------------------------------------------------------------------- #
 # below: measures, sensitivity, second lever, engine
 # --------------------------------------------------------------------------- #
-ui.section("Measures", f"Lift and trim: {', '.join(cz)} | lockout: whole floor")
+ui.section("Measures", f"Lift and trim: {', '.join(cz_ac)} | lockout: whole floor")
 st.dataframe(
     tbl, width="stretch", hide_index=True,
     column_config={
@@ -235,10 +253,8 @@ with tab_sp:
              "noise. No larger sample would shrink it.")
     row = est[est.estimator == which].iloc[0]
     if not phys.get("pooled") and len(est):
-        st.warning("**One estimator only.** The physics model is not identified on this "
-                   "floor (see the thermal-model tab), so there is no lower bound and no "
-                   "midpoint. This is the regression, which overstates the saving by "
-                   "absorbing occupancy.")
+        st.warning(f"**One estimator only.** {REG_ONLY} There is no lower bound and no midpoint; "
+                   "the regression overstates the saving by absorbing occupancy.")
     elif phys.get("unidentified"):
         st.caption("Physics fit not identified for "
                    f"{', '.join(phys['unidentified'])}; those zones use the pooled fit.")

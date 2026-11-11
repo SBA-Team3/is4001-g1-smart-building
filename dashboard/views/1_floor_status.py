@@ -79,10 +79,6 @@ def _lobby() -> None:
     no comfort, no alerts, no baseline."""
     ui.page_header("Floor", ui.floor_name(floor), c["range"])
     end_ = ui.file_end_gate(floor, start, end)
-    if (H.day == as_of.normalize()).any():
-        ui.health_caption(floor, as_of)                          # meters only on this floor
-    else:
-        st.caption("No meter health data for this date.")
     ui.status_notes(as_of, floor)
 
     day_tot = E.floor_totals(h, as_of, as_of)
@@ -119,7 +115,7 @@ def _lobby() -> None:
                                     "_floor_view", st.session_state["floor_view"]))
     if view == "Map":
         tot = dict(zip(eu.zone, eu.total_kwh))
-        mc, _ = st.columns([7, 3])
+        _, mc, _ = st.columns([1, 2, 1])            # full-width block: centre the map
         with mc:
             ui.zone_map(floor, as_of=as_of, neutral=True, height=330,
                         label_extra={z: (f"{v:,.0f} kWh" if pd.notna(v) else "no data")
@@ -127,8 +123,8 @@ def _lobby() -> None:
                         zone_tips={z: ("" if R.has_channel(floor, z, "ac") else "no AC meter; ")
                                    + f"{tot.get(z, float('nan')):,.0f} kWh in the period"
                                    for z in tot})
-        st.caption("Schematic, not to scale — traced from CU-BEMS Fig. 2 (Methods). Total kWh per zone "
-                   "over the period.")
+            ui.md('<p class="cb-cap cb-muted" style="text-align:center">Schematic, not to scale — traced '
+                  'from CU-BEMS Fig. 2 (Methods). Total kWh per zone over the period.</p>')
     else:
         st.dataframe(tbl.style.format({c_: "{:,.0f}" for c_ in tbl.columns if c_.endswith("kWh")},
                                       na_rep=ui.DASH),
@@ -144,13 +140,8 @@ if floor in ui.REPORTING_ONLY:
 ui.page_header("Floor", f"Floor {floor}", f"{c['range']} | Comfort band {LO:g}–{HI:g} °C")
 end = ui.file_end_gate(floor, start, end)
 
-# --- data health, one line (no alert band) ---------------------------------- #
+# No data-health line under the subtitle: point status lives on Sensors.
 reg = ui.register(floor, c)
-sy = ui.since_yesterday(floor, as_of, tariff, LO)     # fixed 90-day look-back, not the period
-lost = HL.went_offline(H, as_of)
-since = (f"Since yesterday: <b>{len(sy['new'])}</b> new · <b>{len(sy['cleared'])}</b> cleared · "
-         f"<b>{len(lost)}</b> went offline")
-ui.health_caption(floor, as_of, since)
 ui.status_notes(as_of, floor)
 
 # --- four tiles ------------------------------------------------------------- #
@@ -198,7 +189,7 @@ k[3].metric(f"Cooled <{LO:g} °C MTD", f"{oc_now:.0f}%" if np.isfinite(oc_now) e
             delta_color="inverse" if np.isfinite(oc_now) and oc_now > target else "off",
             delta_arrow="off", border=True,
             help="Share of cooled, occupied zone-hours below the band on comfort zones, weighted "
-                 "by zone AC energy (proposal KPI 1).")
+                 "by zone AC energy (proposal KPI 1). " + ui.REINSTALL_NOTE)
 
 # --- zones (left) + active alerts (right) ----------------------------------- #
 zc = C.zone_comfort(h, start=start, end=end, lo=LO, hi=HI, floor=floor)
@@ -206,6 +197,7 @@ cm = zc.set_index("zone") if len(zc) else pd.DataFrame()
 eu = E.end_use(h, start, end, floor=floor).set_index("zone")
 op = ui.sort_faults(reg[reg.is_open]) if len(reg) else reg
 
+uncooled = ui.uncooled_zone_temps(floor, start, end)   # sensored zones without an AC meter
 rows = []
 for z in R.ZONES[floor]:
     has_ac = R.has_channel(floor, z, "ac")
@@ -216,6 +208,8 @@ for z in R.ZONES[floor]:
     if r is not None:
         status = (f"● overcooled" if cold > target else "▲ warm" if r.warm_pct > target
                   else "✓ in band")
+    elif comfort and not has_ac:
+        status = "ⓘ not AC-metered"          # sensor but no cooling meter (F2 z3)
     elif comfort:
         status = "○ no data"
     elif tp is not None:
@@ -224,7 +218,7 @@ for z in R.ZONES[floor]:
         status = "ⓘ no sensor"
     nf = int(op.zone.astype(str).str.contains(z).sum()) if len(op) else 0
     rows.append({"Zone": z, "Status": status,
-                 "Mean °C": float(r.mean_c) if r is not None else np.nan,
+                 "Mean °C": float(r.mean_c) if r is not None else uncooled.get(z, np.nan),
                  "Cold h %": cold,
                  "AC kWh": eu.loc[z, "ac_kwh"] if has_ac and z in eu.index else np.nan,
                  "Alerts": nf, "Sensor note": ui.zone_note(floor, z),
@@ -284,7 +278,7 @@ if fview == "Map":
         vals = pd.DataFrame({"zone": zt.Zone, COLD: zt["Cold h %"], "mean °C": zt["Mean °C"],
                              "AC kWh": zt["AC kWh"]})
         n_al = dict(zip(zt.Zone, zt.Alerts))
-        ui.zone_map(floor, vals, COLD, as_of=as_of, height=300,
+        ui.zone_map(floor, vals, COLD, as_of=as_of, height=300, zone_temps=uncooled,
                     tooltip_cols=("mean °C", COLD, "AC kWh"),
                     label_extra={z: f"{n} alert{'s' if n != 1 else ''}" for z, n in n_al.items() if n})
         st.caption("Schematic, not to scale. Switch to Table for each zone's detail.")
@@ -309,23 +303,38 @@ with right:
     if not len(op):
         ui.md(f'<div class="cb-list"><div class="item">{ui.chip("ok", "No open alerts")}'
               f'<div class="txt cb-cap">Nothing raised on this floor in the period.</div></div></div>')
-    for r in op.head(5).itertuples():
-        with st.container(border=True, key=f"card_al_{r.id}"):
-            a, b1, b2, b3 = st.columns([5.4, 2.2, 2.4, 1.7], vertical_alignment="center", gap="small")
-            cost = f" · ฿{r.cost_per_day_thb:,.0f}/day" if r.cost_per_day_thb and tariff else ""
-            a.markdown(f'<div class="cb-stack" style="gap:2px"><div class="cb-row">{ui.state_chip(r)}'
-                       f'<span class="cb-cap cb-muted" title="days open">{ui.esc(r.state)}{cost} · {r.days_open:.0f} d'
-                       f'</span></div><div class="cb-strong">{ui.esc(r.title)}</div></div>',
-                       unsafe_allow_html=True)
-            b1.button("Work order", key=f"wo_{r.id}", type="primary", width="stretch",
-                      disabled=r.state == "In progress",
-                      on_click=ui.set_fault_state, args=(r.id, "In progress", "work order raised"),
-                      help="Sets the alert In progress with the note 'work order raised'.")
-            b2.button("Acknowledge", key=f"ack_{r.id}", width="stretch", disabled=r.state != "New",
-                      on_click=ui.set_fault_state, args=(r.id, "Acknowledged"))
-            b3.button("Mute", key=f"mute_{r.id}", width="stretch", on_click=ui.mute_fault, args=(r.id,),
-                      help="Hide this alert for this session. Alerts clear by themselves once the "
-                           "condition stops.")
+    else:
+        # One bordered list with divided rows (not a card per alert). Scoped CSS: rows are
+        # 44 px, the markdown block loses its own spacing so the chip and zone centre on
+        # the buttons, and the buttons are compact. Tokens only, no hex.
+        ui.md("""<style>
+.st-key-alert_list{padding:0 !important;gap:0 !important}
+.st-key-alert_list [class*="st-key-al_row_"]{padding:6px 12px;gap:0}
+.st-key-alert_list > * + *{border-top:1px solid var(--color-border-default)}
+.st-key-alert_list [class*="st-key-al_row_"] [data-testid="stHorizontalBlock"]{gap:8px;align-items:center}
+.st-key-alert_list [class*="st-key-al_row_"] [data-testid="stMarkdownContainer"]:has(> .cb-row){margin:0}
+.st-key-alert_list [class*="st-key-al_row_"] .cb-row{min-height:32px;align-items:center}
+.st-key-alert_list [class*="st-key-al_row_"] .cb-row .cb-chip{align-self:center}
+.st-key-alert_list [class*="st-key-al_row_"] button{min-height:32px;height:32px;padding:0 12px}
+.st-key-alert_list [class*="st-key-al_row_"] button p{font-size:13px}
+</style>""")
+        with st.container(border=True, key="alert_list"):
+            for r in op.head(5).itertuples():
+                with st.container(key=f"al_row_{r.id}"):
+                    a, b1, b2, b3 = st.columns([5.0, 2.2, 2.5, 1.6], vertical_alignment="center", gap="small")
+                    # The fault-type chip and the zone; description, cost and age live on Alerts.
+                    a.markdown(f'<div class="cb-row">{ui.state_chip(r)}'
+                               f'<span class="cb-strong">{ui.esc(r.zone)}</span></div>',
+                               unsafe_allow_html=True)
+                    b1.button("Work order", key=f"wo_{r.id}", type="primary", width="stretch",
+                              disabled=r.state == "In progress",
+                              on_click=ui.set_fault_state, args=(r.id, "In progress", "work order raised"),
+                              help="Sets the alert In progress with the note 'work order raised'.")
+                    b2.button("Acknowledge", key=f"ack_{r.id}", width="stretch", disabled=r.state != "New",
+                              on_click=ui.set_fault_state, args=(r.id, "Acknowledged"))
+                    b3.button("Mute", key=f"mute_{r.id}", width="stretch", on_click=ui.mute_fault,
+                              args=(r.id,), help="Hide this alert for this session. Alerts clear by "
+                                                 "themselves once the condition stops.")
     st.page_link("views/5_faults.py", label=f"All {len(op)} open alerts", icon=":material/arrow_forward:")
 
 _last_30_days()

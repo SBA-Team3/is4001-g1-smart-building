@@ -4,8 +4,8 @@ A BMS-style operations dashboard for the CU-BEMS building, built for the
 university FM team (Office of Physical Resources Management). Its first
 questions are energy use, cost, and which sensors are down, so the Overview
 answers those for the whole building on one 1440×900 screen. The operational
-pages are wired for Floors 3–7; F1 (the lobby — a team assumption; no sensors) and F2 (not wired)
-appear only in building totals.
+pages are wired for Floors 2–7; F1 (the lobby — a team assumption; no sensors)
+is reporting-only (Overview, Floor, Energy, Carbon).
 
 ## Run it
 
@@ -47,7 +47,7 @@ The navigation is flat, in the order the FM asks:
 | **Sensors** | A neutral zone map (green / red multi-sensor markers, "● N meters down" per zone) beside the Not OK table; Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; point × day status map; per-point record; cross-sensor checks; raw trace |
 | **Comfort** | Which zones are too cold, by how much (degree-hours): a **Map / Table** toggle (default Map — a schematic plan of the floor filled by % of cooled hours below the band, with green / red sensor markers); floor × month overcooling map; zone detail |
 | **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, CUSUM, signature and outlier days, peak demand, profiles |
-| **Carbon** | Scope 2, location-based emissions for the period (building-level; a selected floor is highlighted): tCO₂e, vs expected (F3–F7), intensity, trailing 12 months; monthly emissions; by floor and by end use; reporting-year summary |
+| **Carbon** | Scope 2, location-based emissions for the period (building-level; a selected floor is highlighted): tCO₂e, vs expected (F2–F7, the floors with a baseline), intensity, trailing 12 months; monthly emissions; by floor and by end use; reporting-year summary |
 | **Savings** | The intervention simulator: package inputs → kWh/yr and ฿/yr ranges, tCO₂e, comfort trade-off, IPMVP M&V plan; measures, tornado, control-stability lever, and how each lever is sized |
 | **Methods** | Conventions, point registry, change-points, and "About the data" (why alerts have no severity, what cannot be detected, why not UMLH, flatline rationale, combination rule, practice, corrections, baseline, pilot, exclusions) |
 
@@ -130,7 +130,7 @@ What is still open:
 | Floor | Status |
 |---|---|
 | F1 | Reporting only (Overview, Floor, Energy, Carbon): treated as the lobby — a team assumption; no sensors, AC never switches off. Still `wired: False` in the registry; the dashboard's `ui.REPORTING_ONLY` offers it on those pages only. |
-| F2 | Not wired: renders, but has no lunch shutdown, so the thermal model has no AC-off hour, and its 14-unit z2 needs its own triage view. |
+| F2 | Wired (office). No lunch shutdown → setpoint estimate regression-only; 2019-03-06 sensor reinstall is a warning, not a break. z3 has a sensor but no AC meter (temperature only); z2's AC is the sum of 14 units. |
 | F4, F7 | Wired. The physics fit is not identified (1/C CI reaches zero), so the setpoint estimate is the regression alone and the page says so. |
 | F6 | Wired. Unconfirmed z1/z5 meter-transfer candidate in Jun 2019 (00a §7), not yet in `CHANGE_POINTS`. |
 | F2–F4, F6, F7 | The 2019-03-06 sensor reinstall is declared as a *warning*, not a blocking change-point: nobody has checked whether these floors also ran colder afterwards, as F5 did. |

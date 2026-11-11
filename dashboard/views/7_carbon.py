@@ -25,6 +25,7 @@ EF_SRC = R.CONVENTIONS["co2_kg_per_kwh"][2]
 AREA = float(c["area"])                             # per floor (assumption)
 sel_floor = None if st.session_state.get("building_view", True) else c["floor"]
 WIRED = R.wired_floors()
+BASIS = f"F{WIRED[0]}–F{WIRED[-1]}"        # floors with a weather-normalised baseline
 n_days = int((e - s).days) + 1
 t = lambda kwh: kwh * EF / 1000                     # kWh -> tCO2e
 
@@ -66,11 +67,11 @@ with k[1]:
     if np.isfinite(dev_kwh) and exp_kwh:
         ui.tile("vs expected", f"{t(dev_kwh):+,.1f} tCO₂e",
                 f"{'▲' if dev_kwh > 0 else '▼'} {dev_kwh / exp_kwh * 100:+.1f}% vs weather-normalised baseline",
-                sub=f"F3–F7, {dev.date.nunique()} usable day(s)",
+                sub=f"{BASIS}, {dev.date.nunique()} usable day(s)",
                 help="Actual − expected kWh on the wired floors' usable days (the Overview energy tile's "
-                     "basis), × the grid factor. F1 and F2 have no baseline.")
+                     "basis), × the grid factor. F1 (lobby) has no baseline.")
     else:
-        ui.tile("vs expected", ui.DASH, sub="F3–F7 · no usable baseline days in this period")
+        ui.tile("vs expected", ui.DASH, sub=f"{BASIS} · no usable baseline days in this period")
 with k[2]:
     inten = bk["tco2e"] * 1000 / total_area * 365 / n_days if bk["kwh"] else np.nan
     ui.tile("Intensity", f"{inten:,.1f} kgCO₂e/m²·yr" if np.isfinite(inten) else ui.DASH,
@@ -99,7 +100,7 @@ bars_df["order"] = (bars_df.part == "Rest of building").astype(int)
 dom = [f"F{sel_floor}", "Rest of building"] if sel_floor else ["Building"]
 rng = [ui.PRIMARY, ui.CONTEXT] if sel_floor else [ui.PRIMARY]
 
-# Expected building = actual building − (F3–F7 actual − expected on usable days).
+# Expected building = actual building − (office floors' actual − expected on usable days).
 ud = pd.concat([_usable(f) for f in WIRED], ignore_index=True)
 ud["month"] = ud.date.dt.to_period("M").dt.to_timestamp()
 gap = ud.assign(d=ud.actual - ud.expected).groupby("month").d.sum()
@@ -130,8 +131,8 @@ for f in R.FILE_END:
                alt.Chart(fe_df).mark_text(color=ui.INK_3, align="left", dx=4, dy=4, baseline="top",
                                           fontSize=11).encode(x="d:T", y=alt.value(0), text="label:N")]
 st.altair_chart(ui.chart(alt.layer(*layers), height=280), width="stretch")
-st.caption("Grey column: the as-of month. Expected = building actual minus the F3–F7 deviation from their "
-           "weather/calendar baselines; F1 and F2 enter at actual.")
+st.caption(f"Grey column: the as-of month. Expected = building actual minus the {BASIS} deviation from their "
+           "weather/calendar baselines; F1 (lobby) enters at actual.")
 
 # --------------------------------------------------------------------------- #
 # (3) breakdown

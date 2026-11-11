@@ -221,7 +221,7 @@ POINTS: dict[int, list[Point]] = {
 #: validated for it; every floor is in the registry and the cleaned dataset.
 FLOORS: dict[int, dict] = {
     1: {"wired": False, "zones": 4, "note": "No sensors at all; lighting-dominated, load peaks at night — not an office profile."},
-    2: {"wired": False, "zones": 4, "note": "Different schema — 36 columns, 14 AC units in z2; z2_AC11 is dead. "
+    2: {"wired": True, "zones": 4, "note": "Different schema — 36 columns, 14 AC units in z2; z2_AC11 is dead. "
                                          "No lunch shutdown, so the 12:00 thermal-model calibration has no AC-off hour."},
     3: {"wired": True,  "zones": 5, "note": "All meters offline 11 Oct - 21 Nov 2018."},
     4: {"wired": True,  "zones": 5, "note": "All meters offline 29 Oct - 21 Nov 2018; z1_AC1-3 offline Feb-May 2019."},

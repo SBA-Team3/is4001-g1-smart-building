@@ -95,9 +95,9 @@ for f in WIRED:
                  "_nodata": int(no_data), "_stake": stake, "_f": f})
 # Ranked by ฿ at stake per day across open alerts; floors with no data sink to the bottom.
 ft = pd.DataFrame(rows).sort_values(["_nodata", "_stake"], ascending=[True, False])
-# F1 (lobby, reporting only) and F2 (not monitored): in the totals, out of every ranking.
+# F1 (lobby, reporting only): in the totals, out of every ranking.
 extra = []
-for f_, note_, go in ((1, ui.REPORTING_ONLY[1], 1), (2, "not monitored", 0)):
+for f_, note_, go in ((1, ui.REPORTING_ONLY[1], 1),):
     kwh_ = E.floor_totals(h[h.floor == f_], s, e)["total"]
     extra.append({"Floor": f"F{f_}", "kWh": kwh_,
                   "฿": kwh_ * tariff if tariff and np.isfinite(kwh_) else np.nan,
@@ -182,8 +182,8 @@ with left:
                      "Only hours with live sensors count."),
             "Down": st.column_config.Column(help="Points OFFLINE, FROZEN or BAD SAMPLES today."),
         })
-    st.caption("**Floor 1 is the lobby** (runs around the clock) and F2 is not monitored; both are "
-               "in the building totals and out of every ranking. "
+    st.caption("**Floor 1 is the lobby** (runs around the clock); it is in the building totals and out of "
+               "every ranking. "
                + (f"F6's file ends {R.floor_file_end(6):%d %b %Y}: after that it is not metered, "
                   "not zero. " if 6 in R.FILE_END else "")
                + (f"This period overlaps the building-wide sensor gap ({lo_b:%d %b %Y} – "
@@ -198,15 +198,17 @@ with right:
               f'<div class="txt cb-cap">Nothing raised on floors F{WIRED[0]}–F{WIRED[-1]} '
               f'in this period.</div></div></div>')
     else:
+        # One divided list, one compact row per alert: chip · title · cost and age, centred
+        # on the row (the title wraps to at most two lines; full text on hover).
         items = []
         for r in op.head(5).itertuples():
             cost = (f"฿{r.cost_per_day_thb:,.0f}/day" if r.cost_per_day_thb and tariff else ui.DASH)
-            days = f"{r.days_open:.0f} d open" if np.isfinite(r.days_open) else ""
-            items.append(f'<div class="item">{ui.state_chip(r)}<div class="txt">'
-                         f'<div class="cb-strong">F{r.floor} {ui.esc(r.title)}</div>'
-                         '</div>'
-                         f'<div class="cost">{cost}<div class="cb-cap cb-muted">{days}</div></div></div>')
-        ui.md(f'<div class="cb-list">{"".join(items)}</div>')
+            days = f" · {r.days_open:.0f} d open" if np.isfinite(r.days_open) else ""
+            title = f"F{r.floor} {r.title}".replace(" °C", "\u00a0°C")   # keep "23 °C" together
+            items.append(f'<div class="item">{ui.state_chip(r)}'
+                         f'<span class="cb-strong txt" title="{ui.esc(title)}">{ui.esc(title)}</span>'
+                         f'<span class="cost">{cost}<span class="cb-cap cb-muted">{days}</span></span></div>')
+        ui.md(f'<div class="cb-list compact">{"".join(items)}</div>')
     st.page_link("views/5_faults.py", label=f"All {len(op)} open alerts",
                  icon=":material/arrow_forward:")
 

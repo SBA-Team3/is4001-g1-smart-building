@@ -51,19 +51,24 @@ with left:
                                 on_change=lambda: st.session_state.__setitem__(
                                     "_comfort_view", st.session_state["comfort_view"]))
     show = zc.sort_values("cold_dh", ascending=False) if len(zc) else zc
+    uncooled = ui.uncooled_zone_temps(floor, s, e)      # sensor, no AC meter (F2 z3)
     if view == "Map":
         COLD = f"% < {lo:g} °C"
         vals = pd.DataFrame({"zone": zc.zone, COLD: zc.cold_pct, "mean °C": zc.mean_c,
                              "°C·h below": zc.cold_dh, "AC kWh": zc.ac_kwh}) if len(zc) else \
             pd.DataFrame(columns=["zone", COLD, "mean °C", "°C·h below", "AC kWh"])
-        ui.zone_map(floor, vals, COLD, as_of=as_of, height=330,
+        ui.zone_map(floor, vals, COLD, as_of=as_of, height=330, zone_temps=uncooled,
                     tooltip_cols=("mean °C", COLD, "°C·h below", "AC kWh"))
         st.caption("Schematic, not to scale — traced from CU-BEMS Fig. 2 (Methods).")
     elif len(zc):
-        st.dataframe(pd.DataFrame({
+        league = pd.DataFrame({
             "Zone": [ui.zone_label(floor, z) for z in show.zone],
             "Mean °C": show.mean_c, f"% < {lo:g} °C": show.cold_pct,
-            "°C·h below": show.cold_dh, "AC kWh": show.ac_kwh}).style.format(
+            "°C·h below": show.cold_dh, "AC kWh": show.ac_kwh})
+        # zones with a room sensor but no AC meter: temperature only, never a 0
+        league = pd.concat([league, pd.DataFrame([{"Zone": f"{z} · not AC-metered", "Mean °C": t}
+                                                  for z, t in uncooled.items()])], ignore_index=True)
+        st.dataframe(league.style.format(
                 {"Mean °C": "{:.1f}", f"% < {lo:g} °C": "{:.0f}", "°C·h below": "{:,.0f}",
                  "AC kWh": "{:,.0f}"}, na_rep=ui.DASH),
             hide_index=True, width="stretch", placeholder=ui.DASH)
@@ -97,8 +102,8 @@ ui.md(f'<div style="margin-top:-8px">{ui.seq_legend()}</div>')
 bl0, bl1 = (pd.Timestamp(x) for x in R.BLACKOUT)
 st.caption(f"'—': the building-wide sensor gap ({bl0:%b %Y} – {bl1:%b %Y}) and "
            + ", ".join(f"Floor {f} after its file ends ({R.floor_file_end(f):%d %b %Y})" for f in R.FILE_END)
-           + ". White outline: the as-of month. The step from 2018 to 2019 is a registered change-point: "
-             "every zone ran 2–3 °C colder after the sensors came back on 2019-03-06.")
+           + ". White outline: the as-of month.")
+ui.md(f'<p class="cb-cap cb-muted" style="margin-top:-6px">{ui.esc(ui.REINSTALL_NOTE)}</p>')
 
 # --------------------------------------------------------------------------- #
 ui.section("Zone detail")

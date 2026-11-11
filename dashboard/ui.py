@@ -541,6 +541,11 @@ def _css() -> str:
 .cb-list .item + .item{{border-top:1px solid var(--color-border-default)}}
 .cb-list .item .txt{{flex:1;min-width:0}}
 .cb-list .item .cost{{{ts('Body/Strong')}color:var(--color-text-primary);white-space:nowrap;text-align:right}}
+/* compact list: one 44px row per item, chip centred (Overview Top alerts) */
+.cb-list.compact .item{{padding:6px 12px;min-height:44px;gap:var(--space-2)}}
+.cb-list.compact .item .cb-chip{{align-self:center}}
+.cb-list.compact .item .txt{{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
+.cb-list.compact .item .cost .cb-cap{{font-weight:400}}
 /* native elements, restyled to the tokens */
 div[data-testid="stMainBlockContainer"]{{padding:48px var(--space-8) 64px !important}}
 div[data-testid="stMetric"]{{min-height:118px;background:var(--color-bg-surface);border-radius:var(--radius-lg) !important;
@@ -852,13 +857,19 @@ def expected_line(c: alt.Chart) -> alt.Chart:
     return c.mark_line(color=EXPECTED, strokeWidth=2, strokeDash=[6, 4])
 
 
+#: One sentence for the 2019-03-06 sensor reinstall, used on every floor (Comfort heat map,
+#: Floor's cooled-hours tile, Energy's change-point marker).
+REINSTALL_NOTE = ("Sensors were reinstalled on 6 Mar 2019; zones read 2–3 °C colder afterwards, possibly "
+                  "partly a measurement change. Compare within 2019.")
+
+
 def cps_rules(floor: int, start=None, end=None) -> alt.Chart | None:
     """Dotted muted rules for blocking change-points (and the sensor gap) inside a period."""
     rows = [{"date": pd.Timestamp(c.date), "label": c.title} for c in R.CHANGE_POINTS
             if c.blocks_comparison and floor in c.floors]
     lo, hi = (pd.Timestamp(x) for x in R.BLACKOUT)
     rows += [{"date": lo.normalize(), "label": "sensor gap starts"},
-             {"date": hi.normalize(), "label": "sensors restored"}]
+             {"date": hi.normalize(), "label": REINSTALL_NOTE}]
     df = pd.DataFrame(rows).drop_duplicates("date")
     if start is not None:
         df = df[df.date >= pd.Timestamp(start)]
@@ -936,9 +947,26 @@ def zone_map_reason(floor: int, zone: str) -> str:
         return "no AC / sensor"
     if tp is None:
         return "no sensor"
+    if not has_ac:
+        return "not AC-metered"          # a sensor but no cooling meter (F2 z3): no % below band
     if tp.role != R.ROLE_ZONE_TEMP:
         return "supply-air sensor" if tp.role == R.ROLE_SUPPLY_TEMP else "not a room sensor"
     return ""
+
+
+def uncooled_zone_temps(floor: int, start, end) -> dict:
+    """Mean occupied temperature for zones that have a room sensor but no AC meter
+    (no % below band is possible there). {zone: °C}"""
+    out = {}
+    for z in R.ZONES.get(floor, []):
+        tp = R.point_for(floor, z, "temp")
+        if tp is None or tp.role != R.ROLE_ZONE_TEMP or R.has_channel(floor, z, "ac"):
+            continue
+        d = D.occupied(hourly(floor), zones=[z], require_temp=True)
+        d = d[(d.ts >= pd.Timestamp(start)) & (d.ts < pd.Timestamp(end) + pd.Timedelta(days=1))]
+        if len(d):
+            out[z] = float(d.temp_c.mean())
+    return out
 
 
 SENSOR_CHANNELS = ("temp", "rh", "lux")
@@ -959,7 +987,8 @@ def zone_sensor_status(floor: int, as_of) -> dict:
 def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | None = None, as_of=None,
              label_fmt: str = "{:.0f}%", height: int = 340, tooltip_cols: tuple = (),
              label_extra: dict | None = None, sublabel: dict | None = None,
-             zone_tips: dict | None = None, neutral: bool = False) -> None:
+             zone_tips: dict | None = None, neutral: bool = False,
+             zone_temps: dict | None = None) -> None:
     """Schematic plan of a wired floor (CU-BEMS Fig. 2), not interactive.
 
     Ramp mode: each zone filled by `value_col` on the blue data ramp (the overcooling
@@ -973,7 +1002,8 @@ def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | No
     k = float(fp["aspect"])
     as_of = as_of if as_of is not None else ctx()["as_of"]
     v = values.set_index("zone") if values is not None and "zone" in values else values
-    label_extra, sublabel, zone_tips = label_extra or {}, sublabel or {}, zone_tips or {}
+    label_extra, sublabel, zone_tips = dict(label_extra or {}), sublabel or {}, zone_tips or {}
+    zone_temps = zone_temps or {}
     zones = []
     for z, d in fp["zones"].items():
         if neutral:
@@ -988,6 +1018,10 @@ def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | No
                 reason = "no data"
             valid = not reason
             text = f"{z}  {label_fmt.format(val)}" if valid else f"{z} · {reason}"
+            if reason == "not AC-metered" and np.isfinite(zone_temps.get(z, np.nan)):
+                # no % below band without AC, but the room temperature is real: show it
+                t_ = f"mean {zone_temps[z]:.1f} °C"
+                label_extra[z] = f"{t_} · {label_extra[z]}" if label_extra.get(z) else t_
         step = seq_step(val) if valid else -1
         props = {"zone": z, "valid": valid, "value": val if valid else None,
                  "ink": "dark" if valid and SEQ_INK[step] != INK else "light", "label": text,
@@ -1023,6 +1057,12 @@ def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | No
 
     # labels (and the red second line) in plan units
     sens = {s["zone"]: s["xy"] for s in fp["sensors"] if s.get("zone")}
+    # A sensor the figure does not mark (F2 z3): draw it at the zone's label anchor.
+    approx = set()
+    for z in fp["zones"]:
+        if z not in sens and R.point_for(floor, z, "temp") is not None:
+            sens[z] = list(fp["zones"][z]["label"])
+            approx.add(z)
     rows = []
     for f in zones:
         z = f["properties"]["zone"]
@@ -1052,10 +1092,13 @@ def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | No
         if R.point_for(floor, z, "temp") is None or z not in st_:
             continue
         down, word = st_[z]
-        srows.append({"x": sx * k, "y": sy, "zone": z, "down": down, "sensor": f"Sensor {word}"})
+        srows.append({"x": sx * k, "y": sy, "zone": z, "down": down, "sensor": f"Sensor {word}",
+                      "position": ("approximate (not marked in the paper's figure)" if z in approx
+                                   else "as marked in CU-BEMS Fig. 2")})
     sdf = pd.DataFrame(srows)
     if len(sdf):
-        stips = [alt.Tooltip("zone:N"), alt.Tooltip("sensor:N", title="multi-sensor")]
+        stips = [alt.Tooltip("zone:N"), alt.Tooltip("sensor:N", title="multi-sensor"),
+                 alt.Tooltip("position:N", title="position")]
         partial = ~sdf.down & sdf.sensor.eq("Sensor PARTIAL")
         ok = ~sdf.down & ~partial
         if ok.any():

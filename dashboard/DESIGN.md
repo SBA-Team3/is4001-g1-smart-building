@@ -54,8 +54,9 @@ reads `.streamlit/config.toml` from the folder you start it in.
 11. **Floor selector.** `Bldg` is offered only on Overview and Carbon. **F1 (lobby)** is a
     reporting-only floor (`ui.REPORTING_ONLY`, a frontend notion — the registry still marks it
     unwired): offered on Overview, Carbon, Floor and Energy, with energy, cost and carbon only
-    (no comfort, alerts, baseline or savings). Alerts, Sensors, Comfort and Savings offer F3–F7
-    and fall back to the last office floor (default F5).
+    (no comfort, alerts, baseline or savings). The office floors F2–F7 (`registry.FLOORS` wired)
+    are offered everywhere; Alerts, Sensors, Comfort and Savings offer only them and fall back to
+    the last office floor (default F5).
 12. **A floor past its file end** (`R.FILE_END`): if the whole period is after it, the
     page shows its header and one neutral "No data — …" message and stops
     (`ui.file_end_gate`); if the period overlaps it, one compact note.

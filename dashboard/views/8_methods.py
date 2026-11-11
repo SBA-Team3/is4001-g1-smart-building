@@ -199,6 +199,30 @@ with t_about:
     st.caption("Explanations that used to sit on the operational pages, and the project's practice, "
                "corrections, baseline, pilot and exclusion notes — one expander each.")
 
+    with st.expander("Floor 2", icon=":material/apartment:"):
+        st.markdown(
+            "- **z2 has 14 AC units**; its AC energy is their sum. `z2_AC11` always reads 0; `AC12`, "
+            "`AC13` and `AC14` sit at near-zero standby.\n"
+            "- **No lunch shutdown**: F2's schedule is 08:00–17:00, so the physics (thermal) model has "
+            "no AC-off hour to calibrate on and the setpoint lift is a regression-only estimate.\n"
+            "- **z3 has a full sensor (temperature, RH, light index) but no AC meter**, so it gets a mean "
+            "temperature but no % below band. Its sensor is not marked in the paper's figure; the zone "
+            "map draws it at the zone's label, position approximate.\n"
+            "- **All four F2 plug meters were frozen in Nov 2019**, which suggests one shared cause "
+            "(a logger or CT feed) rather than four separate faults. They still raise one alert each.\n"
+            "- The 2019-03-06 sensor reinstall is a **warning** on F2, not a break.")
+
+    with st.expander("The 6 Mar 2019 sensor reinstall", icon=":material/history:"):
+        st.markdown(
+            "The indoor sensors were offline building-wide from **12 Sep 2018 to 6 Mar 2019** (planned "
+            "firmware work; energy metering continued). After they came back, every zone read colder: "
+            "comparing Jul–Aug 2018 with Jul–Aug 2019 on F2–F7, the mean occupied temperature fell from "
+            "about **24.0 °C to 21.2 °C** while AC energy rose only about **5%**. A 2–3 °C real drop "
+            "would normally cost more cooling than that, so the step is **possibly partly a measurement "
+            "change** (sensor position or calibration), not only a colder building.\n\n"
+            f"**Guidance:** {ui.REINSTALL_NOTE} The step is registered as a change-point; on Floor 5 it "
+            "blocks period-over-period comparisons, on the other floors it is a warning.")
+
     with st.expander("Floor plans — CU-BEMS Fig. 2", icon=":material/map:"):
         with st.container(key="figure_fig2"):
             st.image(os.path.join(DESIGN_DIR, "cubems_fig2_floorplans.png"), width="stretch")
