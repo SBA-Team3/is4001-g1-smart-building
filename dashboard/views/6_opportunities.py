@@ -1,6 +1,15 @@
-"""Opportunities & simulator — the proposal's Intervention Simulator and Energy &
-Cost Impact Summary, on top of the three engine tabs (setpoint, thermal model,
-schedule trim) that size each lever."""
+"""Savings — the potential saving from two FM settings, building-wide.
+
+The FM sets the HVAC operating schedule and a space temperature target; the page
+returns the potential saving on every wired office floor (Floor 1, the lobby, is
+excluded), split into the two Energy Conservation Measures:
+
+* ECM 1 · HVAC time scheduling — metered AC outside the schedule, above each
+  floor's night baseload.
+* ECM 2 · Space temperature setpoint adjustment — cooled occupied hours below the
+  target raised to it, converted to kWh with the thermal model's %/°C (the floor's
+  own where it calibrates, the building average of those floors elsewhere).
+"""
 
 from __future__ import annotations
 
@@ -10,445 +19,283 @@ import pandas as pd
 import streamlit as st
 
 from sbanalytics import analysis as A
-from sbanalytics import comfort as C
+from sbanalytics import anomaly as AN
+from sbanalytics import baseline as B
 from sbanalytics import data as D
-from sbanalytics import mv as M
 from sbanalytics import registry as R
-from sbanalytics import scenario as SC
 import ui
 
 c = ui.ctx()
-floor, tariff = c["floor"], c["tariff"]
-if not ui.require_wired(floor):
-    st.stop()
-
-h = ui.hourly(floor)
-
-
-@st.cache_resource(show_spinner="Calibrating thermal model…")
-def _physics(floor: int, use_solar: bool):
-    return A.fit_physics(D.load_hourly(floor), use_solar=use_solar, floor=floor)
-
-
-@st.cache_resource(show_spinner="Fitting regression…")
-def _reg(floor: int):
-    return A.run_regression(D.load_hourly(floor), floor=floor)
-
-
-@st.cache_resource(show_spinner="Fitting zone baselines for the M&V plan…")
-def _zone_cv(floor: int) -> float:
-    _, perf = A.fit_baselines(D.load_hourly(floor), floor=floor)
-    return A.zone_baseline_cv(perf)
-
-
-@st.cache_resource(show_spinner="Fitting the floor baseline…")
-def _floor_model(floor: int) -> dict:
-    return M.daily_model(D.load_hourly(floor), floor, "ac_kwh")
-
-
-@st.cache_resource(show_spinner="Measuring weekend and holiday AC…")
-def _lockout(floor: int) -> dict:
-    return SC.lockout_measure(D.load_hourly(floor), floor)
-
-
-ui.page_header("Savings", f"Floor {floor} savings", "Model trained on the whole record")
-
-phys = _physics(floor, True)
-# Regression-only? Say why, once, where the result is read (the engine tab repeats it).
-if phys.get("pooled"):
-    REG_ONLY = ""
-elif phys.get("n", 0) < 50:
-    REG_ONLY = (f"Regression-only estimate: Floor {floor} has no lunch shutdown, so the physics model "
-                "cannot be calibrated.")
-else:
-    REG_ONLY = (f"Regression-only estimate: the physics model is not identified on Floor {floor} (its "
-                "capacitance interval reaches zero), so the lift is the regression's upper bound.")
-reg = _reg(floor)
-est = A.estimator_range(phys, reg)
-cz = R.comfort_zones(floor)
-# Comfort zones that also have an AC meter: the lift and trim act on these only (F2 z3 has a
-# room sensor but no AC meter). scenario.mv_plan lists every comfort zone in its boundary text,
-# so the boundary shown below is corrected to these.
-cz_ac = [z for z in cz if R.has_channel(floor, z, "ac")]
-cap = float(R.conv("max_lift_c"))
-max_trim = SC.max_trim(h, floor)
-target = R.conv("overcooled_target_pct")
-LO, HI = c["lo"], c["hi"]                  # comfort band from Assumptions
-t_loc, ef_loc = float(tariff), float(c["ef"])
-
-
-def _baht(v: float) -> str:
-    return f"฿{v:,.0f}" if t_loc else "set rate in Assumptions"
+tariff, LO, HI = float(c["tariff"]), float(c["lo"]), float(c["hi"])
+WIRED = tuple(R.wired_floors())                     # office floors; F1 (lobby) is not wired
+FLOORS = [f"F{f}" for f in WIRED]
+ECM1 = "ECM 1 · HVAC time scheduling"
+ECM2 = "ECM 2 · Space temperature setpoint adjustment"
+NIGHT = range(1, 5)                                 # 01:00–04:59: the floor's baseload hours
+DEF_START, DEF_END = 7, 17
 
 
 # --------------------------------------------------------------------------- #
-# simulator: inputs (left) and results (right)
+# cached data and fits (resources: shared, never mutated)
 # --------------------------------------------------------------------------- #
-left, right = st.columns([4, 8], gap="large")
-with left:
-    with st.container(border=True, key="card_sim_inputs"):
-        ui.md('<p class="cb-overline">Package</p>')
-        lift = st.slider("Zone-temperature lift ΔT (°C), all comfort zones", 0.0, cap, 2.0, 0.25,
-                         help="There is no setpoint channel, so a setpoint raise is modelled as a "
-                              "shift of each zone's observed temperature distribution.")
-        trim_n = st.slider("Schedule trim (hours off the end of the day)", 0, max_trim, 0, 1,
-                           help="Switches cooling off for the last n cooled hours. Ending the day "
-                                "early needs no recovery, so the metered energy is the saving.")
-        lockout = st.toggle("Weekend / holiday lockout", value=False,
-                            help="Tie AC start/stop to the holiday calendar; weekend runs need sign-off.")
-        with st.expander("Per-zone lift"):
-            per_zone = st.toggle("Set the lift per zone", value=False)
-            if per_zone:
-                d_temp = {z: st.slider(f"{ui.zone_label(floor, z)} lift (°C)", 0.0, cap, lift, 0.25,
-                                       key=f"lift_{z}") for z in cz_ac}
-            else:
-                d_temp = {z: lift for z in cz_ac}
-                st.caption("Off: every comfort zone takes the lift above.")
-        with st.expander("Implementation costs"):
-            cost = {"lift": st.number_input("Lift (฿)", 0.0, 1e7, 0.0, 1000.0,
-                                            help="0 for an operational change made at the BMS."),
-                    "trim": st.number_input("Schedule trim (฿)", 0.0, 1e7, 0.0, 1000.0),
-                    "lockout": st.number_input("Lockout (฿)", 0.0, 1e7, 0.0, 1000.0)}
-        st.caption(f"Tariff {t_loc:.2f} ฿/kWh (Assumptions).")
+@st.cache_resource(show_spinner="Loading the office floors…")
+def _floor_hourly() -> pd.DataFrame:
+    """Floor-hour table for the wired floors, metered ok hours only."""
+    fh = B.floor_hourly(D.load_hourly(list(WIRED)))
+    return fh[fh.ok & fh.ac_kwh.notna()].reset_index(drop=True)
 
-res = SC.simulate(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
-                  cost=cost, tariff=t_loc, ef=ef_loc, lo=LO, hi=HI,
-                  parts={"lockout": _lockout(floor)} if lockout else None)
-tbl, comb, cf = res["table"], res["combined"], res["comfort"]
 
-with right:
-    if REG_ONLY:
-        st.caption(f":material/info: {REG_ONLY}")
-    k = st.columns(4)
-    k[0].metric("Saving, kWh/yr", f"{comb['low'] / 1e3:,.1f}k–{comb['high'] / 1e3:,.1f}k",
-                help=f"Mid {comb['mid']:,.0f} kWh/yr. Low and high come from the two estimators "
-                     "(and metered gross/net); never one number.", border=True)
-    k[1].metric("Saving, ฿/yr", f"฿{comb['low'] * t_loc / 1e3:,.0f}k–{comb['high'] * t_loc / 1e3:,.0f}k" if t_loc
-                else "set rate in Assumptions",
-                delta=f"mid ฿{comb['mid'] * t_loc:,.0f}" if t_loc else None, delta_color="off",
-                delta_arrow="off", border=True)
-    k[2].metric("Emissions avoided", f"{comb['mid'] * ef_loc / 1000:,.1f} tCO₂e/yr",
-                help=f"Mid case × the grid factor {ef_loc:.4f} kgCO₂e/kWh, set on the Carbon page "
-                     "(TGO 2022 default).",
-                border=True)
-    k[2].page_link("views/7_carbon.py", label="Factor set on Carbon",
-                   icon=":material/arrow_forward:")
-    k[3].metric(f"Cooled <{LO:g} °C", f"{cf['below_now']:.0f}% → {cf['below_after']:.0f}%",
-                delta=f"{'meets' if cf['below_after'] <= target else 'above'} {target:.0f}% target",
-                delta_color="off" if cf["below_after"] <= target else "inverse", delta_arrow="off",
-                help="Whole-record cooled occupied hours on comfort zones, AC-kWh-weighted, after "
-                     "shifting each zone's temperatures by its lift.", border=True)
-    warm = cf["above_after"]
-    (st.warning if warm > cf["above_now"] else st.info)(
-        f"**Comfort trade-off.** Cooled hours below {LO:g} °C go from {cf['below_now']:.0f}% to "
-        f"{cf['below_after']:.0f}% (target {target:.0f}%); hours above {HI:g} °C from "
-        f"{cf['above_now']:.0f}% to {warm:.0f}%. The projection shifts the observed distribution; it does "
-        "not narrow it — that is a control-loop retune, not a setpoint change.",
-        icon=":material/warning:" if warm > cf["above_now"] else ":material/info:")
+@st.cache_resource(show_spinner="Loading zone data…")
+def _zone_hourly(floor: int) -> pd.DataFrame:
+    return D.load_hourly(floor)
 
-    ui.md('<p class="cb-overline" style="margin-top:8px">M&amp;V plan</p>')
-    fm = _floor_model(floor)
-    floor_cv = float(fm["metrics"].query("split == 'test'").cv_rmse.iloc[0])
-    floor_ac = M.annual_kwh(fm)
-    plan = SC.mv_plan(floor, res, _zone_cv(floor), floor_cv, lockout, trim_n, floor_ac)
-    if len(plan) and cz_ac != cz:
-        plan["measurement boundary"] = plan["measurement boundary"].str.replace(
-            f"AC meters of {', '.join(cz)}", f"AC meters of {', '.join(cz_ac)}", regex=False)
-    if not len(plan):
-        st.caption("Select at least one measure to see its M&V plan.")
-    for _, p in plan.iterrows():
-        with st.container(border=True):
-            a, b, cc_ = st.columns([3, 2, 2], vertical_alignment="center")
-            a.markdown(f"**{p.measure}** · IPMVP Option {p['IPMVP option']}  \n"
-                       f"<small>Boundary: {p['measurement boundary']}</small>", unsafe_allow_html=True)
-            b.metric("Minimum pilot", f"{ui.fmt_weeks(p['minimum pilot (weeks)'])} weeks",
-                     help=f"Expected saving {p['expected saving %']:.1f}% at the baseline's "
-                          f"CV(RMSE) {p['CV(RMSE) %']:.1f}%, α={R.conv('pilot_alpha'):g}, "
-                          f"power {R.conv('pilot_power'):g}. Four weeks can detect "
-                          f"{p['detectable in 4 weeks %']:.1f}%.", border=True)
-            cc_.metric("Expected saving", f"{p['expected saving %']:.1f}%",
-                       help="Of the measurement boundary's annual energy.", border=True)
-            st.caption(f"Baseline period **{p['baseline period']}** · model: {p['baseline model']} · "
-                       f"CV(RMSE) {p['CV(RMSE) %']:.1f}%  \n**Verification:** {p.verification}  \n"
-                       f"**Exclusions:** {p.exclusions}")
+
+@st.cache_resource(show_spinner="Calibrating the thermal model…")
+def _physics(floor: int) -> dict:
+    return A.fit_physics(_zone_hourly(floor), floor=floor)
+
+
+@st.cache_data(show_spinner=False)
+def _sensitivity() -> tuple[dict, float]:
+    """%/°C per floor where the thermal model calibrates, and their building average."""
+    own = {f: float(p["pct_per_c"]) for f in WIRED if (p := _physics(f).get("pooled"))}
+    return own, float(np.mean(list(own.values()))) if own else np.nan
+
+
+@st.cache_data(show_spinner=False)
+def _default_holidays() -> tuple[str, ...]:
+    """Weekdays that are a holiday or closure on every office floor with data that day.
+
+    The calendar is building-wide, so a one-floor closure (F2 31 Jan–1 Feb 2019, F3
+    11 Oct 2018) is left off: the other floors cooled normally on those days.
+    """
+    dt = D.load_day_types()
+    fh = _floor_hourly()
+    has_data = pd.MultiIndex.from_frame(fh[["floor", "date"]].drop_duplicates())
+    dt = dt[pd.MultiIndex.from_frame(dt[["floor", "date"]]).isin(has_data)]
+    off = dt.day_type.isin(["holiday", "closure"]).groupby(dt.date).all()
+    days = pd.to_datetime(off[off].index)
+    return tuple(sorted(d.strftime("%Y-%m-%d") for d in days if d.day_of_week < 5))
+
+
+def _weekdays() -> list[str]:
+    days = pd.date_range(D.RECORD_START, D.RECORD_END, freq="D")
+    return [d.strftime("%Y-%m-%d") for d in days if d.day_of_week < 5]
+
 
 # --------------------------------------------------------------------------- #
-# below: measures, sensitivity, second lever, engine
+# the two measures (cached on hashable inputs)
 # --------------------------------------------------------------------------- #
-ui.section("Measures", f"Lift and trim: {', '.join(cz_ac)} | lockout: whole floor")
-st.dataframe(
-    tbl, width="stretch", hide_index=True,
-    column_config={
-        **{col: st.column_config.NumberColumn(format="%,.0f") for col in tbl.columns
-           if col.startswith(("kWh", "฿", "cost"))},
-        "tCO₂e/yr mid": st.column_config.NumberColumn(format="%.1f"),
-        "payback yr": st.column_config.NumberColumn(format="%.1f", help="Cost ÷ mid ฿/yr. 0 = no capital cost."),
-        "comfort after": st.column_config.TextColumn(width="medium"),
-    })
+@st.cache_data(show_spinner="Sizing HVAC time scheduling…")
+def _ecm1(start: int, end: int, hols: tuple[str, ...]) -> pd.DataFrame:
+    """Per floor: metered AC outside the schedule, above the floor's night baseload.
 
-ui.section("Sensitivity")
-tor = SC.tornado(h, est, phys, floor, d_temp=d_temp, trim_n=trim_n, lockout=lockout,
-                 tariff=t_loc, max_trim=max_trim)
-if comb["mid"] > 0 and t_loc:
-    order = tor.assumption.tolist()
-    bars = alt.Chart(tor).mark_bar(color=ui.PRIMARY, opacity=0.85).encode(
-        y=alt.Y("assumption:N", sort=order, title=None),
-        x=alt.X("low_thb:Q", title="combined mid saving (฿/yr)"), x2="high_thb:Q",
-        tooltip=["assumption", alt.Tooltip("low_thb:Q", format=",.0f"), alt.Tooltip("high_thb:Q", format=",.0f")])
-    base_rule = alt.Chart(pd.DataFrame({"x": [comb["mid"] * t_loc]})).mark_rule(
-        color=ui.INK, strokeWidth=2).encode(x="x:Q")
-    st.altair_chart(ui.chart(bars + base_rule, height=40 * len(tor) + 40), width="stretch")
-    st.caption(f"Each bar moves one assumption across its declared range (tariff ±{R.conv('sens_tariff_pct'):.0f}%, "
-               f"lift ±{R.conv('sens_dT_c'):g} °C, trim ±{R.conv('sens_trim_h'):g} h, %/°C between the physics "
-               "and regression estimates) and holds the rest. White line: the package's mid case.")
-elif not t_loc:
-    st.caption("Set a tariff in Assumptions to size the ฿ sensitivity.")
-else:
-    st.caption("The package saves nothing yet — set a lift, a trim or the lockout.")
+    Same qualifying rule as anomaly.after_hours_ac (> max(0.5, night median + 3.5
+    MAD)); the saving is the energy above the night median. On workdays, the hours the
+    floor cools today (R.ac_on_hours) and the pre-cooling hour before them are never
+    counted, whatever the schedule.
+    """
+    fh, hol = _floor_hourly(), set(hols)
+    rows = []
+    for f in WIRED:
+        g = fh[fh.floor == f]
+        n_days = g.date.nunique()
+        ann = 365.0 / n_days if n_days else np.nan
+        night = g[g.hour.isin(NIGHT)].ac_kwh
+        med = float(night.median())
+        thr = max(0.5, med + AN.ROBUST_Z * AN.mad_scale(night))
+        on = R.ac_on_hours(f)
+        protect = set(on) | {min(on) - 1}                           # in use + pre-cooling
+        off_day = (g.dow >= 5) | g.date.isin(hol)
+        out = off_day | ~((g.hour >= start) & (g.hour < end))
+        out &= off_day | ~g.hour.isin(protect)
+        hit = g[out & (g.ac_kwh > thr)]
+        hit_off = off_day[hit.index]
+        rows.append({
+            "floor": f, "kwh": float((hit.ac_kwh - med).sum()) * ann,
+            "baseline": g.ac_kwh.sum() * ann,
+            "days_offday": hit[hit_off].date.nunique() * ann,
+            "days_workday": hit[~hit_off].date.nunique() * ann,
+        })
+    return pd.DataFrame(rows)
 
-ui.section("Control stability")
-lo_b, hi_b = LO, HI
-f1, f2 = st.columns(2)
-shift = f1.slider("Setpoint rise (°C)", 0.0, 4.0, 1.5, 0.25, key="frontier_shift")
-sd_scale = f2.slider("Deadband tightening", 0.4, 1.0, 1.0, 0.05, key="frontier_sd",
-                     help="1.00 leaves the spread unchanged; 0.60 is a control loop retuned to cut swing by 40%.")
-fr = C.frontier(h, lo=lo_b, hi=hi_b, sd_scale=sd_scale, floor=floor)
-fl = fr.melt(id_vars=["zone", "shift"], value_vars=["pct_cold", "pct_warm"], var_name="band", value_name="pct")
-fl["band"] = fl["band"].map({"pct_cold": f"< {lo_b:g} °C", "pct_warm": f"> {hi_b:g} °C"})
-st.altair_chart(ui.chart(alt.layer(
-    alt.Chart(fl).mark_line(strokeWidth=2.5).encode(
-        x=alt.X("shift:Q", title="setpoint rise (°C)"), y=alt.Y("pct:Q", title="% of cooled hours"),
-        color=alt.Color("band:N", title=None, scale=ui.COLD_WARM, legend=alt.Legend(orient="top")),
-        strokeDash=alt.StrokeDash("zone:N", legend=alt.Legend(orient="top")),
-        tooltip=["zone", "band", alt.Tooltip("shift:Q", format=".2f"), alt.Tooltip("pct:Q", format=".1f")]),
-    alt.Chart(pd.DataFrame({"s": [shift]})).mark_rule(color=ui.INK, strokeDash=[5, 3]).encode(x="s:Q"),
-), height=280), width="stretch")
-dz = D.occupied(h, zones=R.comfort_zones(floor), require_temp=True, ac_on=True)
-after = []
-for z, g in dz.groupby("zone"):
-    n = C.shift_distribution(g.temp_c, shift, sd_scale)
-    after.append({"zone": z, "cold %": (n < lo_b).mean() * 100, "warm %": (n > hi_b).mean() * 100,
-                  "mean °C": n.mean(), "sd °C": n.std(), "sd now": g.temp_c.std()})
-af = pd.DataFrame(after)
-if len(af):
-    st.dataframe(af.drop(columns="sd now").round(1), width="stretch", hide_index=True)
-    st.caption(f"At +{shift:g} °C with deadband ×{sd_scale:.2f}, roughly {af['cold %'].mean():.0f}% of cooled "
-               f"hours are still below {lo_b:g} °C. Today's distributions are wide (σ ≈ "
-               f"{af['sd now'].min():.1f}–{af['sd now'].max():.1f} °C), so a zone that stays volatile after a "
-               "setpoint change is a controls-tuning item, not a setpoint item.")
 
-# --------------------------------------------------------------------------- #
-with st.expander("How each lever is sized", icon=":material/engineering:"):
-    tab_sp, tab_phys, tab_sched = st.tabs(["Setpoint", "Where the load goes", "Schedule trim"])
+@st.cache_data(show_spinner="Sizing the setpoint adjustment…")
+def _ecm2(start: int, end: int, hols: tuple[str, ...], target: float) -> pd.DataFrame:
+    """Per floor: raise in-schedule cooled occupied hours that run below the target.
 
-# --------------------------------------------------------------------------- #
-with tab_sp:
-    st.subheader("If the occupied setpoint went up")
+    The deficit is read on hours with a valid zone temperature, then scaled to all the
+    floor's in-schedule cooled AC energy (the sensor blackout and outages leave about a
+    third of cooled hours without a temperature; counting them as zero would understate).
+    """
+    hol = set(hols)
+    own, avg = _sensitivity()
+    rows = []
+    for f in WIRED:
+        hf = _zone_hourly(f)
+        zones = [z for z in R.comfort_zones(f) if R.has_channel(f, z, "ac")]
+        cooled = D.occupied(hf, zones=zones, hours=range(start, end), ac_on=True,
+                            exclude_holidays=False)
+        cooled = cooled[~cooled.date.isin(hol)]
+        occ = cooled[cooled.temp_ok & cooled.temp_c.notna()]
+        deficit = (target - occ.temp_c).clip(lower=0)
+        below = deficit > 0
+        cover = occ.ac_kwh.sum() / cooled.ac_kwh.sum() if len(occ) else np.nan
+        # Annualise on days with AC data, as ECM 1 does: D.annual_factor counts every calendar
+        # date in the file, which understates floors with gaps (F6's file ends Oct 2019).
+        ann = 365.0 / max(hf.loc[hf.ac_kwh.notna(), "date"].nunique(), 1)
+        pct = own.get(f, avg)
+        kwh = (-(pct / 100) * float((deficit * occ.ac_kwh).sum()) / cover * ann
+               if len(occ) and np.isfinite(pct) else 0.0)
+        rows.append({"floor": f, "kwh": kwh, "hours": len(occ),
+                     "pct_below": below.mean() * 100 if len(occ) else np.nan,
+                     "mean_below": deficit[below].mean() if below.any() else 0.0})
+    return pd.DataFrame(rows)
 
-    cc = st.columns([2, 2, 2])
-    which = cc[0].selectbox(
-        "Sensitivity estimate", est.estimator.tolist(),
-        index=len(est) - 1,
-        help="The spread between these is method disagreement, not sampling "
-             "noise. No larger sample would shrink it.")
-    row = est[est.estimator == which].iloc[0]
-    if not phys.get("pooled") and len(est):
-        st.warning(f"**One estimator only.** {REG_ONLY} There is no lower bound and no midpoint; "
-                   "the regression overstates the saving by absorbing occupancy.")
-    elif phys.get("unidentified"):
-        st.caption("Physics fit not identified for "
-                   f"{', '.join(phys['unidentified'])}; those zones use the pooled fit.")
-    d_temp = cc[1].slider("Raise setpoint by (°C)", 0.0, 4.0, 1.5, 0.25)
-    realisation = cc[2].slider("Realisation factor", 0.3, 1.0, 1.0, 0.05,
-                               help="Share of the modelled saving you expect to "
-                                    "bank. M&V practice discounts for overrides, "
-                                    "drift and hot calls.")
-
-    sim = A.setpoint_saving(h, row.pct_per_c, d_temp, realisation=realisation,
-                            floor=floor)
-    lo_s = A.setpoint_saving(h, min(row.lo, row.hi), d_temp, realisation=realisation, floor=floor)
-    hi_s = A.setpoint_saving(h, max(row.lo, row.hi), d_temp, realisation=realisation, floor=floor)
-    tot = sim.saving_kwh.sum()
-
-    k = st.columns(4)
-    k[0].metric("Sensitivity", f"{row.pct_per_c:+.1f} %/°C",
-                help=f"{row.role} — {row.note}", border=True)
-    k[1].metric("Energy saved", f"{tot:,.0f} kWh/yr", border=True)
-    k[2].metric("Cost saved", f"฿{tot * tariff:,.0f}/yr", border=True)
-    k[3].metric("Range", f"฿{min(lo_s.saving_kwh.sum(), hi_s.saving_kwh.sum())*tariff:,.0f}"
-                         f" – ฿{max(lo_s.saving_kwh.sum(), hi_s.saving_kwh.sum())*tariff:,.0f}", border=True)
-
-    st.dataframe(
-        sim.assign(**{"saving ฿/yr": sim.saving_kwh * tariff})
-           .rename(columns={"kwh_year": "AC kWh/yr", "saving_kwh": "saving kWh/yr"})
-           .round(0), width="stretch", hide_index=True)
-
-    st.markdown("**Every estimator at once**")
-    grid = []
-    for _, r in est.iterrows():
-        for d in np.arange(0, 4.01, 0.25):
-            s = A.setpoint_saving(h, r.pct_per_c, d, realisation=realisation,
-                                  floor=floor).saving_kwh.sum()
-            grid.append({"estimator": r.estimator, "dT": d, "kWh": s})
-    g = pd.DataFrame(grid)
-    st.altair_chart(
-        alt.layer(
-            alt.Chart(g).mark_line(strokeWidth=2.5).encode(
-                x=alt.X("dT:Q", title="setpoint rise (°C)"),
-                y=alt.Y("kWh:Q", title="saving (kWh/yr)"),
-                color=alt.Color("estimator:N", legend=alt.Legend(orient="top",
-                                                                 columns=1, title=None)),
-                tooltip=["estimator", alt.Tooltip("dT:Q", format=".2f"),
-                         alt.Tooltip("kWh:Q", format=",.0f")]),
-            alt.Chart(pd.DataFrame({"d": [d_temp]})).mark_rule(
-                color=ui.INK, strokeDash=[5, 3]).encode(x="d:Q"),
-        ).properties(height=320), width="stretch")
-
-    st.dataframe(est[["estimator", "pct_per_c", "lo", "hi", "role", "note"]].round(2),
-                 width="stretch", hide_index=True)
 
 # --------------------------------------------------------------------------- #
-with tab_phys:
-    st.subheader("Where the cooling load actually goes")
-    st.caption("The most useful single chart here, because it explains why the "
-               "two estimates disagree.")
-
-    if not phys.get("pooled"):
-        st.error("Not enough AC-off hours to calibrate." if phys["n"] < 50 else
-                 f"**The thermal model is not identified on Floor {floor}.** Across "
-                 f"{phys['n']:,} lunch-hour zone-days the capacitance coefficient's "
-                 "confidence interval reaches zero, so C — and with it UA — is "
-                 "unbounded. The setpoint estimate above uses the regression alone, "
-                 "which is the confounded upper bound: read it as indicative.")
-    else:
-        p = phys["pooled"]
-        dec = A.load_decomposition(h, phys, floor=floor)
-
-        k = st.columns(4)
-        k[0].metric("Thermal capacitance C", f"{p['C_kwh_per_c']:.2f} kWh/°C", border=True)
-        k[1].metric("Envelope conductance UA", f"{p['UA_kw_per_c']:.3f} kW/°C", border=True)
-        k[2].metric("Implied sensitivity", f"{p['pct_per_c']:+.1f} %/°C", border=True)
-        k[3].metric("Calibration sample", f"{phys['n']:,} zone-days", border=True)
-
-        dl = dec.reset_index().melt(
-            id_vars="zone", value_vars=["envelope_kw", "internal_kw", "residual_kw"],
-            var_name="component", value_name="kW")
-        dl["component"] = dl.component.map({
-            "envelope_kw": "Envelope UA·ΔT — a setpoint change acts here",
-            "internal_kw": "Internal — metered light + plug, untouchable",
-            "residual_kw": "Residual — latent, occupants, fan, plant"})
-        st.altair_chart(
-            alt.Chart(dl).mark_bar().encode(
-                y=alt.Y("zone:N", title=None),
-                x=alt.X("kW:Q", title="mean cooling load (kW) on cooled hours"),
-                color=alt.Color("component:N", scale=alt.Scale(
-                    range=[ui.PRIMARY, ui.SERIES_2, ui.CONTEXT]),
-                    legend=alt.Legend(orient="bottom", columns=1, title=None)),
-                order=alt.Order("component:N"),
-                tooltip=["zone", "component", alt.Tooltip("kW:Q", format=".2f")],
-            ).properties(height=200), width="stretch")
-
-        st.dataframe(dec[["measured_kw", "envelope_pct", "internal_pct",
-                          "residual_pct"]].round(1), width="stretch")
-
-        st.info(
-            f"**Envelope conduction is only {dec.envelope_pct.mean():.0f}% of the "
-            f"cooling load.** A setpoint change acts on that share, plus some "
-            f"unknown part of the latent load inside the residual. It acts on "
-            f"none of the metered internal gains "
-            f"({dec.internal_pct.mean():.0f}%). That is the arithmetic reason "
-            f"the physics estimate lands near {p['pct_per_c']:+.1f} %/°C while a "
-            f"regression on indoor temperature reports "
-            f"{reg['pooled']['pct_per_c']:+.1f} %/°C — the regression is claiming "
-            f"a saving larger than the entire envelope term, which it can only "
-            f"do by absorbing occupancy."
-        )
-
-        # How the calibration works (plain text: no expander inside an expander)
-        ui.md('<p class="cb-overline" style="margin-top:12px">How the calibration works</p>')
-        st.markdown(
-            "At 12:00 the AC draws ~0 kWh on every weekday. For that hour "
-            "the zone is a free-running thermal mass whose only *measured* "
-            "heat input is lighting plus plug load:\n\n"
-            r"$$C\,\frac{dT}{dt} = UA\,(T_{out}-T_{in}) + Q_{int} + a\,I_{sol}$$"
-            "\n\nRegressing the hourly drift on the metered internal gain "
-            "identifies $1/C$; the driving-force coefficient then gives "
-            "$UA$. In steady cooled operation the envelope term is the part "
-            "of the load a setpoint change removes, so "
-            r"$d(\text{load})/d(T_{set}) = -UA$."
-            "\n\nCrucially, indoor temperature never appears on the "
-            "right-hand side as a *cause* of energy — so unlike a regression "
-            "of load on temperature, this cannot be confounded by occupancy. "
-            + ("It also agrees in sign across all three zones, where the "
-               "regression gives z5 the wrong sign entirely." if floor == 5 else
-               "Where the regression and the physics disagree in sign for a zone, "
-               "occupancy is the likely reason.")
-        )
-        L = phys["frame"]
-        # One panel per zone (small multiples) rather than four colours on one plot.
-        pts = alt.Chart().mark_circle(opacity=0.45, size=35).encode(
-            x=alt.X("drive:Q", title="driving force T_out − T_in (°C)"),
-            y=alt.Y("drift:Q", title="free-running drift (°C/hour)"),
-            color=alt.value(ui.PRIMARY),
-            tooltip=["zone", "date", alt.Tooltip("drive:Q", format=".1f"),
-                     alt.Tooltip("drift:Q", format=".2f")])
-        fit = alt.Chart().transform_regression(
-            "drive", "drift", groupby=["zone"]).mark_line(strokeWidth=2, color=ui.INK).encode(
-            x="drive:Q", y="drift:Q")
-        st.altair_chart(ui.chart(
-            alt.layer(pts, fit, data=L).properties(width=260, height=200)
-            .facet(facet=alt.Facet("zone:N", title=None), columns=4), height=None),
-            width="content")
-
+# header and controls
 # --------------------------------------------------------------------------- #
-with tab_sched:
-    st.subheader("Trimming the cooling schedule")
-    st.caption("The only lever here that is measured rather than inferred — the "
-               "energy in an hour you switch off is metered. What the physics "
-               "adds is the recovery charge.")
+ui.page_header("Savings", "Building savings",
+               f"Potential saving on the office floors F{WIRED[0]}–F{WIRED[-1]} (Floor 1, the "
+               "lobby, excluded) · sized on the whole record, annualised")
 
-    hp = A.hour_profile(h, floor=floor)
-    on_hours = SC.on_hours(h, floor)
-    st.markdown("Cooling currently runs in: " + ", ".join(f"`{x:02d}:00`" for x in on_hours))
+HOURS = [f"{h:02d}:00" for h in range(25)]
+DEFAULT_HOLS = _default_holidays()
+with st.container(border=True, key="card_sav_controls"):
+    k1, k2, k3 = st.columns([5, 3, 4], gap="large", vertical_alignment="bottom")
+    s_lbl, e_lbl = k1.select_slider(
+        "HVAC operating schedule (workdays)", HOURS, value=(HOURS[DEF_START], HOURS[DEF_END]),
+        key="sav_sched",
+        help="Cooling is allowed from the start hour up to the end hour on workdays. Weekends "
+             "are always non-operating. AC outside this window counts toward ECM 1.")
+    start, end = HOURS.index(s_lbl), HOURS.index(e_lbl)
+    with k2.popover(f"Holiday calendar · {len(st.session_state.get('sav_hols', DEFAULT_HOLS))} days",
+                    icon=":material/event_busy:", width="stretch"):
+        hols = st.multiselect(
+            "AC-off weekdays", _weekdays(), default=list(DEFAULT_HOLS), key="sav_hols",
+            format_func=lambda d: f"{pd.Timestamp(d):%a %d %b %Y}",
+            help="Pre-filled with every weekday that is a holiday or closure on all office floors. "
+                 "Remove a date to treat it as a workday; add one to switch the AC off.")
+        st.caption("Weekends are always non-operating, so only weekdays are listed.")
+    target = k3.slider("Space temperature target (°C)", min(20.0, LO), HI, LO, 0.5, key="sav_target",
+                       help="Cooled occupied hours below this are raised to it (ECM 2). Hours "
+                            f"already at or above the target are left alone. Below {LO:g} °C the "
+                            "target is still under the comfort band: a cautious first step.")
+    st.caption(f"Tariff {tariff:.2f} ฿/kWh (Assumptions) · comfort band {LO:g}–{HI:g} °C.")
+hols_t = tuple(sorted(hols))
 
-    cc = st.columns([3, 1])
-    drop = cc[0].multiselect("Switch cooling off in these hours", on_hours,
-                             default=[max(on_hours)] if on_hours else [])
-    recover = cc[1].toggle("Charge recovery back", value=True)
 
-    if drop and phys.get("pooled"):
-        tr = A.schedule_trim(h, phys, tuple(drop), recover, floor=floor)
-        gross, net = tr.gross_kwh_year.sum(), tr.net_kwh_year.sum()
-        k = st.columns(4)
-        k[0].metric("Gross energy released", f"{gross:,.0f} kWh/yr", border=True)
-        k[1].metric("Net of recovery", f"{net:,.0f} kWh/yr",
-                    delta=f"{net - gross:,.0f} recovery", border=True)
-        k[2].metric("Cost saved (net)", f"฿{net * tariff:,.0f}/yr", border=True)
-        k[3].metric("Temp at end of gap", f"{tr.end_temp_c.mean():.1f} °C",
-                    help=f"From the calibrated drift rate. Above {HI:g} °C is a "
-                         "complaint risk.", border=True)
-
-        st.dataframe(
-            tr[["gross_kwh_year", "recovery_kwh", "net_kwh_year", "drift_c_per_h",
-                "end_temp_c", "resumes_same_day"]].round(2), width="stretch")
-
-        if not tr.resumes_same_day.any():
-            st.info(
-                "Cooling does not resume after this gap, so nothing has to be "
-                "pulled back out — the gross saving is the net saving. Trimming "
-                "the end of the day is the cheapest lever on the floor.")
+def _spans(hours: list[int]) -> list[tuple[int, int]]:
+    """[7, 8, 16] -> [(7, 9), (16, 17)]: contiguous hour-starts as (start, end) spans."""
+    out: list[list[int]] = []
+    for h in sorted(hours):
+        if out and h == out[-1][1]:
+            out[-1][1] = h + 1
         else:
-            st.info(
-                f"Cooling resumes the same day, so {gross - net:,.0f} kWh/yr of "
-                f"the gross is spent pulling the zone back down. The net saving "
-                f"is {net / max(gross, 1) * 100:.0f}% of the gross — which is "
-                "why extending the lunch gap is a much worse deal than it looks.")
-    elif drop:
-        st.error("Thermal model not calibrated.")
-    else:
-        st.info("Select at least one hour to trim.")
+            out.append([h, h + 1])
+    return [(a, b) for a, b in out]
 
-    st.dataframe(hp.rename(columns={
-        "mean_kwh": "mean kWh", "total_kwh": "total kWh",
-        "frac_off": "fraction AC off", "mean_c": "mean °C"}).round(2),
-        width="stretch")
+
+# Guard: a schedule that cuts hours the floor cools today is not cutting waste.
+cut = {f: [h for h in R.ac_on_hours(f) if not start <= h < end] for f in WIRED}
+cut = {f: hs for f, hs in cut.items() if hs}
+if cut:
+    where = "; ".join(f"F{f} " + ", ".join(f"{a:02d}:00–{b:02d}:00" for a, b in _spans(hs))
+                      for f, hs in cut.items())
+    st.warning(
+        f"**The schedule cuts hours the AC cools today.** {where}. Plug load shows these floors "
+        "occupied in those hours (on F3–F6 it stays above night level until about 20:00), so "
+        "that cooling is not waste. They are not counted as savings.",
+        icon=":material/warning:")
+
+e1, e2 = _ecm1(start, end, hols_t), _ecm2(start, end, hols_t, float(target))
+own, avg = _sensitivity()
+
+
+# --------------------------------------------------------------------------- #
+# headline tiles
+# --------------------------------------------------------------------------- #
+def _baht(kwh_v: float) -> str:
+    return f"฿{kwh_v * tariff:,.0f}/yr" if tariff else "set rate in Assumptions"
+
+
+base_tot = float(e1.baseline.sum())
+s1, s2 = float(e1.kwh.sum()), float(e2.kwh.sum())
+tot = s1 + s2
+k = st.columns(4)
+k[0].metric("Potential savings", _baht(tot), delta=f"{tot:,.0f} kWh/yr", delta_color="off",
+            delta_arrow="off", border=True,
+            help="ECM 1 + ECM 2 at the settings above. They do not overlap: ECM 1 is AC outside "
+                 "the schedule, ECM 2 is cooling inside it.")
+k[1].metric("% of HVAC baseline", f"{tot / base_tot * 100:.1f}%" if base_tot else "—",
+            delta=f"of {base_tot / 1e3:,.0f}k kWh/yr", delta_color="off", delta_arrow="off",
+            border=True, help="HVAC baseline = metered AC on the office floors, annualised per floor.")
+k[2].metric(ECM1, f"{s1:,.0f} kWh/yr", delta=_baht(s1), delta_color="off", delta_arrow="off",
+            border=True, help="From the operating schedule and holiday calendar.")
+k[3].metric(ECM2, f"{s2:,.0f} kWh/yr", delta=_baht(s2), delta_color="off", delta_arrow="off",
+            border=True, help="From the space temperature target.")
+
+
+# --------------------------------------------------------------------------- #
+# by floor
+# --------------------------------------------------------------------------- #
+fl = e1.merge(e2, on="floor", suffixes=("_1", "_2"))
+fl["Floor"] = "F" + fl.floor.astype(str)
+fl["total"] = fl.kwh_1 + fl.kwh_2
+
+ui.section("By floor")
+use_baht = bool(tariff)
+unit = "฿/yr" if use_baht else "kWh/yr"
+long = fl.melt(id_vars="Floor", value_vars=["kwh_1", "kwh_2"], var_name="measure", value_name="kWh")
+long["measure"] = long.measure.map({"kwh_1": ECM1, "kwh_2": ECM2})
+long["value"] = long.kWh * tariff if use_baht else long.kWh
+st.altair_chart(ui.chart(alt.Chart(long).mark_bar().encode(
+    # Every floor labelled: overlap culling was dropping alternate floors.
+    y=alt.Y("Floor:N", sort=FLOORS, title=None, scale=alt.Scale(domain=FLOORS, paddingInner=0.35),
+            axis=alt.Axis(labelOverlap=False, labelPadding=6, ticks=False)),
+    x=alt.X("value:Q", stack="zero", title=f"potential saving ({unit})", axis=alt.Axis(format=",.0f")),
+    color=alt.Color("measure:N", title=None, sort=[ECM1, ECM2],
+                    scale=alt.Scale(domain=[ECM1, ECM2], range=[ui.PRIMARY, ui.SERIES_2]),
+                    legend=alt.Legend(orient="top")),
+    order=alt.Order("measure:N"),
+    tooltip=["Floor", "measure", alt.Tooltip("kWh:Q", title="kWh/yr", format=",.0f"),
+             *([alt.Tooltip("value:Q", title="฿/yr", format=",.0f")] if use_baht else [])],
+), height=alt.Step(40)), width="stretch")
+
+tbl = pd.DataFrame({
+    "Floor": fl.Floor,
+    "ECM 1 kWh/yr": fl.kwh_1,
+    "ECM 2 kWh/yr": fl.kwh_2,
+    "Total kWh/yr": fl.total,
+    "Total ฿/yr": fl.total * tariff if tariff else np.nan,
+    "% of HVAC baseline": fl.total / fl.baseline * 100,
+    "Out-of-hours AC": [f"~{a:.0f} weekend/holiday days, ~{b:.0f} workdays a year"
+                        for a, b in zip(fl.days_offday, fl.days_workday)],
+    f"Cooled hours below {target:g} °C": [
+        f"{p:.0f}%, by {m:.1f} °C on average" if h else ui.DASH
+        for p, m, h in zip(fl.pct_below, fl.mean_below, fl.hours)],
+})
+st.dataframe(
+    tbl.style.format({"ECM 1 kWh/yr": "{:,.0f}", "ECM 2 kWh/yr": "{:,.0f}", "Total kWh/yr": "{:,.0f}",
+                      "% of HVAC baseline": "{:.1f}%"}, na_rep=ui.DASH)
+       .format({"Total ฿/yr": "฿{:,.0f}"}, subset=["Total ฿/yr"],
+               na_rep="set rate in Assumptions" if not tariff else ui.DASH),
+    hide_index=True, width="stretch",
+    column_config={"% of HVAC baseline": st.column_config.Column(
+        help="Of the floor's metered annual AC energy.")})
+
+pooled_floors = [f"F{f}" for f in WIRED if f not in own]
+st.caption(
+    f"**{ECM1}:** the metered AC energy outside the schedule — weekends, the holiday calendar, "
+    "and workday hours before the start or after the end — counting only hours clearly above "
+    "the floor's overnight baseload, and only the energy above it, so a legitimate 24/7 unit is "
+    "not called waste. On workdays, the hours a floor cools today and the pre-cooling hour "
+    "before them are never counted.  \n"
+    f"**{ECM2}:** each in-schedule cooled occupied hour below the target is raised to it (read "
+    "on hours with a valid zone temperature, scaled to all cooled hours), and converted to kWh "
+    "with the thermal model's AC-energy change per °C. "
+    + (f"{', '.join(pooled_floors)} use the building average ({avg:+.1f} %/°C) of the floors "
+       "where the model calibrates, which assumes they respond like those floors. "
+       if pooled_floors and np.isfinite(avg) else "")
+    + "The model counts envelope conduction only, so the figure is likely conservative.")
