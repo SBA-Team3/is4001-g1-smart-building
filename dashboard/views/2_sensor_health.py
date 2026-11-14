@@ -18,7 +18,7 @@ start, end = c["start"], c["end"]
 if not ui.require_wired(floor):
     st.stop()
 
-ui.page_header("Sensors", f"Floor {floor} sensors", f"Status on {ui.day_txt(as_of)} | history {c['range']}")
+ui.page_header("Sensors", f"Floor {floor}", f"Status on {ui.day_txt(as_of)} | history {c['range']}")
 end = ui.file_end_gate(floor, start, end)
 
 H = ui.health(floor)

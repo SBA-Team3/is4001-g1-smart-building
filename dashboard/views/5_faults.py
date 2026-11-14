@@ -24,7 +24,7 @@ st.session_state.setdefault("muted", set())
 
 hd = st.columns([5, 1], vertical_alignment="bottom")
 with hd[0]:
-    ui.page_header("Alerts", "Building alerts" if bldg else f"Floor {floor} alerts", c["range"])
+    ui.page_header("Alerts", "Building alerts" if bldg else f"Floor {floor}", c["range"])
 export_slot = hd[1].empty()
 # One floor's file end does not stop the building queue, and it carries no note there.
 if not bldg:

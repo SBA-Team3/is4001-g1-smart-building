@@ -30,7 +30,7 @@ def _heat(lo: float, hi: float) -> pd.DataFrame:
     return P.overcooled_by_month(D.load_hourly(None), lo=lo, hi=hi)
 
 
-ui.page_header("Comfort", f"Floor {floor} comfort", f"{c['range']} | Band {lo:g}–{hi:g} °C")
+ui.page_header("Comfort", f"Floor {floor}", f"{c['range']} | Band {lo:g}–{hi:g} °C")
 e = ui.file_end_gate(floor, s, e)
 
 ac_on = st.toggle("Only hours with cooling running", value=True,

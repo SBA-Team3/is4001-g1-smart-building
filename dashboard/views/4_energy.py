@@ -1,6 +1,6 @@
 """Energy — use and cost over the period against the weather-normalised
-expectation (ISO 50006 / IPMVP), G14 model quality, CUSUM, energy signature,
-peak demand and load profiles."""
+expectation (ISO 50006 / IPMVP), G14 model quality, energy signature and
+load profiles."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from sbanalytics import registry as R
 import ui
 
 c = ui.ctx()
-floor, as_of, tariff, area = c["floor"], c["as_of"], c["tariff"], c["area"]
+floor, tariff, area = c["floor"], c["tariff"], c["area"]
 s, e = c["start"], c["end"]
 if not ui.require_wired(floor, allow_reporting=True):
     st.stop()
@@ -30,7 +30,7 @@ def _model(floor: int, target: str) -> dict:
     return M.daily_model(D.load_hourly(floor), floor, target)
 
 
-ui.page_header("Energy", f"{ui.floor_name(floor)} energy", c["range"])
+ui.page_header("Energy", ui.floor_name(floor), c["range"])
 e = ui.file_end_gate(floor, s, e)
 
 # --------------------------------------------------------------------------- #
@@ -42,8 +42,6 @@ if LOBBY:
     metered = np.isfinite(tot["total"])
     k = st.columns(3)
     k[0].metric("Energy", f"{tot['total']:,.0f} kWh" if metered else "no data", border=True,
-                delta=f"AC {tot['ac_share']:.0f}% of it" if np.isfinite(tot["ac_share"]) else None,
-                delta_color="off", delta_arrow="off",
                 help=f"Submetered zone loads (AC + lighting + plug), {c['period_label']}.")
     k[1].metric("Cost", ui.thb(tot["total"], tariff) if metered else "no data", border=True,
                 help=f"Energy × {tariff:.2f} ฿/kWh.")
@@ -62,8 +60,6 @@ else:
     metered = np.isfinite(tot["total"])
     k = st.columns(4)
     k[0].metric("Energy", f"{tot['total']:,.0f} kWh" if metered else "no data", border=True,
-                delta=f"AC {tot['ac_share']:.0f}% of it" if np.isfinite(tot["ac_share"]) else None,
-                delta_color="off", delta_arrow="off",
                 help=f"Submetered zone loads (AC + lighting + plug), {c['period_label']}.")
     k[1].metric("Cost", ui.thb(tot["total"], tariff) if metered else "no data", border=True,
                 help=f"Energy × {tariff:.2f} ฿/kWh.")
@@ -111,8 +107,8 @@ else:
                    "A daily model held to the hourly G14 limits — lenient, so read as indicative.")
 
     # --------------------------------------------------------------------------- #
-TAB_NAMES = (["Monthly", "Peak demand", "Profiles"] if LOBBY else
-             ["Actual vs expected", "CUSUM", "Signature & outlier days", "Peak demand", "Profiles"])
+TAB_NAMES = (["Monthly", "Profiles"] if LOBBY else
+             ["Actual vs expected", "Signature & outlier days", "Profiles"])
 tabs = dict(zip(TAB_NAMES, st.tabs(TAB_NAMES)))
 n_days = int((e - s).days) + 1
 
@@ -177,45 +173,6 @@ else:
         else:
             st.info("No usable days in this period.", icon=":material/info:")
 
-    with tabs["CUSUM"]:
-        model = _model(floor, "total_kwh")
-        blocking = [x for x in R.crosses_change_point(s, e, floor) if x.blocks_comparison]
-        cu = M.cusum(model, s, e)
-        if len(cu):
-            if blocking:
-                st.warning("The CUSUM restarts at " + "; ".join(f"**{x.date}** ({x.title})" for x in blocking)
-                           + ". A cumulative sum across a configuration change measures the change, so "
-                             "each stretch is drawn separately.", icon=":material/warning:")
-            cl = [alt.Chart(cu).mark_line(strokeWidth=2).encode(
-                x=alt.X("date:T", title=None), y=alt.Y("cusum:Q", title="cumulative kWh vs expected"),
-                color=alt.Color("segment:N", scale=alt.Scale(range=[ui.PRIMARY, ui.SERIES_2, ui.SERIES_3]),
-                                legend=alt.Legend(orient="top", title="stretch")),
-                tooltip=[alt.Tooltip("date:T"), alt.Tooltip("cusum:Q", format=",.0f"),
-                         alt.Tooltip("resid:Q", format=",.0f", title="day's deviation"), "segment"]),
-                alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(color=ui.EXPECTED, strokeDash=[6, 4]).encode(y="y:Q")]
-            rules = ui.cps_rules(floor, cu.date.min(), cu.date.max())
-            if rules is not None:
-                cl.append(rules)
-            st.altair_chart(ui.chart(alt.layer(*cl), height=280), width="stretch")
-            seg = cu[cu.date <= as_of]
-            if len(seg):
-                cur = seg[seg.segment == seg.segment.iloc[-1]]
-                k2 = st.columns(3)
-                k2[0].metric("Net vs expected, current stretch", f"{cur.cusum.iloc[-1]:+,.0f} kWh",
-                             delta=ui.signed_thb(cur.cusum.iloc[-1] * tariff) if tariff else None,
-                             delta_color="inverse", border=True,
-                             help=f"From {cur.date.min().date()} to {cur.date.max().date()}, within one "
-                                  "configuration.")
-                k2[1].metric("Days in stretch", f"{len(cur)}", border=True,
-                             help=("Includes training days, where the CUSUM is ~0 by construction."
-                                   if cur.in_train.any() else "All out of sample."))
-                k2[2].metric("Configuration", "baseline" if cur.baseline_segment.iloc[0] else "different",
-                             border=True, help="Whether this stretch is the one the baseline was trained in.")
-            st.caption("Read the slope, not the level: a steady climb means more than the weather explains, "
-                       "and the point where the slope changes is when performance drifted.")
-        else:
-            st.info("No usable days in this period.", icon=":material/info:")
-
     with tabs["Signature & outlier days"]:
         model = _model(floor, "total_kwh")
         sig = M.signature(model, s, e)
@@ -243,21 +200,6 @@ else:
                 st.caption(f"More than {R.conv('signature_outlier_z'):g} training SDs above the workday line.")
         else:
             st.info("No usable days in this period.", icon=":material/info:")
-
-with tabs["Peak demand"]:
-    dp = M.daily_peaks(h, s, e)
-    if len(dp):
-        st.altair_chart(ui.chart(alt.Chart(dp).mark_line(color=ui.PRIMARY, point=n_days <= 45).encode(
-            x=alt.X("date:T", title=None), y=alt.Y("peak_kw:Q", title="daily peak (kW, hourly mean)"),
-            tooltip=[alt.Tooltip("date:T"), alt.Tooltip("peak_kw:Q", format=".1f"),
-                     alt.Tooltip("peak_at:T", format="%H:%M")]), height=220), width="stretch")
-        st.markdown("The daily peak is the morning AC start-up; staggering zone start times lowers it.")
-        ui.md('<p class="cb-overline">Top 10 demand hours</p>')
-        st.dataframe(ui.round_numeric(M.top_peaks(h, s, e).rename(columns={
-            "out_temp": "outdoor °C", "out_rh": "outdoor RH %", "day_type": "day"})),
-            width="stretch", hide_index=True)
-    else:
-        st.info("No metered hours in this period.", icon=":material/info:")
 
 with tabs["Profiles"]:
     ei = E.eui(h, area, floor)
