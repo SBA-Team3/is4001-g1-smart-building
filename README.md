@@ -58,7 +58,7 @@ is4001-g1-smart-building/
 │   └── derived/             tables one analysis notebook hands to the next (KPIs, baselines)
 ├── src/sbanalytics/         the shared code: one set of rules for everyone
 │                            (python -m sbanalytics.pipeline builds data/cleaned/)
-├── analysis/                start with 0 (know the data), then the analytics plan A → F (run in order)
+├── analysis/                start with 0 (know the data), then 01 → 06 (run in order)
 │   ├── 00a_data_quality.ipynb         0  what you can and can't trust: coverage map, outage register, cleaning, meter roles, clocks
 │   ├── 00b_building_overview.ipynb    0  where the energy goes and when; overcooling in occupied hours
 │   ├── 00c_floor_profiles.ipynb       0  what only each floor shows (one section per floor owner)
@@ -72,7 +72,7 @@ is4001-g1-smart-building/
                              (design rules, tokens and the Figma link: dashboard/DESIGN.md)
 ```
 
-### `src/sbanalytics` — what lives where
+### Inside `src/sbanalytics` 
 
 | Module | Purpose |
 |---|---|
@@ -90,7 +90,7 @@ is4001-g1-smart-building/
 
 ---
 
-## How the data is cleaned (one set of rules, all floors)
+## How the data is cleaned 
 
 | Problem | Rule |
 |---|---|
@@ -107,33 +107,6 @@ Cleaning changes each floor's energy totals by less than 0.4%. Every changed min
 
 ---
 
-## Analytics plan
-
-**Start with layer 0.** Read `00a`–`00c` before `01`–`06`: they show where the data has gaps (the indoor-sensor blackout, F6's truncated file, the F3/F4 meter outages, the Jan–Feb 2019 AC-meter gap) and which meters to distrust, which the analytics notebooks filter out rather than show.
-
-| Layer | Question | Methods | Notebook |
-|---|---|---|---|
-| 0 · Know the data | What can we trust, where does the energy go, and what is special about each floor? | daily coverage map per point, outage register, cleaning audit, meter roles, clock checks, measured schedules, meter-transfer scan; building overview; per-floor profiles re-derived from the members' floor EDAs | `analysis/00a`, `00b`, `00c` |
-| A · Descriptive baseline | How does each floor normally behave? | end-use split, baseload ratio, after-hours share, load factor, overcooling share; k-means on daily load shapes | `analysis/01` |
-| B · Predictive baseline (M&V) | What should it have used, given weather and calendar? | 3-parameter change-point (daily), TOWT and gradient boosting (hourly); accepted only if ASHRAE Guideline 14 is met out of sample | `analysis/02` |
-| C · Comparison | Who is worse, and when? | weather-normalised year-on-year; floor benchmark on normalised KPIs; zone overcooling league | `analysis/03` |
-| D · Anomaly detection | What needs attention? | data-quality layer; rules (after-hours AC, always-on/dead units); robust z on cross-fitted baseline residuals + CUSUM drift; validated on known events | `analysis/04` |
-| E · Forecasting | What is coming tomorrow? | day-ahead hourly forecasts, rolling-origin backtest against seasonal-naive | `analysis/05` |
-| F · Recommendations | What should facilities management do? | kWh/THB ranges from two estimators, confidence, verification and pilot length | `analysis/06` |
-
-### Headline findings (from the notebooks; re-run to refresh)
-
-- **Data.** Indoor sensors are missing on every floor for ~6 months (Sep 2018 – Mar 2019); F6's file ends on 22 Oct 2019. Power meters are ~99% complete outside the named outages (94.8% over the full record, `analysis/00a` §2).
-- **Overcooling everywhere.** 68–83% of occupied, cooled hours on F2–F7 are below 23 °C; some zones average 18.5–20 °C.
-- **Baselines work.** The daily change-point model meets ASHRAE G14 out of sample on F2–F7; the hourly TOWT model on F2–F6.
-- **Year on year, weather-normalised**, Jul–Dec 2019 is within ±3.5% of the 2018-trained baseline on F2–F7. F1 used ~12% less.
-- **Anomalies.** The detector flags ~1% of hours on most floors and catches all 5 weekend AC runs found independently in the Floor 3 deep dive. F2 and F7 stand out with frequent full weekend AC programmes.
-- **Forecasting** beats the seasonal-naive benchmark by 48–66% (MAE) on F2–F7 (17% on F1) — useful for peak warnings, secondary to B–D.
-- **Biggest lever: raising cooling setpoints by 2 °C** (≈ 51–59 MWh/yr on the office floors), then **locking AC schedules to the calendar** (weekend/holiday runs). Full table: `analysis/06_recommendations.ipynb`.
-- **Floor 1 is not an office floor** (evening-peaking, AC never off; a 7-hour clock offset cannot be ruled out). It is kept in totals but excluded from schedule-based measures.
-
----
-
 ## Floor owners
 
 | Floor | Owner |
@@ -145,9 +118,3 @@ Cleaning changes each floor's energy totals by less than 0.4%. Every changed min
 | Floor 5 | Terence |
 | Floor 6 | Williams |
 | Floor 7 | Sana |
-
-## Working together
-
-- Change **cleaning or definitions** only in `src/sbanalytics/`, then rebuild with `python -m sbanalytics.pipeline`. Never patch the data inside a notebook.
-- New analysis goes in `analysis/`, on a branch, via PR. Notebooks run in order (00a–00c first, for context): 03 and 06 read what 01 and 02 write to `data/derived/`.
-- If you get stuck on setup, shout in the group chat before burning too much time on it.
