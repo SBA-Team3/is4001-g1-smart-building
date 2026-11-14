@@ -48,6 +48,10 @@ FLATLINE_MIN = {"temp": 60, "rh": 60, "ac": 240, "light": 240, "plug": 240}
 #: Channels evaluated only while cooling runs (G36 state-based suppression).
 OCCUPIED_ONLY = {"temp", "rh"}
 
+#: Day types on which the floor does not run its cooling schedule even though the
+#: day is a weekday (weekends are already outside the occupied mask).
+NON_OPERATING_DAYS = {"holiday", "closure"}
+
 
 def _flatline_threshold(channel: str) -> int:
     return FLATLINE_MIN.get(channel, int(R.conv("flatline_min")))
@@ -72,6 +76,13 @@ def score_point_days(H: pd.DataFrame) -> pd.DataFrame:
     h["flat_measured"] = measured
 
     h["flag_flatline"] = measured >= thr
+    # A public holiday or closure is a weekday with the AC off, so a steady room
+    # temperature is quiescence, not a stuck sensor (the occupied mask in
+    # quality.point_day_health only knows about weekends).
+    if "floor" in h:
+        dt = D.load_day_types().assign(day=lambda d: pd.to_datetime(d.date))
+        off = h[["floor", "day"]].merge(dt[["floor", "day", "day_type"]], on=["floor", "day"], how="left")
+        h.loc[occ_only & off.day_type.isin(NON_OPERATING_DAYS).to_numpy(), "flag_flatline"] = False
     # The lux channel is a scaled index of unknown units that legitimately pins
     # at low integers for hours. We report its flat runs but never alarm on them.
     h.loc[h.role == R.ROLE_SCALED_INDEX, "flag_flatline"] = False

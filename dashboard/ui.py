@@ -268,6 +268,16 @@ POINT_GLYPH = {"OFFLINE": ("○", "offline"), "FROZEN": ("●", "critical"),
                "OK": ("✓", "normal"), "NO FILE": ("○", "offline")}
 
 
+def day_status(d: pd.DataFrame) -> np.ndarray:
+    """Status of each point-day row. First match wins; the three "down" states
+    come before PARTIAL so a degraded day cannot hide a bad one."""
+    return np.select(
+        [d.received == 0, d.flag_flatline.values,
+         (d.out_of_range > 0) | (d.spikes > 0),
+         d.completeness < R.conv("completeness_target")],
+        ["OFFLINE", "FROZEN", "BAD SAMPLES", "PARTIAL"], default="OK")
+
+
 def point_glyph(status: str) -> str:
     return f"{POINT_GLYPH.get(status, ('', ''))[0]} {status}".strip()
 
@@ -275,9 +285,9 @@ def point_glyph(status: str) -> str:
 @st.cache_data(show_spinner=False)
 def point_status(floor: int, as_of) -> pd.DataFrame:
     """One row per point on the as-of day: floor, zone, channel, point, status,
-    last good day, days stale. Status is the Sensors page's rule: OFFLINE (no
-    samples), FROZEN (flatline), PARTIAL (below the completeness target),
-    BAD SAMPLES (out of range or spikes), else OK. OFFLINE, FROZEN and BAD
+    last good day, days stale. Status is `day_status`: OFFLINE (no samples),
+    FROZEN (flatline), BAD SAMPLES (out of range or spikes), PARTIAL (below the
+    completeness target), else OK. OFFLINE, FROZEN and BAD
     SAMPLES are "down"; PARTIAL is degraded. Past a floor's file end every point
     is NO FILE — not counted as down, because there is no file to be down in."""
     S = scored(floor)
@@ -289,12 +299,7 @@ def point_status(floor: int, as_of) -> pd.DataFrame:
         pts = S[["zone", "channel", "column"]].drop_duplicates()
         out = pts.assign(status="NO FILE")
     elif len(day):
-        status = np.select(
-            [day.received == 0, day.flag_flatline.values,
-             day.completeness < R.conv("completeness_target"),
-             (day.out_of_range > 0) | (day.spikes > 0)],
-            ["OFFLINE", "FROZEN", "PARTIAL", "BAD SAMPLES"], default="OK")
-        out = day[["zone", "channel", "column"]].assign(status=status)
+        out = day[["zone", "channel", "column"]].assign(status=day_status(day))
     else:
         pts = S[["zone", "channel", "column"]].drop_duplicates()
         out = pts.assign(status="OFFLINE")
