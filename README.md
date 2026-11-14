@@ -6,6 +6,10 @@ Kaggle source: https://www.kaggle.com/datasets/claytonmiller/cubems-smart-buildi
 
 **Goal:** understand energy consumption across the building and give facilities managers recommendations they can act on, each with an energy range, a confidence level and a way to verify it.
 
+![Dashboard Overview: building energy, cost and sensors down for the period, floors ranked, top alerts and monthly energy by floor](data/visuals/Overview.png)
+
+*The Streamlit dashboard's Overview page. Page-by-page guide and more screenshots: [dashboard/README.md](dashboard/README.md).*
+
 ---
 
 ## Getting set up
@@ -50,6 +54,7 @@ is4001-g1-smart-building/
 │   ├── raw/                 CU-BEMS CSVs, untouched (2018FloorN.csv, 2019FloorN.csv)
 │   ├── external/            weather (ERA5, UTC), Thai holidays, Chula academic calendar
 │   ├── cleaned/             pipeline output — see data/cleaned/README.md
+│   ├── visuals/             dashboard screenshots and the CU-BEMS floor-plan figure used in the READMEs
 │   └── derived/             tables one analysis notebook hands to the next (KPIs, baselines)
 ├── src/sbanalytics/         the shared code: one set of rules for everyone
 │                            (python -m sbanalytics.pipeline builds data/cleaned/)
@@ -63,7 +68,7 @@ is4001-g1-smart-building/
 │   ├── 04_anomaly_detection.ipynb     D  what needs attention? (fault register)
 │   ├── 05_forecasting.ipynb           E  what is coming tomorrow?
 │   └── 06_recommendations.ipynb       F  what should facilities management do?
-└── dashboard/               Streamlit dashboard: portfolio view of all floors + Floor 5 operations, reads data/cleaned/
+└── dashboard/               Streamlit dashboard: building overview + operations pages for every floor, reads data/cleaned/
                              (design rules, tokens and the Figma link: dashboard/DESIGN.md)
 ```
 

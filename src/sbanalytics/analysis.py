@@ -143,32 +143,6 @@ def fit_physics(h: pd.DataFrame, zones=None, use_solar: bool = True,
     return out
 
 
-def load_decomposition(h: pd.DataFrame, phys: dict, zones=None,
-                       floor: int = 5) -> pd.DataFrame:
-    """Split measured load into envelope / internal / residual.
-
-    This is why the physics and regression estimates disagree: a setpoint change
-    acts on the envelope term and some unknown share of latent load in the
-    residual. It acts on none of the metered internal gains.
-    """
-    zones = zones or R.comfort_zones(floor)
-    d = D.occupied(h, zones=zones, require_temp=True, ac_on=True)
-    d = d.assign(int_kwh=d.light_kwh.fillna(0) + d.plug_kwh.fillna(0))
-    rows = []
-    for z, g in d.groupby("zone"):
-        p = phys["per_zone"].get(z) or phys["pooled"]
-        if not p:
-            continue
-        env = (p["UA_kw_per_c"] * (g.out_temp - g.temp_c)).clip(lower=0).mean()
-        meas, intn = g.ac_kwh.mean(), g.int_kwh.mean()
-        rows.append({"zone": z, "measured_kw": meas, "envelope_kw": env,
-                     "internal_kw": intn, "residual_kw": meas - env - intn,
-                     "envelope_pct": env / meas * 100,
-                     "internal_pct": intn / meas * 100,
-                     "residual_pct": (meas - env - intn) / meas * 100})
-    return pd.DataFrame(rows).set_index("zone") if rows else pd.DataFrame()
-
-
 # --------------------------------------------------------------------------- #
 # regression elasticity (the upper bound)
 # --------------------------------------------------------------------------- #
@@ -282,48 +256,6 @@ def fit_baselines(h: pd.DataFrame, zones=None, floor: int = 5):
                              "cv_rmse": cv, "nmbe": nmbe,
                              "meets_g14": "yes" if (cv <= 30 and abs(nmbe) <= 10) else "no"})
     return fitted, pd.DataFrame(rows)
-
-
-def zone_baseline_cv(perf: pd.DataFrame, model: str = "GBM") -> float:
-    """Mean out-of-sample CV(RMSE) of the zone baselines — the noise a pilot has
-    to beat (used for the Option B pilot length)."""
-    t = perf[(perf.model == model) & perf.split.str.startswith("test")]
-    return float(t.cv_rmse.mean()) if len(t) else np.nan
-
-
-def combined_meter_check(h: pd.DataFrame, pair=("z2", "z4"),
-                         split: str = "2019-09-27", floor: int = 5) -> dict:
-    """Evidence that the 2019-09-27 step is a re-apportionment, not a demand change.
-
-    If cooling energy moved *between* two meters, then each zone shifts sharply
-    while their sum barely moves, and the ratio between them flips. If instead
-    one zone genuinely started using less cooling, the sum would fall too. This
-    distinguishes the two, and it is what disqualifies z4's baseline from M&V
-    across the boundary.
-    """
-    a, b = pair
-    d = D.occupied(h, zones=list(pair))
-    cut = pd.Timestamp(split)
-    before = d[(d.ts >= pd.Timestamp("2019-06-01")) & (d.ts < cut)]
-    after = d[(d.ts >= cut) & (d.ts <= pd.Timestamp("2019-12-31"))]
-    if not len(before) or not len(after):
-        return {}
-
-    def side(x):
-        m = x.groupby("zone").ac_kwh.mean()
-        tot = m.sum()
-        return {a: m.get(a, np.nan), b: m.get(b, np.nan), "sum": tot,
-                "ratio": m.get(a, np.nan) / m.get(b, np.nan) if m.get(b, 0) else np.nan}
-
-    B, A_ = side(before), side(after)
-    return {
-        "pair": pair, "split": split, "before": B, "after": A_,
-        "delta_a_pct": (A_[a] / B[a] - 1) * 100,
-        "delta_b_pct": (A_[b] / B[b] - 1) * 100,
-        "delta_sum_pct": (A_["sum"] / B["sum"] - 1) * 100,
-        "ratio_before": B["ratio"], "ratio_after": A_["ratio"],
-        "n_before": len(before), "n_after": len(after),
-    }
 
 
 # --------------------------------------------------------------------------- #

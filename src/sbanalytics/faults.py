@@ -34,14 +34,6 @@ from . import registry as R
 
 HIGH, MED, LOW = "high", "medium", "low"
 
-#: ISA-18.2 / EEMUA 191 benchmarks we audit our own alarm output against.
-ALARM_KPI = {
-    "flood_per_10min": 10,
-    "target_mix": {HIGH: 5, MED: 15, LOW: 80},
-    "max_standing": 10,
-    "steady_per_hour": 2,
-}
-
 
 #: What a work order needs beyond the diagnosis: which trade gets it, what they
 #: do, and how anyone will know it worked. Verification text is filled from the
@@ -136,8 +128,6 @@ def _in_blackout(start, end) -> bool:
         return False
     lo, hi = (pd.Timestamp(x) for x in R.BLACKOUT)
     return pd.Timestamp(start) >= lo.normalize() and pd.Timestamp(end) <= hi
-
-
 
 
 # --------------------------------------------------------------------------- #
@@ -416,33 +406,3 @@ def build_register(h: pd.DataFrame, H: pd.DataFrame, start=None, end=None,
     return f.drop(columns="key").reset_index(drop=True)
 
 
-def register_diff(prev: pd.DataFrame, cur: pd.DataFrame) -> dict:
-    """What changed between two registers: ids raised and ids cleared."""
-    p = set(prev.id) if len(prev) else set()
-    c = set(cur.id) if len(cur) else set()
-    return {"new": sorted(c - p), "cleared": sorted(p - c)}
-
-
-def alarm_audit(f: pd.DataFrame, days: int) -> dict:
-    """Audit our own alarm output against ISA-18.2 / EEMUA 191.
-
-    A dashboard that emits alarms without measuring its own alarm load is the
-    thing alarm-rationalisation exists to fix, so we hold ourselves to the same
-    benchmarks we would apply to a BMS.
-    """
-    if not len(f):
-        return {"total": 0, "per_day": 0.0, "mix": {}, "target": ALARM_KPI["target_mix"],
-                "deviation": {}, "standing": 0, "verdict": "No alarms raised."}
-    mix = (f.priority.value_counts(normalize=True) * 100).to_dict()
-    per_day = len(f) / max(days, 1)
-    target = ALARM_KPI["target_mix"]
-    dev = {k: mix.get(k, 0.0) - target[k] for k in target}
-    ok = per_day <= ALARM_KPI["steady_per_hour"] * 24 and abs(dev.get(HIGH, 0)) < 25
-    return {
-        "total": len(f), "per_day": per_day, "mix": mix, "target": target,
-        "deviation": dev, "standing": int((f.priority == HIGH).sum()),
-        "verdict": ("Within benchmark — the register is small enough to action."
-                    if ok else
-                    "Above benchmark — thresholds should be tightened before this "
-                    "would be usable in a live building."),
-    }

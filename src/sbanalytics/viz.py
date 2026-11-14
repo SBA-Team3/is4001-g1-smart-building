@@ -10,12 +10,10 @@ scatter plots keep to three colours and facet beyond that.
 from __future__ import annotations
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 
 CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100",
                "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
 SEQUENTIAL = "Blues"                         # magnitude: one hue, light -> dark
-DIVERGING = "RdBu_r"                         # polarity: blue / gray / red
 STATUS = {"good": "#0ca30c", "warning": "#fab219", "serious": "#ec835a", "critical": "#d03b3b"}
 
 INK, INK_2, MUTED = "#0b0b0b", "#52514e", "#898781"
@@ -43,6 +41,3 @@ def setup() -> None:
     })
 
 
-def floor_legend(ax, floors, **kw):
-    handles = [plt.Line2D([], [], color=FLOOR_COLORS[f], lw=2, label=f"F{f}") for f in floors]
-    ax.legend(handles=handles, **kw)

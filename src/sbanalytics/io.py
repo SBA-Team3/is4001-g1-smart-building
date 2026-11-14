@@ -82,11 +82,6 @@ def load_holidays() -> pd.DataFrame:
     return h.rename(columns={"holiday_name": "name"})[["date", "name"]]
 
 
-def load_academic_calendar() -> pd.DataFrame:
-    """Only Semester 1 of 2019 is covered — use as a 2019 sensitivity feature only."""
-    return pd.read_csv(C.ACADEMIC_CSV, parse_dates=["start_date", "end_date"])
-
-
 def column_meta(floor: int) -> pd.DataFrame:
     """The registry as a column dictionary for one floor (raw column -> meaning)."""
     return pd.DataFrame([{

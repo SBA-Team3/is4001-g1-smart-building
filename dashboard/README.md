@@ -45,12 +45,43 @@ The navigation is flat, in the order the FM asks:
 | **Overview** *(default)* | How much energy and money this period, against expected? Which sensors are down? Which floor and which alert first? |
 | **Floor** | For one floor: data health, a zones **Map / Table** (the map adds open alerts per zone; the table opens each zone's detail), energy today, cost MTD vs expected, peak, cooled <23 °C vs 40%; zones worst first; act on open alerts (Work order / Acknowledge / Mute) |
 | **Alerts** | The fault register — the whole building (`Bldg`, the default on entry; the count matches the Overview's "All N open alerts") or one floor — as a queue of Type · Zone · Description · Cost / day · State, filtered by fault type, trade and state (Open / Cleared / Muted / All); a pop-up with the facts, possible causes, options to consider, a note and Acknowledge / Work order / Mute; CSV export for a CMMS. No severity, and no manual Resolve: **alerts clear automatically** once the condition has not been seen for more than 3 days (the episode gap) |
-| **Sensors** | A neutral zone map (green / red multi-sensor markers, "● N meters down" per zone) beside the Not OK table; Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; point × day status map; per-point record; cross-sensor checks; raw trace |
+| **Sensors** | A neutral zone map (green / red multi-sensor markers, "● N meters down" per zone) beside the Not OK table; Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; a point × day status map (one row per point, verdict in the label, worst first); humidity cross-check; minute trace |
 | **Comfort** | Which zones are too cold, by how much (degree-hours): a **Map / Table** toggle (default Map — a schematic plan of the floor filled by % of cooled hours below the band, with green / red sensor markers); floor × month overcooling map; zone detail |
 | **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, signature and outlier days, profiles |
 | **Carbon** | Scope 2, location-based emissions for the period (building-level; a selected floor is highlighted): tCO₂e, vs expected (F2–F7, the floors with a baseline), intensity, trailing 12 months; monthly emissions; by floor and by end use; reporting-year summary |
 | **Savings** | The intervention simulator: package inputs → kWh/yr and ฿/yr ranges, tCO₂e, comfort trade-off, IPMVP M&V plan; measures, tornado, control-stability lever, and how each lever is sized |
 | **About the data** | What is and is not measured; how alerts clear; the assumptions in use |
+
+### Screenshots
+
+Taken on the default view (as of 14 Nov 2019, period MTD).
+
+**Overview** — building energy, cost and sensors down; floors ranked; top alerts; monthly energy by floor.
+
+![Overview page](../data/visuals/Overview.png)
+
+**Floor** — one floor's data health, zone map and KPIs against the 40% overcooling target.
+
+![Floor page](../data/visuals/Floor.png)
+
+**Sensors** — zone map with meters down, the Not OK table, and the humidity cross-check (z1 on Floor 5
+sits ~1.5 g/m³ below the median: a supply-air sensor).
+
+![Sensors page](../data/visuals/Sensors.png)
+
+**Comfort** — which zones are overcooled and by how much.
+
+![Comfort page](../data/visuals/Comfort.png)
+
+**Carbon** — Scope 2, location-based emissions for the period.
+
+![Carbon page](../data/visuals/Carbon.png)
+
+The zone maps on Floor, Sensors and Comfort are traced from the CU-BEMS floor plans (Floors 1–2 left,
+3–7 right; red dots are the multi-sensors). Source: Pipattanasomporn et al., *Scientific Data* (2020),
+Fig. 2, CC BY 4.0.
+
+![CU-BEMS Fig. 2 floor plans](../data/visuals/layout.png)
 
 Floor and Sensors carry one plain line of data health under the subtitle (points down
 by name, point health, completeness today; on Floor also new / cleared / went offline
@@ -83,8 +114,8 @@ Analytics modules (pure pandas, no Streamlit):
 
 | Module | What it does |
 |---|---|
-| `portfolio` | building KPIs, floor league, floor × month overcooling, meter-outage episodes, per-floor levers and the generated "biggest lever" sentence |
-| `mv` | daily change-point baseline per floor, G14 summary, roll-up with uncertainty band, segmented CUSUM, energy signature, peak demand |
+| `portfolio` | building KPIs, floor × month overcooling, meter-outage episodes |
+| `mv` | daily change-point baseline per floor, G14 summary, roll-up with uncertainty band, energy signature, month excess |
 | `scenario` | intervention simulator: lift / trim / lockout, combined without double counting, comfort after, IPMVP plan, tornado |
 | `workorders` | alert-state store (append-only CSV) and CMMS export; the dashboard ignores saved "Resolved" states and derives Cleared itself |
 | `faults` | stable ids, cost of inaction, days open, recurrence, trade, action, verification (`PLAYBOOK`) |
@@ -166,11 +197,10 @@ Added for v2 (all in `R.CONVENTIONS`, with sources):
 | Lockout low case | 50% of metered weekend/holiday excess | Notebook 06 |
 | Tornado ranges | tariff ±20%, lift ±0.5 °C, trim ±1 h | Project assumption |
 
-Rules (in `R.METHODS`): overcooled share = AC-kWh-weighted cooled occupied
-hours (notebook 01); combined savings = S × (1 − T/B0) + T + L per case;
-IPMVP Option B for zone-metered measures, C for floor-wide; CUSUM restarts at
-each blocking change-point; alert states (the dashboard overrides the registry's manual
-lifecycle: people set Acknowledged / In progress / Muted, the system sets Cleared).
+Rules: overcooled share = AC-kWh-weighted cooled occupied hours (notebook 01);
+combined savings = S × (1 − T/B0) + T + L per case; IPMVP Option B for
+zone-metered measures, C for floor-wide; alert states: people set Acknowledged /
+In progress / Muted, the system sets Cleared.
 
 Deliberately **not** used: the term "Unmet Load Hours" (it is defined relative to
 a setpoint, which this building does not expose) and the ASHRAE 55 adaptive

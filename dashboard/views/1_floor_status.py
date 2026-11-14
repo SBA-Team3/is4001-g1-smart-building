@@ -11,8 +11,6 @@ import streamlit as st
 from sbanalytics import comfort as C
 from sbanalytics import data as D
 from sbanalytics import energy as E
-from sbanalytics import faults as F
-from sbanalytics import health as HL
 from sbanalytics import kpis as K
 from sbanalytics import mv as M
 from sbanalytics import registry as R
@@ -206,7 +204,7 @@ for z in R.ZONES[floor]:
     r = cm.loc[z] if comfort and z in cm.index else None
     cold = float(r.cold_pct) if r is not None else np.nan
     if r is not None:
-        status = (f"● overcooled" if cold > target else "▲ warm" if r.warm_pct > target
+        status = ("● overcooled" if cold > target else "▲ warm" if r.warm_pct > target
                   else "✓ in band")
     elif comfort and not has_ac:
         status = "ⓘ not AC-metered"          # sensor but no cooling meter (F2 z3)

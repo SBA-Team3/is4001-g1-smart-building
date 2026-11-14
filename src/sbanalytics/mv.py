@@ -11,8 +11,8 @@ The training window is per floor. Floor 5 trains on analysis.TRAIN
 change-points: after the 2019-03-06 sensor restoration (the floor ran 2-3 degC
 colder from then on) and before the 2019-09-27 z2<->z4 meter transfer. Other
 floors use the notebooks' 12-month window. Anything on the far side of a
-blocking change-point is still drawn, but the CUSUM restarts there, because a
-cumulative sum across a configuration change measures the change, not the
+blocking change-point is still drawn, but flagged (`baseline_segment`), because
+a comparison across a configuration change measures the change, not the
 performance.
 """
 
@@ -23,7 +23,6 @@ import pandas as pd
 
 from . import analysis as A
 from . import baseline as B
-from . import energy as E
 from . import registry as R
 
 #: Training and test windows per floor. See module docstring for why F5 differs.
@@ -91,11 +90,6 @@ def segment_labels(dates: pd.Series, floor: int) -> pd.Series:
     return pd.Series([names[i] for i in idx], index=dates.index)
 
 
-def annual_kwh(model: dict) -> float:
-    """Annualised energy of the modelled channel, from usable days."""
-    return float(model["daily"].actual.mean() * 365)
-
-
 def g14_summary(model: dict) -> pd.DataFrame:
     """Train/test CV(RMSE) and NMBE against G14 limits, with pass/fail."""
     m = model["metrics"].copy()
@@ -133,14 +127,6 @@ def rollup(model: dict, start=None, end=None, freq: str = "MS",
     out["deviation_pct"] = out.deviation / out.expected * 100
     out["significant"] = out.deviation.abs() > out.band
     return out.drop(columns="var")
-
-
-def cusum(model: dict, start=None, end=None) -> pd.DataFrame:
-    """Cumulative (actual - expected), restarted at every blocking change-point."""
-    d = _window(model["daily"], start, end).sort_values("date")
-    d = d.assign(cusum=d.groupby("segment").resid.cumsum())
-    return d[["date", "actual", "expected", "resid", "cusum", "segment",
-              "baseline_segment", "in_train"]]
 
 
 def signature(model: dict, start=None, end=None, z: float | None = None) -> dict:
@@ -182,35 +168,3 @@ def month_excess(model: dict, as_of, tariff: float | None = None) -> dict:
                     "excess": w.resid.sum(), "thb": w.resid.sum() * tariff, "days": len(w),
                     "in_train": bool(w.in_train.any())}
     return out
-
-
-# --------------------------------------------------------------------------- #
-# peak demand
-# --------------------------------------------------------------------------- #
-
-def daily_peaks(h: pd.DataFrame, start=None, end=None) -> pd.DataFrame:
-    """Daily peak of hourly-mean floor demand (kW)."""
-    s = E.floor_demand(h, start, end).dropna()
-    if not len(s):
-        return pd.DataFrame(columns=["date", "peak_kw", "peak_at"])
-    g = s.groupby(s.index.normalize())
-    return pd.DataFrame({"peak_kw": g.max(), "peak_at": g.idxmax()}).rename_axis("date").reset_index()
-
-
-def top_peaks(h: pd.DataFrame, start=None, end=None, n: int = 10) -> pd.DataFrame:
-    """The n highest demand hours, with outdoor temperature at the time."""
-    s = E.floor_demand(h, start, end).dropna().nlargest(n)
-    wx = h.groupby("ts")[["out_temp", "out_rh", "day_type"]].first()
-    t = pd.DataFrame({"kW": s}).join(wx).rename_axis("hour").reset_index()
-    return t
-
-
-def demand_cost(h: pd.DataFrame, start=None, end=None, charge: float | None = None) -> pd.DataFrame:
-    """Monthly maximum demand and the demand charge it would attract."""
-    charge = R.conv("demand_charge_thb_per_kw") if charge is None else charge
-    s = E.floor_demand(h, start, end).dropna()
-    if not len(s):
-        return pd.DataFrame(columns=["month", "max_kw", "charge_thb"])
-    m = s.groupby(s.index.to_period("M")).max()
-    return pd.DataFrame({"month": m.index.to_timestamp(), "max_kw": m.values,
-                         "charge_thb": m.values * charge})

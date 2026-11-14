@@ -96,12 +96,6 @@ def add_cyclic(d: pd.DataFrame) -> pd.DataFrame:
     return d
 
 
-def degree_days(weather: pd.DataFrame, base_c: float) -> pd.Series:
-    """Daily cooling degree-days from hourly outdoor temperature (mean-of-hours method)."""
-    w = weather.set_index("ts").out_temp
-    return ((w - base_c).clip(lower=0) / 24).resample("D").sum().rename(f"cdd_{base_c:g}")
-
-
 def occupied_mask(h: pd.DataFrame) -> pd.Series:
     """Workday rows inside each floor's measured AC hours."""
     key = h.floor.astype(int) * 100 + h.hour

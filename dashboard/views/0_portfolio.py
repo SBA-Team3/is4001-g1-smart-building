@@ -161,7 +161,6 @@ with left:
             "kWh": st.column_config.Column(width=66),
             "Alerts": st.column_config.Column(width=54, help="Open alerts in the period."),
             "Top type": st.column_config.Column(width=128, help="Most common open alert type."),
-            "Down": st.column_config.Column(width=50),
             "Note": st.column_config.Column(width=168),
             "฿": st.column_config.Column(help="Energy × tariff. Blank when the rate is 0."),
             "vs exp %": st.column_config.Column(
@@ -170,7 +169,7 @@ with left:
             f"<{LO:g} °C %": st.column_config.Column(
                 help=f"Share of cooled, occupied zone-hours below {LO:g} °C (target < {target:.0f}%). "
                      "Only hours with live sensors count."),
-            "Down": st.column_config.Column(help="Points OFFLINE, FROZEN or BAD SAMPLES today."),
+            "Down": st.column_config.Column(width=50, help="Points OFFLINE, FROZEN or BAD SAMPLES today."),
         })
     st.caption("**Floor 1 is the lobby** (runs around the clock); it is in the building totals and out of "
                "every ranking. "

@@ -17,7 +17,6 @@ from . import registry as R
 CLEANED = C.DATA_CLEANED
 HOURLY = CLEANED / "hourly_zone.parquet"
 HOURLY_POINTS = CLEANED / "hourly_point.parquet"
-DAILY = CLEANED / "daily_zone.parquet"
 HEALTH = CLEANED / "point_day_health.parquet"
 WEATHER = CLEANED / "weather_hourly.parquet"
 DAY_TYPES = CLEANED / "day_types.parquet"
@@ -77,10 +76,6 @@ def load_hourly_points(floor: int | list | None = None) -> pd.DataFrame:
     return pd.read_parquet(HOURLY_POINTS, filters=_floor_filter(floor))
 
 
-def load_daily(floor: int | list | None = None) -> pd.DataFrame:
-    return pd.read_parquet(DAILY, filters=_floor_filter(floor))
-
-
 def load_weather() -> pd.DataFrame:
     return pd.read_parquet(WEATHER)
 
@@ -115,10 +110,6 @@ def load_day(floor: int, day, columns=None) -> pd.DataFrame:
 # --------------------------------------------------------------------------- #
 # as-of window helpers
 # --------------------------------------------------------------------------- #
-
-def clamp_as_of(day) -> pd.Timestamp:
-    d = pd.Timestamp(day).normalize()
-    return min(max(d, RECORD_START), RECORD_END)
 
 
 def window(as_of, days: int) -> tuple[pd.Timestamp, pd.Timestamp]:

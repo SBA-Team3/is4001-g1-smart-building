@@ -24,7 +24,7 @@ here, not editing analysis code.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pandas as pd
 
@@ -367,8 +367,8 @@ CONVENTIONS = {
     "signature_outlier_z": (2.0, "sd", "Workday flagged on the energy signature when it sits more than 2 "
                             "training-residual SDs above the change-point line"),
     "pilot_alpha": (0.05, "", "Pilot power calculation: two-sided significance level"),
-    "pilot_power": (0.80, "", "Pilot power calculation: power (Methods page default)"),
-    "pilot_rho": (0.5, "", "Within-day correlation of hourly residuals (Methods page realistic default)"),
+    "pilot_power": (0.80, "", "Pilot power calculation: power (Savings page minimum pilot length)"),
+    "pilot_rho": (0.5, "", "Within-day correlation of hourly residuals (realistic default)"),
     "estimator_ci_max_ratio": (5.0, "x", "A %/degC estimate is used only if negative and its CI is no wider "
                                "than 5x its magnitude (notebook 06 reliability rule)"),
     "lockout_low_frac": (0.5, "", "Low end of the weekend/holiday lockout saving = half the metered "
@@ -383,54 +383,6 @@ CONVENTIONS = {
                    "26 degC neutrality bound is exceeded on every floor"),
 }
 
-#: Methods that are rules rather than numbers. Shown beside CONVENTIONS on the
-#: Methods page, so no formula the dashboard applies is undeclared.
-METHODS: dict[str, tuple[str, str]] = {
-    "Overcooled share": (
-        "Cooled occupied zone-hours (workday, measured AC hours, temp_ok, AC > ac_on_kwh) below "
-        "comfort_lo; per zone, then weighted by each zone's AC kWh in the window. Zones with fewer "
-        "than overcooled_min_hours are left out.",
-        "Notebook 01 (floor_kpis.csv) — the 68-83% figure in the proposal"),
-    "tCO2e": ("kWh x co2_kg_per_kwh / 1000. Grid-average factor, not marginal.",
-              "TGO grid emission factor"),
-    "Cost of inaction (THB/day)": (
-        "Energy attributable to the fault / calendar days from first seen to the as-of date x tariff "
-        "(not active days, which would turn a one-off event into a daily loss). Zero, "
-        "not estimated, where the rule has no defensible energy attribution. For overcooling the "
-        "attributable energy is all cooling delivered while the zone was below the band, an upper bound "
-        "on the avoidable share.",
-        "FDD prioritisation practice (SkySpark / Clockworks 'cost of inaction')"),
-    "Fault lifecycle": (
-        "New -> Acknowledged -> In progress -> Resolved, plus Muted. Stored per fault id with "
-        "timestamp and note in dashboard/cache/fault_states.csv (append-only; latest row wins).",
-        "CMMS work-order states; ISA-18.2 shelving for Muted"),
-    "Fault id": ("F<floor>.<zone>.<rule>[.<point or start date>] — stable across windows so a state "
-                 "survives a page reload; offline episodes carry their start date.", "Project convention"),
-    "Expected energy (M&V baseline)": (
-        "Daily 3-parameter cooling change-point model on mean outdoor temperature, fitted separately "
-        "for workdays and non-workdays (ASHRAE IMT). Floor 5 trains on 2019-03-07 to 2019-09-26 so the "
-        "window sits between the 2019-03-06 and 2019-09-27 change-points; other floors use Jul 2018 - "
-        "Jun 2019.", "ASHRAE Guideline 14, IPMVP Option C"),
-    "Expected-energy band": (
-        "+/- mv_confidence_z x sqrt(sum of daily residual variances x (1+rho)/(1-rho)), rho = lag-1 "
-        "autocorrelation of training residuals.", "ASHRAE Guideline 14 Annex B autocorrelation correction"),
-    "CUSUM": ("Cumulative sum of (actual - expected), restarted at every registered change-point that "
-              "blocks comparison, so it never accumulates across a configuration change.",
-              "ISO 50006 EnPI monitoring"),
-    "Combined savings": (
-        "Schedule trim and weekend lockout are metered and additive (disjoint hours). The setpoint "
-        "%/degC is applied to the occupied AC baseline after the trim is removed: "
-        "combined = S x (1 - T/B0) + T + L, for the low, mid and high case separately.",
-        "Interactive-effects rule in IPMVP Core Concepts"),
-    "IPMVP option": (
-        "Option B (retrofit isolation) for measures acting on zones with their own AC meter "
-        "(zone-temperature lift, schedule trim); Option C (whole facility) for floor-wide schedule "
-        "measures (weekend/holiday lockout) and the combined package.", "IPMVP Core Concepts 2022"),
-    "Minimum pilot length": (
-        "analysis.weeks_required at the baseline's CV(RMSE): hourly zone model for Option B (cooled "
-        "hours/day, rho = pilot_rho), daily floor model for Option C (one observation per workday).",
-        "ASHRAE Guideline 14 / standard two-sample power calculation"),
-}
 
 #: Floors that are not office floors: kept in building totals, excluded from
 #: schedule-based and overcooling rankings.
@@ -534,62 +486,6 @@ def point_for_any(floor: int, zone: str, channel: str) -> Point | None:
 
 def wired_floors() -> list[int]:
     return [f for f, meta in FLOORS.items() if meta["wired"]]
-
-
-def registry_frame(floor: int = 5) -> pd.DataFrame:
-    """The registry as a table, for display on the methods page."""
-    rows = [{
-        "zone": p.zone, "channel": p.channel, "column": p.column or "—",
-        "role": p.role, "unit": p.unit,
-        "range": f"{p.lo:g}–{p.hi:g}" if p.lo is not None else "—",
-        "note": p.note,
-    } for p in POINTS.get(floor, [])]
-    return pd.DataFrame(rows).sort_values(["zone", "channel"]).reset_index(drop=True)
-
-
-#: Project Haystack 4 marker tags and Brick class per (channel, role). The
-#: lux channel gets no illuminance tag on purpose: it is a scaled index.
-_TAGS = {
-    ("ac", None): ("elec-meter", "point his sensor elec power hvac", "brick:Electric_Power_Sensor"),
-    ("light", None): ("elec-meter", "point his sensor elec power lighting", "brick:Electric_Power_Sensor"),
-    ("plug", None): ("elec-meter", "point his sensor elec power plugLoad", "brick:Electric_Power_Sensor"),
-    ("temp", ROLE_ZONE_TEMP): ("zone-air-temp-sensor", "point his sensor zone air temp",
-                               "brick:Zone_Air_Temperature_Sensor"),
-    ("temp", ROLE_SUPPLY_TEMP): ("discharge-air-temp-sensor", "point his sensor discharge air temp",
-                                 "brick:Supply_Air_Temperature_Sensor"),
-    ("rh", None): ("zone-air-humidity-sensor", "point his sensor zone air humidity",
-                   "brick:Zone_Air_Humidity_Sensor"),
-    ("lux", None): ("light-level-index", "point his sensor zone luxIndex", "brick:Sensor"),
-}
-
-
-def haystack_frame(floors=None) -> pd.DataFrame:
-    """The point registry with Haystack / Brick tags, for export to a BMS or a
-    semantic model. Absent points are left out (nothing to tag); dead and
-    suspect meters keep their tags plus a `disabled` / `faulty` marker so a
-    consumer does not trend them as live."""
-    rows = []
-    for f in sorted(floors or POINTS):
-        for p in points(f):
-            proto, tags, brick = _TAGS.get((p.channel, p.role)) or _TAGS[(p.channel, None)]
-            extra = {ROLE_DEAD: " disabled", ROLE_SUSPECT_CONSTANT: " faulty",
-                     ROLE_RESIDUAL: " standby"}.get(p.role, "")
-            rows.append({"id": f"cubems.F{f}.{p.zone}.{p.column}", "dis": f"F{f} {p.zone} {p.column}",
-                         "siteRef": "cubems", "floorRef": f"cubems.F{f}", "spaceRef": f"cubems.F{f}.{p.zone}",
-                         "proto": proto, "tags": tags + extra, "unit": p.unit,
-                         "kind": "Number", "brick_class": brick, "role": p.role, "note": p.note})
-    return pd.DataFrame(rows)
-
-
-def change_point_frame(floor: int | None = None) -> pd.DataFrame:
-    return pd.DataFrame([{
-        "floor": ", ".join(f"F{f}" for f in c.floors),
-        "date": c.date, "event": c.title, "severity": c.severity,
-        "zones": ", ".join(c.zones) if c.zones else "all",
-        "blocks year-on-year": "yes" if c.blocks_comparison else "no",
-        "detail": c.detail,
-    } for c in CHANGE_POINTS if floor is None or floor in c.floors],
-        columns=["floor", "date", "event", "severity", "zones", "blocks year-on-year", "detail"])
 
 
 def crosses_change_point(start, end, floor: int | None = None) -> list[ChangePoint]:

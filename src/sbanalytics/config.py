@@ -28,7 +28,6 @@ DATA_DERIVED = REPO / "data" / "derived"       # tables one analysis notebook ha
 
 WEATHER_CSV = DATA_EXTERNAL / "openmeteo_bangkok_hourly_2018-06-30_2019-12-31_UTC.csv"
 HOLIDAYS_CSV = DATA_EXTERNAL / "thai_holidays_2018_2019.csv"
-ACADEMIC_CSV = DATA_EXTERNAL / "chula_academic_calendar.csv"
 
 FLOORS = (1, 2, 3, 4, 5, 6, 7)
 YEARS = (2018, 2019)

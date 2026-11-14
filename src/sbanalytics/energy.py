@@ -124,12 +124,6 @@ def carpet(h: pd.DataFrame, value: str = "ac_kwh", start=None, end=None,
     return g
 
 
-def load_duration(h: pd.DataFrame, start=None, end=None) -> pd.DataFrame:
-    s = floor_demand(h, start, end).dropna().sort_values(ascending=False)
-    return pd.DataFrame({"rank_pct": np.arange(1, len(s) + 1) / len(s) * 100,
-                         "kw": s.values})
-
-
 def daily(h: pd.DataFrame, start=None, end=None, zones=None) -> pd.DataFrame:
     d = D.slice_hourly(h, start, end, zones)
     g = d.groupby("date", as_index=False)[END_USES].sum(min_count=1)

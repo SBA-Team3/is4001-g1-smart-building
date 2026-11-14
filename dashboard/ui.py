@@ -116,11 +116,6 @@ def building_hourly() -> pd.DataFrame:
     return D.load_hourly(None)
 
 
-@st.cache_data(show_spinner="Loading building point health…")
-def building_health() -> pd.DataFrame:
-    return D.load_health(None)
-
-
 @st.cache_data(show_spinner="Scoring points…")
 def scored(floor: int) -> pd.DataFrame:
     return HL.score_point_days(D.load_health(floor))
@@ -316,11 +311,6 @@ def building_point_status(as_of) -> pd.DataFrame:
     return pd.concat([point_status(f, as_of) for f in R.wired_floors()], ignore_index=True)
 
 
-def short_point(row) -> str:
-    """'F5 z3 plug'."""
-    return f"F{row.floor} {row.zone} {row.channel}"
-
-
 # --------------------------------------------------------------------------- #
 # fault register — one window, one set of states, so counts agree everywhere
 # --------------------------------------------------------------------------- #
@@ -329,10 +319,6 @@ def short_point(row) -> str:
 def _raw_register(floor: int, start, end, as_of, tariff: float, lo: float) -> pd.DataFrame:
     return F.build_register(D.load_hourly(floor), D.load_health(floor), start=start, end=end,
                             floor=floor, tariff=tariff, as_of=as_of, lo=lo)
-
-
-#: People only acknowledge and handle the work; the system clears an alert.
-HUMAN_STATES = ["New", "Acknowledged", "In progress", "Muted"]
 
 
 def cleared_mask(last_seen: pd.Series, as_of) -> pd.Series:
@@ -608,7 +594,6 @@ _CHIP = {"info": ("info", "info"),
          "ok": ("normal", "check_circle"), "normal": ("normal", "check_circle"),
          "good": ("normal", "check_circle"), "neutral": ("info", "info"),
          "offline": ("offline", "radio_button_unchecked")}
-HOLLOW_STATES = {"Acknowledged", "In progress"}
 
 
 def chip(status: str, label: str | None = None, hollow: bool = False) -> str:
@@ -633,15 +618,6 @@ def legend(items: list[tuple[str, str]], tick: bool = False) -> str:
     """[(label, hex)] swatches; tick=True draws the thin target marker instead."""
     return "".join(f'<span class="cb-legend"><i class="{"tick" if tick else ""}" '
                    f'style="background:{c}"></i>{esc(l)}</span>' for l, c in items)
-
-
-def share_bar(pct: float, target: float | None = None) -> str:
-    """A 0–100% blue magnitude with a target tick. Judgement goes in a chip beside it."""
-    target = R.conv("overcooled_target_pct") if target is None else target
-    w = max(0.0, min(100.0, pct)) if np.isfinite(pct) else 0.0
-    return (f'<div class="cb-share"><div class="track"></div>'
-            f'<div class="fill" style="width:{w:.1f}%"></div>'
-            f'<div class="target" style="left:{target:.1f}%"></div></div>')
 
 
 def tile(label: str, value: str, delta: str = "", sub: str = "", items: list[str] | None = None,
@@ -713,32 +689,6 @@ def file_end_gate(floor: int, start, end) -> pd.Timestamp:
     return fe.normalize()
 
 
-SINCE_LOOKBACK_DAYS = 90
-
-
-@st.cache_data(show_spinner=False)
-def _since_register(floor: int, as_of, tariff: float, lo: float) -> pd.DataFrame:
-    s, e = D.window(as_of, SINCE_LOOKBACK_DAYS)
-    return _raw_register(floor, s, e, as_of, tariff, lo)
-
-
-def since_yesterday(floor: int, as_of, tariff: float, lo: float | None = None) -> dict:
-    """New / cleared alerts on the as-of day, from a fixed 90-day look-back that
-    ignores the period control (a one-day window would make every fault 'new')."""
-    lo = float(R.conv("comfort_lo")) if lo is None else float(lo)
-    reg = _since_register(floor, pd.Timestamp(as_of).normalize(), float(tariff), lo)
-    if len(reg):
-        reg = reg[~reg.planned]
-    day = pd.Timestamp(as_of).normalize()
-    if not len(reg):
-        return {"new": [], "cleared": []}
-    fs = pd.to_datetime(reg.first_seen).dt.normalize()
-    ls = pd.to_datetime(reg.last_seen).dt.normalize()
-    # Cleared today = it just passed the episode gap (as_of − last_seen = gap + 1 days).
-    became = day - pd.Timedelta(days=int(R.conv("episode_gap_days")) + 1)
-    return {"new": reg.id[fs == day].tolist(), "cleared": reg.id[ls == became].tolist()}
-
-
 def comparison_guard(start, end, floor: int, show: bool = True) -> list:
     """Block a period-over-period comparison that straddles a change-point."""
     cps = [c for c in R.crosses_change_point(start, end, floor) if c.blocks_comparison]
@@ -765,10 +715,6 @@ def thb(kwh_v: float, tariff: float, suffix: str = "") -> str:
     if kwh_v is None or not np.isfinite(kwh_v):
         return DASH
     return f"฿{kwh_v * tariff:,.0f}{suffix}"
-
-
-def money(v, tariff):
-    return thb(v, tariff)
 
 
 def round_numeric(df: pd.DataFrame, digits: int = 1) -> pd.DataFrame:
@@ -1145,13 +1091,3 @@ def zone_map(floor: int, values: pd.DataFrame | None = None, value_col: str | No
        f'boundary of the 2nd and 3rd step</span></div>')
 
 
-def file_end_note(floor: int, end=None) -> None:
-    """Flag a floor whose source file ends early, wherever it appears."""
-    fe = R.floor_file_end(floor)
-    if fe is not None and (end is None or pd.Timestamp(end) >= fe.normalize()):
-        st.warning(f"**Floor {floor}'s file ends {fe:%Y-%m-%d %H:%M}.** Everything after is "
-                   "not metered — never compare it with an earlier period.", icon=":material/warning:")
-
-
-def fmt_weeks(w) -> str:
-    return "> 5 years" if w is None or not np.isfinite(w) else f"{w:.0f}"

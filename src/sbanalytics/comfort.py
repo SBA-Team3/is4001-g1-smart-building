@@ -119,29 +119,3 @@ def shift_distribution(temps, d_mean: float = 0.0, sd_scale: float = 1.0):
     return mu + d_mean + (t - mu) * sd_scale
 
 
-def frontier(h: pd.DataFrame, zones=None, lo=None, hi=None, sd_scale=1.0,
-             shifts=None, floor: int = 5) -> pd.DataFrame:
-    """Cold-tail vs warm-tail as the setpoint rises — the comfort trade-off."""
-    lo = band()[0] if lo is None else lo
-    hi = band()[1] if hi is None else hi
-    shifts = np.arange(0, 3.51, 0.25) if shifts is None else shifts
-    zones = zones or R.comfort_zones(floor)
-
-    d = D.occupied(h, zones=zones, require_temp=True, ac_on=True)
-    rows = []
-    for s in shifts:
-        for z, g in d.groupby("zone"):
-            n = shift_distribution(g.temp_c, s, sd_scale)
-            rows.append({"zone": z, "shift": float(s),
-                         "pct_cold": float((n < lo).mean() * 100),
-                         "pct_warm": float((n > hi).mean() * 100),
-                         "mean_c": float(n.mean())})
-    return pd.DataFrame(rows)
-
-
-def cycling_rate(minute_df: pd.DataFrame, col: str, on_kw: float = 0.5) -> pd.Series:
-    """AC on/off transitions per day — our computable analogue of G36 FC4
-    ('too many changes in operating state'), which we cannot compute as written
-    because it needs valve and damper positions."""
-    on = (minute_df[col] > on_kw).astype(int)
-    return on.diff().abs().groupby(minute_df.index.normalize()).sum()

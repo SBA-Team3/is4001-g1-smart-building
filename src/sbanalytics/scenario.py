@@ -33,7 +33,6 @@ from . import analysis as A
 from . import anomaly as AN
 from . import baseline as B
 from . import kpis as K
-from . import mv as M
 from . import registry as R
 
 CASES = ("low", "mid", "high")
@@ -210,70 +209,6 @@ def _row(name, r, cost, tariff, ef, conf, comfort_txt) -> dict:
 # M&V plan
 # --------------------------------------------------------------------------- #
 
-def mv_plan(floor: int, result: dict, zone_cv: float, floor_cv: float,
-            lockout: bool, trim_n: int, floor_ac_kwh: float) -> pd.DataFrame:
-    """One IPMVP card per active measure.
-
-    Option B for measures on zones with their own AC meter, judged against the
-    hourly zone baseline (analysis.fit_baselines); Option C for floor-wide
-    measures and the package, judged against the daily floor model (mv.py).
-    `floor_ac_kwh` is the floor's annual AC energy, the Option C denominator.
-
-    The lockout is the exception: a weekend run is so small against a daily
-    model's noise that no pilot of sane length detects it statistically. It is
-    verified by direct metering instead (non-workday AC back to night base).
-    """
-    alpha, power, rho = R.conv("pilot_alpha"), R.conv("pilot_power"), R.conv("pilot_rho")
-    hpd = len(R.ac_on_hours(floor))
-    cps = [f"{c.date} ({c.title})" for c in M.blocking_change_points(floor)]
-    excl = ["public holidays and detected closures (day_type)",
-            "any day with < 20 usable hours (G14 data sufficiency)"]
-    if cps:
-        excl.append("no baseline or reporting period may straddle " + "; ".join(cps))
-    fe = R.floor_file_end(floor)
-    if fe is not None:
-        excl.append(f"no data after {fe.date()} — the floor's file ends there")
-    b0 = result["base_kwh"] or np.nan
-    floor_ac = floor_ac_kwh or np.nan
-    rows = []
-
-    def card(measure, option, boundary, baseline, model, cv, saving_kwh, base_kwh, hours_per_day,
-             days_pw, r, verify=""):
-        pct = saving_kwh / base_kwh * 100 if base_kwh and np.isfinite(base_kwh) else np.nan
-        wk = A.weeks_required(cv, pct, hours_per_day, days_pw, alpha, power, r) \
-            if np.isfinite(pct) and pct > 0 else np.nan
-        rows.append({"measure": measure, "IPMVP option": option, "measurement boundary": boundary,
-                     "baseline period": baseline, "baseline model": model,
-                     "CV(RMSE) %": cv, "expected saving %": pct,
-                     "minimum pilot (weeks)": wk,
-                     "verification": verify or (f"actual vs baseline for >= {wk:.0f} weeks"
-                                                if np.isfinite(wk) else
-                                                "not detectable within 5 years against this baseline"),
-                     "detectable in 4 weeks %": A.detectable_saving(cv, 4, hours_per_day, days_pw,
-                                                                    alpha, power, r),
-                     "exclusions": "; ".join(excl)})
-
-    zones = ", ".join(R.comfort_zones(floor))
-    zb = f"{A.TRAIN[0]} → {A.TRAIN[1]}"
-    fb = f"{M.train_window(floor)[0]} → {M.train_window(floor)[1]}"
-    if result["lift"]["mid"] > 0:
-        card("Zone-temperature lift", "B — retrofit isolation", f"AC meters of {zones}", zb,
-             "hourly zone GBM on weather + calendar (analysis.fit_baselines)", zone_cv,
-             result["lift"]["mid"], b0, hpd, 5, rho)
-    if trim_n and result["trim"]["mid"] > 0:
-        card("Schedule trim", "B — retrofit isolation", f"AC meters of {zones}, trimmed hours", zb,
-             "hourly zone GBM on weather + calendar", zone_cv, result["trim"]["mid"], b0, hpd, 5, rho)
-    if lockout and result["lockout"]["mid"] > 0:
-        card("Weekend/holiday lockout", "C — whole floor", "floor AC total, non-workdays", fb,
-             "daily 3P change-point, non-workday regime (mv.py)", floor_cv,
-             result["lockout"]["mid"], floor_ac, 1, 5, 0.0,
-             verify=(f"direct metering: no non-workday hour above {R.conv('ac_on_kwh'):g} kWh/h per zone "
-                     f"over the next {R.conv('verify_weeks_schedule'):.0f} weekends and holidays"))
-    if result["combined"]["mid"] > 0:
-        card("Combined package", "C — whole floor", "floor AC total", fb,
-             "daily 3P change-point (mv.py)", floor_cv, result["combined"]["mid"], floor_ac, 1, 5, 0.0)
-    return pd.DataFrame(rows)
-
 
 # --------------------------------------------------------------------------- #
 # sensitivity
@@ -306,7 +241,6 @@ def tornado(h: pd.DataFrame, est: pd.DataFrame, phys: dict, floor: int, *,
     tp = R.conv("sens_tariff_pct") / 100
     rows.append((f"Tariff ±{tp * 100:.0f}%", mid * (1 - tp), mid * (1 + tp)))
 
-    c = base["combined"]
     lift = base["lift"]
     t, l_, b0 = base["trim"], base["lockout"], base["base_kwh"]
     adj = lambda s: (s * (1 - (t["mid"] / b0 if b0 else 0)) + t["mid"] + l_["mid"]) * tariff

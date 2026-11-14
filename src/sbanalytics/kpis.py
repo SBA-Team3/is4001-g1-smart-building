@@ -9,7 +9,6 @@ occupied zones are overcooled.
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score

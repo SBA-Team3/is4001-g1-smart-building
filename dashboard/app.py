@@ -69,7 +69,6 @@ nav = st.navigation(position="top", pages=[
     st.Page(f"{P}/6_opportunities.py", title="Savings", icon=":material/savings:"),
     st.Page(f"{P}/8_about_data.py", title="About the data", icon=":material/info:"),
 ])
-on_overview = nav.url_path == OVERVIEW.url_path
 #: Pages that offer "Bldg" (ui.BUILDING_PAGES): Overview and Carbon highlight a selected
 #: floor; Alerts narrows to it.
 on_building_page = nav.url_path in ui.BUILDING_PAGES

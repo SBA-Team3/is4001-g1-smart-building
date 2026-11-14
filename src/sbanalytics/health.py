@@ -104,31 +104,6 @@ def score_point_days(H: pd.DataFrame) -> pd.DataFrame:
     return h
 
 
-def completeness_table(H: pd.DataFrame, exclude_blackout: bool = True) -> pd.DataFrame:
-    """Per-point completeness over the whole record.
-
-    Excluding the blackout by default is the honest choice: with it included, z2
-    reads 50.9% and every zone looks equally broken by one known planned outage.
-    Excluding it shows z2 is still only ~75% complete, which is the number an FM
-    would actually act on.
-    """
-    h = H[~H.in_blackout] if exclude_blackout else H
-    g = h.groupby(["zone", "channel", "column", "role"], as_index=False).agg(
-        days=("day", "nunique"),
-        received=("received", "sum"),
-        expected=("expected", "sum"),
-        offline_days=("received", lambda s: int((s == 0).sum())),
-        max_flat=("max_flat_nonzero", "max"),
-        out_of_range=("out_of_range", "sum"),
-        spikes=("spikes", "sum"),
-    )
-    g["completeness"] = g.received / g.expected * 100
-    scored = score_point_days(h)
-    g["flat_days"] = scored.groupby(["zone", "channel", "column", "role"]).flag_flatline.sum().values
-    g["flat_day_share"] = g.flat_days / g.days * 100
-    return g.sort_values("completeness")
-
-
 def verdict(row) -> str:
     """One-line operator verdict per point."""
     if row.role == R.ROLE_SUSPECT_CONSTANT and row.flat_day_share > 40:
@@ -162,19 +137,6 @@ def point_health_index(H: pd.DataFrame, day=None, floor: int = 5) -> dict:
     }
 
 
-def heatmap_frame(H: pd.DataFrame, channels=None, zones=None) -> pd.DataFrame:
-    """Point x day health, for the operator's most-used data-quality visual."""
-    h = score_point_days(H)
-    if channels:
-        h = h[h.channel.isin(list(channels))]
-    if zones:
-        h = h[h.zone.isin(list(zones))]
-    h["point"] = h.zone + " " + h.channel
-    return h[["point", "zone", "channel", "column", "day", "health", "completeness",
-              "received", "max_flat_nonzero", "out_of_range", "spikes",
-              "flag_offline", "flag_flatline", "in_blackout"]]
-
-
 def last_good(H: pd.DataFrame, as_of, floor: int = 5) -> pd.DataFrame:
     """Most recent day each point reported anything, at or before as_of."""
     d = pd.Timestamp(as_of).normalize()
@@ -184,51 +146,9 @@ def last_good(H: pd.DataFrame, as_of, floor: int = 5) -> pd.DataFrame:
     return g.rename(columns={"day": "last_good_day"}).sort_values("days_stale", ascending=False)
 
 
-def went_offline(H: pd.DataFrame, as_of) -> pd.DataFrame:
-    """Points that reported something the day before as_of and nothing on as_of —
-    the "since yesterday" line an operator reads first."""
-    d = pd.Timestamp(as_of).normalize()
-    today = H[H.day == d].set_index("column").received
-    prev = H[H.day == d - pd.Timedelta(days=1)].set_index("column").received
-    cols = today.index.intersection(prev.index)
-    lost = [c for c in cols if today[c] == 0 and prev[c] > 0]
-    return H[(H.day == d) & H.column.isin(lost)][["zone", "channel", "column"]]
-
-
 # --------------------------------------------------------------------------- #
 # cross-sensor consistency — the strongest check available without a reference
 # --------------------------------------------------------------------------- #
-
-def peer_deviation(h: pd.DataFrame, freq: str = "MS", zones=None) -> pd.DataFrame:
-    """Each zone's temperature offset from the peer median, by period.
-
-    Uses the RSS-combined tolerance form from ASHRAE G36 — |A - B| > sqrt(eA^2 +
-    eB^2) — with the dataset's stated +/-0.4 degC sensor accuracy, which is the
-    correct way to combine two instruments' error bands.
-    """
-    zones = zones or R.comfort_zones(D.floor_of(h))
-    d = D.occupied(h, zones=zones, require_temp=True)
-    if not len(d):
-        return pd.DataFrame()
-
-    d = d.assign(period=d.ts.dt.to_period(freq.rstrip("S")).dt.to_timestamp())
-    piv = d.pivot_table(index="period", columns="zone", values="temp_c", aggfunc="mean")
-    n = d.pivot_table(index="period", columns="zone", values="temp_c", aggfunc="size")
-
-    med = piv.median(axis=1)
-    dev = piv.sub(med, axis=0)
-    eps = R.conv("sensor_acc_temp")
-    tol = np.sqrt(2) * eps
-
-    out = dev.reset_index().melt(id_vars="period", var_name="zone", value_name="deviation")
-    out = out.merge(n.reset_index().melt(id_vars="period", var_name="zone", value_name="n"),
-                    on=["period", "zone"], how="left")
-    out["tolerance"] = tol
-    out["exceeds"] = out.deviation.abs() > tol
-    # Periods with almost no data produce meaningless deviations (z2 has months
-    # with n=0 and n=8), so mark them rather than letting them drive a trend.
-    out["reliable"] = out.n.fillna(0) >= 40
-    return out
 
 
 def humidity_consistency(h: pd.DataFrame, zones=None) -> pd.DataFrame:

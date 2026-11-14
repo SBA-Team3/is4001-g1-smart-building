@@ -16,14 +16,10 @@ dashboard and the notebooks quote the same numbers.
 
 from __future__ import annotations
 
-import warnings
 
 import numpy as np
 import pandas as pd
 
-from . import analysis as A
-from . import anomaly as AN
-from . import baseline as B
 from . import config as C
 from . import data as D
 from . import kpis as K
@@ -98,19 +94,6 @@ def monthly_energy(h: pd.DataFrame) -> pd.DataFrame:
 # floor league
 # --------------------------------------------------------------------------- #
 
-def weather_normalised_deviation() -> pd.DataFrame:
-    """Jul-Dec 2019 actual vs the 2018-trained daily baseline, per floor.
-
-    Read from notebook 02's chosen model (total kWh, test period). G14's NMBE is
-    (actual - expected) / actual; the FM-facing number is relative to expected.
-    """
-    c = derived("baseline_chosen")
-    c = c[c.target == "total_kwh"].set_index("floor")
-    nmbe = c.nmbe / 100
-    return pd.DataFrame({"deviation_pct": nmbe / (1 - nmbe) * 100,
-                         "baseline_meets_g14": c.meets_g14.astype(bool),
-                         "baseline_cv_rmse": c.cv_rmse})
-
 
 def meter_outages(H: pd.DataFrame, min_share: float = 0.5) -> pd.DataFrame:
     """Floor-level meter outage episodes from the point-day health table.
@@ -138,66 +121,6 @@ def meter_outages(H: pd.DataFrame, min_share: float = 0.5) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["floor", "start", "end", "days", "share_offline"])
 
 
-def status_note(floor: int, comp_row=None, outages: pd.DataFrame | None = None) -> str:
-    """The caveat an FM needs next to a floor's row, generated from the registry
-    and the data rather than typed per floor."""
-    notes = []
-    if floor in R.NON_OFFICE_FLOORS:
-        notes.append("Not an office floor — in building totals, excluded from schedule and "
-                     "overcooling rankings")
-    fe = R.floor_file_end(floor)
-    if fe is not None:
-        notes.append(f"File ends {fe.date()} — no data after; never compare F{floor} past it")
-    if outages is not None and len(outages):
-        o = outages[outages.floor == floor]
-        if len(o):
-            notes.append("Meter outages " + ", ".join(
-                f"{r.start:%d %b %y}–{r.end:%d %b %y} ({r.days} d)" for r in o.itertuples()))
-    if comp_row is not None and comp_row.get("meter_pct", 100) < R.conv("completeness_target"):
-        notes.append(f"Meters {comp_row['meter_pct']:.0f}% complete over the record")
-    if not R.sensored_zones(floor):
-        notes.append("No indoor sensors")
-    return "; ".join(notes) if notes else "—"
-
-
-def night_ac_ratio(h: pd.DataFrame) -> pd.Series:
-    """Per floor: mean AC in 01-04 h as % of mean AC in workday 08-16 h. Near 100%
-    means the AC never switches off — the signature of a non-office floor."""
-    night = h[h.hour.between(1, 4)].groupby(["floor", "ts"]).ac_kwh.sum().groupby("floor").mean()
-    day = h[h.is_workday & h.hour.between(8, 16)].groupby(["floor", "ts"]).ac_kwh.sum().groupby("floor").mean()
-    return night / day * 100
-
-
-def floor_league(h: pd.DataFrame, area_m2: float | None = None,
-                 H: pd.DataFrame | None = None) -> pd.DataFrame:
-    """One row per floor, whole record. Office floors sorted by overcooled share,
-    worst first; non-office floors last."""
-    area_m2 = R.conv("floor_area_m2") if area_m2 is None else area_m2
-    k = derived("floor_kpis").set_index("floor")
-    dev = weather_normalised_deviation()
-    comp = completeness(h)
-    t = pd.DataFrame(index=sorted(R.FLOORS))
-    t.index.name = "floor"
-    t["eui"] = k.kwh_per_day * 365 / area_m2
-    t["ac_share_pct"] = k.ac_share * 100
-    t["overcooled_pct"] = k.overcooled_share * 100
-    t["after_hours_ac_pct"] = k.after_hours_ac_share * 100
-    t["deviation_pct"] = dev.deviation_pct
-    t["baseline_meets_g14"] = dev.baseline_meets_g14
-    t["meter_pct"] = comp.meter_pct
-    t["sensor_pct"] = comp.sensor_pct
-    t["night_ac_pct"] = night_ac_ratio(h)
-    t["office"] = [f not in R.NON_OFFICE_FLOORS for f in t.index]
-    for f in R.NON_OFFICE_FLOORS:          # never rank a non-office floor on office KPIs
-        t.loc[f, ["overcooled_pct", "after_hours_ac_pct"]] = np.nan
-    out = meter_outages(H) if H is not None else None
-    t["status"] = [status_note(f, comp.loc[f].to_dict() if f in comp.index else None, out)
-                   for f in t.index]
-    t = t.reset_index()
-    return t.sort_values(["office", "overcooled_pct"], ascending=[False, False],
-                         na_position="last").reset_index(drop=True)
-
-
 def overcooled_by_month(h: pd.DataFrame, lo: float | None = None, hi: float | None = None) -> pd.DataFrame:
     """Floor x month overcooled share — the 'where do I send the team' view.
 
@@ -220,95 +143,4 @@ def overcooled_by_month(h: pd.DataFrame, lo: float | None = None, hi: float | No
 # the one-sentence "what to look at"
 # --------------------------------------------------------------------------- #
 
-def setpoint_range(est: pd.DataFrame) -> tuple[float, float, int] | None:
-    """(low, high, n) %/degC saving magnitude from the n estimators that pass
-    notebook 06's reliability rule. None when no estimator is usable."""
-    keep = []
-    for _, e in est[est.estimator != "Midpoint"].iterrows():
-        width = abs(e.hi - e.lo)
-        if np.isfinite(width) and e.pct_per_c < 0 and width <= R.conv("estimator_ci_max_ratio") * abs(e.pct_per_c):
-            keep.append(-e.pct_per_c)
-    return (min(keep), max(keep), len(keep)) if keep else None
 
-
-def floor_levers(h: pd.DataFrame, lo: float | None = None, hi: float | None = None) -> pd.DataFrame:
-    """Annualised kWh for the levers this data can size, per office floor.
-
-    * +1 degC zone-temperature lift — notebook 06's estimator range
-    * weekend/holiday AC lockout — metered excess above each floor's night base
-    * workday AC run-on outside the schedule — metered excess
-    Plus the worst comfort zone, so the sentence can name a place to walk to.
-    """
-    fh = B.floor_hourly(h)
-    fd = B.floor_daily(fh)
-    year = 365 / fd[fd.ok].groupby("floor").size()
-    ah = AN.after_hours_ac(fh)
-    if len(ah):
-        ah["off_day"] = ah.day_type.isin(["weekend", "holiday", "closure"])
-    co = K.cooled_occupied(h)
-    zs = K.overcooled_share(co, by=("floor", "zone"), lo=lo, hi=hi)
-    rows = []
-    for f in office_floors():
-        hf = h[h.floor == f]
-        if not R.comfort_zones(f):
-            continue
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            est = A.estimator_range(A.fit_physics(hf, floor=f), A.run_regression(hf, floor=f))
-        rng = setpoint_range(est)
-        base = A.setpoint_saving(hf, pct_per_c=-1, d_temp=1, floor=f).kwh_year.sum()
-        a = ah[ah.floor == f] if len(ah) else ah
-        z = zs[zs.floor == f].sort_values("share_below", ascending=False)
-        rows.append({
-            "floor": f,
-            "setpoint_kwh_lo": base * rng[0] / 100 if rng else np.nan,
-            "setpoint_kwh_hi": base * rng[1] / 100 if rng else np.nan,
-            "n_estimators": rng[2] if rng else 0,
-            "lockout_kwh": a[a.off_day].excess_kwh.sum() * year.get(f, np.nan) if len(a) else 0.0,
-            "runon_kwh": a[~a.off_day].excess_kwh.sum() * year.get(f, np.nan) if len(a) else 0.0,
-            "worst_zone": z.zone.iloc[0] if len(z) else None,
-            "worst_zone_pct": z.share_below.iloc[0] * 100 if len(z) else np.nan,
-        })
-    return pd.DataFrame(rows).set_index("floor")
-
-
-def what_to_look_at(floor: int, league_row: dict, levers: pd.DataFrame,
-                    tariff: float | None = None, lo: float | None = None) -> str:
-    """One generated sentence per floor. Data problems outrank energy levers,
-    because a lever sized on a broken meter is not a lever."""
-    tariff = R.conv("tariff_thb") if tariff is None else tariff
-    if floor in R.NON_OFFICE_FLOORS:
-        return (f"Not an office profile — overnight AC runs at {league_row['night_ac_pct']:.0f}% of its "
-                "daytime level, so there is no schedule to trim: confirm what the space is and whether "
-                "24/7 cooling is required before setting any target.")
-    lead = ""
-    if league_row.get("meter_pct", 100) < R.conv("completeness_target"):
-        lead = f"Data first — meters only {league_row['meter_pct']:.0f}% complete. "
-    if floor not in levers.index:
-        return lead + "No comfort-zone data to size a lever."
-    lv = levers.loc[floor]
-    cands = {
-        "the AC calendar (weekend/holiday runs)": lv.lockout_kwh,
-        "AC run-on outside the workday schedule": lv.runon_kwh,
-        "a +1 °C zone-temperature lift": np.nanmean([lv.setpoint_kwh_lo, lv.setpoint_kwh_hi]),
-    }
-    cands = {k: v for k, v in cands.items() if np.isfinite(v) and v > 0}
-    if not cands:
-        return lead + "No lever this data can size."
-    best = max(cands, key=cands.get)
-    kwh = cands[best]
-    if best.startswith("a +1") and lv.n_estimators > 1:
-        size = (f"≈{lv.setpoint_kwh_lo:,.0f}–{lv.setpoint_kwh_hi:,.0f} kWh/yr, "
-                f"฿{lv.setpoint_kwh_lo * tariff:,.0f}–{lv.setpoint_kwh_hi * tariff:,.0f}")
-    elif best.startswith("a +1"):
-        size = (f"≈{kwh:,.0f} kWh/yr from a single usable estimator, ฿{kwh * tariff:,.0f} — "
-                "treat as indicative")
-    else:
-        size = f"≈{kwh:,.0f} kWh/yr metered, ฿{kwh * tariff:,.0f}"
-    where = (f"; start in {lv.worst_zone} ({lv.worst_zone_pct:.0f}% of its cooled hours below "
-             f"{R.conv('comfort_lo') if lo is None else lo:g} °C)" if lv.worst_zone else "")
-    tail = ""
-    fe = R.floor_file_end(floor)
-    if fe is not None:
-        tail = f" Sized on data to {fe.date()} only."
-    return f"{lead}Biggest lever: {best} ({size}){where}.{tail}"
