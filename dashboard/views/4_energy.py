@@ -166,10 +166,6 @@ else:
                        "with the G14 autocorrelation correction. Grey bars lie across a registered "
                        "change-point from the training window and need an IPMVP non-routine adjustment "
                        "before they count. Dotted rules: change-points and the sensor gap.")
-            with st.expander("Table"):
-                st.dataframe(ui.round_numeric(ru[["date", "days", "actual", "expected", "lo", "hi",
-                                                  "deviation", "deviation_pct", "significant", "config"]]),
-                             width="stretch", hide_index=True)
         else:
             st.info("No usable days in this period.", icon=":material/info:")
 

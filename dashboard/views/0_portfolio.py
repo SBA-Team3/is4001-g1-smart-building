@@ -30,16 +30,6 @@ def _model(floor: int) -> dict:
     return M.daily_model(D.load_hourly(floor), floor, "total_kwh")
 
 
-@st.cache_resource(show_spinner="Sizing each floor's levers…")
-def _levers(lo: float, hi: float) -> pd.DataFrame:
-    return P.floor_levers(D.load_hourly(None), lo=lo, hi=hi)
-
-
-@st.cache_data(show_spinner="Ranking floors…")
-def _league(area: float) -> pd.DataFrame:
-    return P.floor_league(D.load_hourly(None), area, D.load_health(None))
-
-
 def _vs_expected(floor: int, s_, e_) -> tuple[float, float]:
     """(actual, expected) kWh over the usable days of the period, from the floor's baseline."""
     d = _model(floor)["daily"]
@@ -241,14 +231,4 @@ st.altair_chart(ui.chart(alt.Chart(mo).mark_bar(stroke=ui.SURFACE, strokeWidth=1
     tooltip=tip + [alt.Tooltip("month:T", format="%b %Y"), alt.Tooltip("kWh:Q", format=",.0f")]),
     height=260), width="stretch")
 st.caption("Floor 6 has nothing after October 2019 because its file ends, not because it used nothing.")
-
-with st.expander("Biggest lever per floor", icon=":material/lightbulb:"):
-    L, lv = _league(c["area"]), _levers(LO, HI)     # per-floor area = building area ÷ 7
-    for _, r in L.iterrows():
-        f = int(r.floor)
-        if f in R.NON_OFFICE_FLOORS:
-            continue
-        ui.md(f'<p class="cb-body" style="margin:0 0 8px"><b>F{f}</b> — '
-              f'{ui.esc(P.what_to_look_at(f, r.to_dict(), lv, tariff, lo=LO))}</p>')
-    st.caption("Whole-record figures. Sized on the Savings page.")
 
