@@ -67,7 +67,7 @@ nav = st.navigation(position="top", pages=[
     st.Page(f"{P}/4_energy.py", title="Energy", icon=":material/bolt:"),
     st.Page(f"{P}/7_carbon.py", title="Carbon", icon=":material/eco:"),
     st.Page(f"{P}/6_opportunities.py", title="Savings", icon=":material/savings:"),
-    st.Page(f"{P}/8_methods.py", title="Methods", icon=":material/science:"),
+    st.Page(f"{P}/8_about_data.py", title="About the data", icon=":material/info:"),
 ])
 on_overview = nav.url_path == OVERVIEW.url_path
 #: Pages that offer "Bldg" (ui.BUILDING_PAGES): Overview and Carbon highlight a selected
@@ -200,7 +200,7 @@ with st.container(key="ctxbar"):
                 st.button(f"Reset to {BAND_DEFAULT[0]:g}–{BAND_DEFAULT[1]:g} °C", on_click=_reset_band,
                           key="band_reset", type="tertiary", icon=":material/restart_alt:")
             st.caption("The grid emission factor is set on the Carbon page. Full list with sources on "
-                       "the Methods page.")
+                       "the About the data page.")
 
 st.session_state["building_view"] = sel == "Bldg"
 _s, _e, _ = ui.period_bounds(st.session_state["as_of"], st.session_state["period"])

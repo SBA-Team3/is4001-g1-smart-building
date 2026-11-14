@@ -124,7 +124,7 @@ def _lobby() -> None:
                                    + f"{tot.get(z, float('nan')):,.0f} kWh in the period"
                                    for z in tot})
             ui.md('<p class="cb-cap cb-muted" style="text-align:center">Schematic, not to scale — traced '
-                  'from CU-BEMS Fig. 2 (Methods). Total kWh per zone over the period.</p>')
+                  'from CU-BEMS Fig. 2 (Pipattanasomporn et al., 2020). Total kWh per zone over the period.</p>')
     else:
         st.dataframe(tbl.style.format({c_: "{:,.0f}" for c_ in tbl.columns if c_.endswith("kWh")},
                                       na_rep=ui.DASH),

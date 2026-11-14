@@ -202,5 +202,5 @@ _name, _src = (EF_SRC.split(", ", 1) + [""])[:2]
 _fac = (f"custom factor {EF:.4f} kgCO₂e/kWh (TGO 2022 default {EF_DEFAULT:g})" if CUSTOM
         else f"{_name} {EF:g} kgCO₂e/kWh ({_src})")
 fc[0].caption(f"Scope 2, location-based · {_fac} · "
-              "submetered zone loads only; excludes central plant, lifts and common areas. Method on Methods")
-fc[1].page_link("views/8_methods.py", label="Methods", icon=":material/arrow_forward:", icon_position="right")
+              "submetered zone loads only; excludes central plant, lifts and common areas.")
+fc[1].page_link("views/8_about_data.py", label="About the data", icon=":material/arrow_forward:", icon_position="right")

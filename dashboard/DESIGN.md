@@ -91,7 +91,7 @@ depend on the period length.
 **States.** People set New → Acknowledged → In progress (a work order), or Mute. The
 system sets **Cleared** (`ui.with_states`): last seen more than the episode gap (3 days)
 before the as-of day. Open = not cleared and not muted; every count uses that. There is
-no manual Resolve and no "fixed when" text in the UI; how each type clears is on Methods.
+no manual Resolve and no "fixed when" text in the UI; how each type clears is on About the data.
 
 `ui.type_chip(rule, state)` is **neutral** — `bg/control` fill, `border/strong` edge,
 `text/secondary`, icon + label — filled while New, an outline once Acknowledged or In
@@ -167,7 +167,7 @@ H3 15/22, Body 14/20, Caption 12/16, Overline 11/16 uppercase.
 
 | Component | In code |
 |---|---|
-| Top nav (flat: Overview · Floor · Alerts · Sensors · Comfort · Energy · Carbon · Savings · Methods) | `st.navigation(position="top")` in `app.py` |
+| Top nav (flat: Overview · Floor · Alerts · Sensors · Comfort · Energy · Carbon · Savings · About the data) | `st.navigation(position="top")` in `app.py` |
 | Context bar (floor, as-of date, period, Assumptions popover: tariff, building floor area; on Carbon the popover is replaced by the grid emission factor, key `ef`) | `app.py`, keys `floor_select`, `as_of`, `period`; read via `ui.ctx()` |
 | Data-health caption | `ui.health_caption(floor, as_of, extra)` (Floor, Sensors) |
 | Page header | `ui.page_header(overline, title, sub_html)` |

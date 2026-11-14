@@ -50,7 +50,7 @@ The navigation is flat, in the order the FM asks:
 | **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, signature and outlier days, profiles |
 | **Carbon** | Scope 2, location-based emissions for the period (building-level; a selected floor is highlighted): tCO₂e, vs expected (F2–F7, the floors with a baseline), intensity, trailing 12 months; monthly emissions; by floor and by end use; reporting-year summary |
 | **Savings** | The intervention simulator: package inputs → kWh/yr and ฿/yr ranges, tCO₂e, comfort trade-off, IPMVP M&V plan; measures, tornado, control-stability lever, and how each lever is sized |
-| **Methods** | Conventions, point registry, change-points, and "About the data" (why alerts have no severity, what cannot be detected, why not UMLH, flatline rationale, combination rule, practice, corrections, baseline, pilot, exclusions) |
+| **About the data** | What is and is not measured; how alerts clear; the assumptions in use |
 
 Floor and Sensors carry one plain line of data health under the subtitle (points down
 by name, point health, completeness today; on Floor also new / cleared / went offline
@@ -138,8 +138,8 @@ What is still open:
 
 ## Standards and conventions
 
-Every threshold is declared with its source on the **Methods** page. The main
-ones:
+Every threshold is declared with its source in `R.CONVENTIONS`; the ones an FM
+needs are on the **About the data** page. The main ones:
 
 | Parameter | Value | Basis |
 |---|---|---|
@@ -150,7 +150,7 @@ ones:
 | EUI benchmark | 170 good / 225 typical | Bangkok office study, n=41 |
 | Humidity limit | 0.012 kg/kg | ASHRAE 55 |
 
-Added for v2 (all in `R.CONVENTIONS`, with sources, on the Methods page):
+Added for v2 (all in `R.CONVENTIONS`, with sources):
 
 | Parameter | Value | Basis |
 |---|---|---|
@@ -162,7 +162,7 @@ Added for v2 (all in `R.CONVENTIONS`, with sources, on the Methods page):
 | Verification windows | 2 weeks (schedule/metering), 4 weeks (comfort) | Project convention |
 | M&V band | ±1.645 σ (90%), G14 autocorrelation correction | IPMVP / ASHRAE G14 |
 | Energy-signature outlier | > 2 training SDs above the line | Project convention |
-| Pilot power | α 0.05, power 0.8, ρ 0.5 | Methods-page defaults |
+| Pilot power | α 0.05, power 0.8, ρ 0.5 | Savings-page minimum pilot length |
 | Lockout low case | 50% of metered weekend/holiday excess | Notebook 06 |
 | Tornado ranges | tariff ±20%, lift ±0.5 °C, trim ±1 h | Project assumption |
 
@@ -190,4 +190,4 @@ building is mechanically cooled).
 - Three of five plug meters are effectively frozen; two power spikes were
   uncapped.
 
-See the Methods page for the full list with evidence.
+See the notebooks (00a, 00b) for the full list with evidence.

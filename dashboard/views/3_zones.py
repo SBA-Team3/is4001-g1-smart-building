@@ -59,7 +59,7 @@ with left:
             pd.DataFrame(columns=["zone", COLD, "mean °C", "°C·h below", "AC kWh"])
         ui.zone_map(floor, vals, COLD, as_of=as_of, height=330, zone_temps=uncooled,
                     tooltip_cols=("mean °C", COLD, "°C·h below", "AC kWh"))
-        st.caption("Schematic, not to scale — traced from CU-BEMS Fig. 2 (Methods).")
+        st.caption("Schematic, not to scale — traced from CU-BEMS Fig. 2 (Pipattanasomporn et al., 2020).")
     elif len(zc):
         league = pd.DataFrame({
             "Zone": [ui.zone_label(floor, z) for z in show.zone],

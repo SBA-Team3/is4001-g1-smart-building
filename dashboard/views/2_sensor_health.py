@@ -142,11 +142,11 @@ with tab_points:
     if floor == 5:
         st.caption("On this floor the frozen points are plug meters, not temperature sensors: z3_Plug "
                    "reports a constant ~0.27 kW with about 7 distinct values a day; z5_Plug and "
-                   "z2_Plug sit pinned for up to 2.6 days at a time. Why temperature never reads "
-                   "frozen is on the Methods page.")
+                   "z2_Plug sit pinned for up to 2.6 days at a time. Temperature is judged frozen "
+                   "only while cooling runs, since a room holds steady overnight with the AC off.")
     else:
-        st.caption("Why temperature never reads frozen (it is only judged while cooling runs) is on "
-                   "the Methods page.")
+        st.caption("Temperature is judged frozen only while cooling runs, since a room holds steady "
+                   "overnight with the AC off.")
 
 # --------------------------------------------------------------------------- #
 with tab_cross:

@@ -227,7 +227,7 @@ def ctx() -> dict:
 #: assumption; the dataset does not say what it is.
 REPORTING_ONLY = {1: "lobby"}
 #: Pages that accept a reporting-only floor (by URL path); the rest need an office floor.
-REPORTING_PAGES = {"", "carbon", "floor_status", "energy"}
+REPORTING_PAGES = {"", "carbon", "floor_status", "energy", "about_data"}
 #: Pages that offer "Bldg" (Alerts starts there on entry; app.py).
 BUILDING_PAGES = {"", "carbon", "faults"}
 
