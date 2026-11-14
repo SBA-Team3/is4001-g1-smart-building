@@ -88,25 +88,6 @@ is4001-g1-smart-building/
 | `kpis`, `baseline`, `anomaly`, `forecast` | the cross-floor analytics used in `analysis/` |
 | `viz` | one colour-blind-safe chart style; floor N is always the same colour |
 
----
-
-## How the data is cleaned 
-
-| Problem | Rule |
-|---|---|
-| Impossible values | outside per-point bounds in the registry → NaN |
-| Logger glitches found by floor owners (F4, F5) | kept as caps → NaN |
-| Reconnect bursts (e.g. 4,762 kW on a light meter) | > 3×P99.9, ≤ 3 min, rolling median < cap/3 → NaN |
-| Short gaps | interpolate interior gaps ≤ 5 min; **longer gaps are never filled** |
-| Stuck sensors | flagged in the health table, not deleted |
-| Hour / day usability | hour usable if ≥ 48 min present; day if ≥ 20 usable hours |
-| Timestamps | Bangkok local time, no shift; weather converted UTC → local |
-| Calendar | holidays from the shared CSV; closures and worked holidays detected from load |
-
-Cleaning changes each floor's energy totals by less than 0.4%. Every changed minute is in `data/cleaned/cleaning_log.csv`.
-
----
-
 ## Floor owners
 
 | Floor | Owner |
