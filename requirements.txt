@@ -7,8 +7,9 @@ scikit-learn>=1.4
 statsmodels>=0.14
 
 # Notebooks and charts
-matplotlib
+matplotlib>=3.10     # boxplot(orientation=) is new in 3.10
 jupyter
+jinja2               # pandas DataFrame.style; not installed by ipykernel alone (VS Code)
 
 # Dashboard
 # <=1.50 lacks altair_chart(width=); 1.65 is the version the dashboard was built
