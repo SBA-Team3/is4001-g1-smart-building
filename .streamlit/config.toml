@@ -1,0 +1,59 @@
+# Dashboard theme. Values come from dashboard/design/tokens.json (see
+# dashboard/DESIGN.md). Streamlit reads this file from the folder you run
+# `streamlit run dashboard/app.py` in, so run from the repo root. Dark only.
+
+[client]
+toolbarMode = "viewer"                 # hide the developer toolbar (Deploy, rerun, settings)
+
+[theme]
+base = "dark"
+primaryColor = "#2EB4C8"               # accent/default: selection, focus, primary button. Never data.
+backgroundColor = "#0F1113"            # bg/page
+secondaryBackgroundColor = "#282D32"   # bg/control (inputs, segmented controls)
+textColor = "#ECEFF2"                  # text/primary
+borderColor = "#626C77"                # border/strong: input and card edges
+dataframeBorderColor = "#30363C"       # border/default: decorative dividers
+dataframeHeaderBackgroundColor = "#202428"
+dataframeHeaderTextColor = "#AEB6BF"
+linkColor = "#5CCBDB"                  # accent/hover
+codeBackgroundColor = "#202428"
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "8px"                     # radius/md
+buttonRadius = "8px"
+
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap, sans-serif"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap, sans-serif"
+baseFontSize = 14                      # Body/Regular
+headingFontSizes = ["24px", "18px", "18px", "15px", "12px", "11px"]
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+metricValueFontSize = "28px"           # Display/Metric
+metricValueFontWeight = 600
+
+# Status colours (st.metric deltas, banners, badges). Always paired with an icon and a word.
+redColor = "#F0524F"
+redTextColor = "#FF8E8A"
+redBackgroundColor = "#3B1B1C"
+orangeColor = "#F2A516"
+orangeTextColor = "#FFC453"
+orangeBackgroundColor = "#382B11"
+yellowColor = "#F2A516"
+yellowTextColor = "#FFC453"
+yellowBackgroundColor = "#382B11"
+greenColor = "#3FAE6E"
+greenTextColor = "#72D198"
+greenBackgroundColor = "#15301F"
+grayColor = "#8E97A1"
+grayTextColor = "#B9C1CA"
+grayBackgroundColor = "#23272C"
+# st.info is a quiet grey note, not a data-blue fill.
+blueColor = "#8E97A1"                   # text/muted
+blueTextColor = "#ECEFF2"               # text/primary
+blueBackgroundColor = "#202428"         # bg/raised
+
+# data/primary, data/series-2, data/series-3, data/context
+chartCategoricalColors = ["#4F8DF6", "#D8C08F", "#A6CBFB", "#5A636D"]
+
+[theme.sidebar]
+backgroundColor = "#171A1D"            # bg/surface (the sidebar is not rendered)
+secondaryBackgroundColor = "#282D32"

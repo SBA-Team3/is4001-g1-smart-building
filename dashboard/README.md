@@ -1,68 +1,136 @@
-# Floor 5 — facilities operations dashboard
+# CU-BEMS building — facilities operations dashboard
 
-A BMS-style operations dashboard for Floor 5 of the CU-BEMS building, built for a
-facilities manager rather than an analyst.
+A BMS-style operations dashboard for the CU-BEMS building, built for the
+university FM team (Office of Physical Resources Management). Its first
+questions are energy use, cost, and which sensors are down, so the Overview
+answers those for the whole building on one 1440×900 screen. The operational
+pages are wired for Floors 2–7; F1 (the lobby — a team assumption; no sensors)
+is reporting-only (Overview, Floor, Energy, Carbon).
 
 ## Run it
 
-```bash
-pip install -r ../requirements.txt
-python3 build_cache.py        # once, ~1 minute
-streamlit run app.py
-```
-
-`build_cache.py` reads the raw CSVs in `../data/` and writes four parquet
-artefacts into `cache/` (gitignored). The dashboard never touches the raw files:
-minute-level fault detection over 790,560 rows × 26 channels cannot run on a
-page load.
+From the repo root:
 
 ```bash
-python3 verify.py             # 29 ground-truth checks
+pip install -r requirements.txt && pip install -e .
+python -m sbanalytics.pipeline         # once, ~2 minutes, all floors -> data/cleaned/
+streamlit run dashboard/app.py
 ```
 
-## Why the pages are in this order
+The dashboard reads the **shared cleaned dataset** in `data/cleaned/` — the same
+files every notebook uses — built by `src/sbanalytics/pipeline.py`. It never
+touches the raw files: minute-level fault detection over 790,560 rows × 26
+channels cannot run on a page load.
 
-A facilities manager opening a dashboard asks three questions, in this order:
+## Layout
 
-1. **Can I trust what I'm looking at?** → *Floor status* trust band, *Sensor &
-   data health*
-2. **What is wrong, and what do I do about it?** → *Zones*, *Faults & actions*
-3. **How is the floor performing?** → *Energy*, *Opportunities*
+One **context bar** sits above every page: floor (`Bldg · F1 … F7` on Overview and
+Carbon; `Bldg · F2 … F7` on Alerts, which starts at `Bldg` on entry; `F2 … F7` on the other
+floor pages, plus F1 on Floor and Energy; they fall back to the last office floor, default F5), the as-of date, the **period** (`Today · 7d · 30d · MTD · 12m · Record`,
+default MTD) and an **Assumptions** popover (tariff, building floor area — 11,700 m²
+by default; per-floor figures use ÷7; the comfort band, default 23–26 °C). Assumptions
+persist across pages. A custom comfort band flows into every band-dependent figure
+(overcooled shares, overcooling alerts, Comfort, levers,
+the simulator's comfort after) through optional `lo`/`hi` arguments; the 40% target
+stays fixed. When the band is not the default the button reads "Assumptions · custom band".
+On the Carbon page the Assumptions popover is replaced by the grid emission
+factor (default: the TGO 2022 figure in `R.CONVENTIONS["co2_kg_per_kwh"]`),
+editable so it can be updated to a newer TGO figure; a custom value is flagged. Every page reads that one period, so counts agree across pages.
+There is no sidebar.
 
-Data health sits above everything else because the documented failure mode of
-rule-based building FDD is that a rule cannot tell its input has gone stale. A
-comfort figure computed on a dead sensor looks exactly like one computed on a
-live sensor.
+The navigation is flat, in the order the FM asks:
+
+| Page | Question |
+|---|---|
+| **Overview** *(default)* | How much energy and money this period, against expected? Which sensors are down? Which floor and which alert first? |
+| **Floor** | For one floor: data health, a zones **Map / Table** (the map adds open alerts per zone; the table opens each zone's detail), energy today, cost MTD vs expected, peak, cooled <23 °C vs 40%; zones worst first; act on open alerts (Work order / Acknowledge / Mute) |
+| **Alerts** | The fault register — the whole building (`Bldg`, the default on entry; the count matches the Overview's "All N open alerts") or one floor — as a queue of Type · Zone · Description · Cost / day · State, filtered by fault type, trade and state (Open / Cleared / Muted / All); a pop-up with the facts, possible causes, options to consider, a note and Acknowledge / Work order / Mute; CSV export for a CMMS. No severity, and no manual Resolve: **alerts clear automatically** once the condition has not been seen for more than 3 days (the episode gap) |
+| **Sensors** | A neutral zone map (green / red multi-sensor markers, "● N meters down" per zone) beside the Not OK table; Which points are not OK (OFFLINE / FROZEN / BAD SAMPLES / PARTIAL), since when; a point × day status map (one row per point, verdict in the label, worst first); humidity cross-check; minute trace |
+| **Comfort** | Which zones are too cold, by how much (degree-hours): a **Map / Table** toggle (default Map — a schematic plan of the floor filled by % of cooled hours below the band, with green / red sensor markers); floor × month overcooling map; zone detail |
+| **Energy** | Energy, cost, ฿ vs expected, peak; G14 model quality in one line; actual vs expected, signature and outlier days, profiles |
+| **Carbon** | Scope 2, location-based emissions for the period (building-level; a selected floor is highlighted): tCO₂e, vs expected (F2–F7, the floors with a baseline), intensity, trailing 12 months; monthly emissions; by floor and by end use; reporting-year summary |
+| **Savings** | The intervention simulator: package inputs → kWh/yr and ฿/yr ranges, tCO₂e, comfort trade-off, IPMVP M&V plan; measures, tornado, control-stability lever, and how each lever is sized |
+| **About the data** | What is and is not measured; how alerts clear; the assumptions in use |
+
+### Screenshots
+
+Taken on the default view (as of 14 Nov 2019, period MTD).
+
+**Overview** — building energy, cost and sensors down; floors ranked; top alerts; monthly energy by floor.
+
+![Overview page](../data/visuals/Overview.png)
+
+**Floor** — one floor's data health, zone map and KPIs against the 40% overcooling target.
+
+![Floor page](../data/visuals/Floor.png)
+
+**Sensors** — zone map with meters down, the Not OK table, and the humidity cross-check (z1 on Floor 5
+sits ~1.5 g/m³ below the median: a supply-air sensor).
+
+![Sensors page](../data/visuals/Sensors.png)
+
+**Comfort** — which zones are overcooled and by how much.
+
+![Comfort page](../data/visuals/Comfort.png)
+
+**Carbon** — Scope 2, location-based emissions for the period.
+
+![Carbon page](../data/visuals/Carbon.png)
+
+The zone maps on Floor, Sensors and Comfort are traced from the CU-BEMS floor plans (Floors 1–2 left,
+3–7 right; red dots are the multi-sensors). Source: Pipattanasomporn et al., *Scientific Data* (2020),
+Fig. 2, CC BY 4.0.
+
+![CU-BEMS Fig. 2 floor plans](../data/visuals/layout.png)
+
+Floor and Sensors carry one plain line of data health under the subtitle (points down
+by name, point health, completeness today; on Floor also new / cleared / went offline
+since yesterday). "Point down" is OFFLINE, FROZEN or BAD SAMPLES on the as-of day
+(`ui.point_status`); PARTIAL is degraded, not down. Alerts are labelled by fault type,
+never severity.
+
+## Design
+
+Dark only. Colours, type and components are in [DESIGN.md](DESIGN.md); the tokens
+live in `design/tokens.json` and `.streamlit/config.toml` (repo root). Don't
+hard-code a colour in a page.
 
 ## Structure
 
 ```
-app.py              navigation, global sidebar (floor, as-of date, tariff)
-build_cache.py      raw CSV -> parquet artefacts
-verify.py           ground-truth regression checks
-core/
-  registry.py       point registry + change-point registry — the source of truth
-  data.py           floor-agnostic loaders, as-of windows, psychrometrics
-  health.py         completeness, flatline, range, spike, peer consistency
-  comfort.py        exceedance hours and degree-hours vs a declared band
-  energy.py         EUI, end use, demand, baseload, after-hours
-  faults.py         FDD rules + G36 persistence/suppression + alarm self-audit
-  analysis.py       thermal calibration, setpoint sensitivity, M&V baseline
-  ui.py             cached loaders, trust band, chart theme
-pages/              one file per page
-legacy/             the superseded 8-tab analyst prototype, for reference
+app.py              flat top navigation, context bar (floor, as-of date, period,
+                    assumptions)
+ui.py               cached loaders, design tokens, the global period, point status,
+                    fault register, fault types, data-health caption, chips, tiles,
+                    chart theme
+design/             tokens.json, logo; floorplans.json (floors 3–7 zone polygons traced
+                    from CU-BEMS Fig. 2, schematic, not to scale) and the source figure
+views/              one file per page; analytics come from ../src/sbanalytics/,
+                    the same code the analysis notebooks use
+cache/              local state (fault_states.csv) — gitignored
 ```
+
+Analytics modules (pure pandas, no Streamlit):
+
+| Module | What it does |
+|---|---|
+| `portfolio` | building KPIs, floor × month overcooling, meter-outage episodes |
+| `mv` | daily change-point baseline per floor, G14 summary, roll-up with uncertainty band, energy signature, month excess |
+| `scenario` | intervention simulator: lift / trim / lockout, combined without double counting, comfort after, IPMVP plan, tornado |
+| `workorders` | alert-state store (append-only CSV) and CMMS export; the dashboard ignores saved "Resolved" states and derives Cleared itself |
+| `faults` | stable ids, cost of inaction, days open, recurrence, trade, action, verification (`PLAYBOOK`) |
+| `kpis` | `cooled_occupied` + `overcooled_share` — the one definition of the overcooling KPI |
 
 ## The registry is the important bit
 
-`core/registry.py` holds one row per physical point, carrying what the channel
+`src/sbanalytics/registry.py` holds one row per physical point, carrying what the channel
 *means*. Three metering traps live there as data rather than as `if zone ==
 "z1"` branches scattered through analysis code:
 
 - **z1's real cooling load is on `AC4`, not `AC1`.** Only z1 has four AC
   channels. `z1_AC4` carries 65,525 kWh; AC1+AC2+AC3 together carry 225 kWh.
   Every other zone is on AC1, so a `*_AC1` aggregate silently drops 37 % of the
-  floor's cooling. `verify.py` asserts against this.
+  floor's cooling.
 - **z3 has no AC meter** — it is a stairwell. It renders as "not metered", never
   as zero.
 - **The lux channel is not lux.** It maxes at 49–79 with integer resolution
@@ -73,21 +141,36 @@ A second registry holds *change-points* — dates across which the data is not
 comparable with itself. Any period-over-period comparison spanning one is
 disabled with a reason.
 
-## Adding another floor
+## Adding another floor (operational pages)
 
 The data layer is floor-agnostic; every loader takes a floor number. Floors 3,
-4, 6 and 7 share Floor 5's exact 30-column schema.
+4 and 7 share Floor 5's column layout; F6 has its four-AC zone in z4, F1 and F2
+have their own layouts (all declared in `registry.LAYOUT`).
 
-1. Add the floor's rows to `core/registry.py`
-2. `python3 build_cache.py --floor N`
-3. Set `wired: True` in `registry.FLOORS`
+Every floor is in the registry and in `data/cleaned/`. Floors 3, 4, 6 and 7 are
+wired; 1 and 2 are not. To wire one:
 
-Nothing in the analysis code changes.
+1. Check its registry rows (`LAYOUT`, `ROLE_OVERRIDES` in `src/sbanalytics/registry.py`)
+2. Tag its outages and change-points with the floor (`KNOWN_OUTAGES`, `CHANGE_POINTS.floors`) —
+   untagged history is Floor 5's and must not leak
+3. Check each page renders sensibly for its zones, and that the thermal model is identified
+   (Savings → "How each lever is sized" → thermal-model tab)
+4. Set `wired: True` in `registry.FLOORS` and open every page for that floor, including the dates of its outages
+
+What is still open:
+
+| Floor | Status |
+|---|---|
+| F1 | Reporting only (Overview, Floor, Energy, Carbon): treated as the lobby — a team assumption; no sensors, AC never switches off. Still `wired: False` in the registry; the dashboard's `ui.REPORTING_ONLY` offers it on those pages only. |
+| F2 | Wired (office). No lunch shutdown → setpoint estimate regression-only; 2019-03-06 sensor reinstall is a warning, not a break. z3 has a sensor but no AC meter (temperature only); z2's AC is the sum of 14 units. |
+| F4, F7 | Wired. The physics fit is not identified (1/C CI reaches zero), so the setpoint estimate is the regression alone and the page says so. |
+| F6 | Wired. Unconfirmed z1/z5 meter-transfer candidate in Jun 2019 (00a §7), not yet in `CHANGE_POINTS`. |
+| F2–F4, F6, F7 | The 2019-03-06 sensor reinstall is declared as a *warning*, not a blocking change-point: nobody has checked whether these floors also ran colder afterwards, as F5 did. |
 
 ## Standards and conventions
 
-Every threshold is declared with its source on the **Methods** page. The main
-ones:
+Every threshold is declared with its source in `R.CONVENTIONS`; the ones an FM
+needs are on the **About the data** page. The main ones:
 
 | Parameter | Value | Basis |
 |---|---|---|
@@ -97,6 +180,27 @@ ones:
 | Evaluation window | 5-min rolling mean | ASHRAE G36 §5.16.14.6 |
 | EUI benchmark | 170 good / 225 typical | Bangkok office study, n=41 |
 | Humidity limit | 0.012 kg/kg | ASHRAE 55 |
+
+Added for v2 (all in `R.CONVENTIONS`, with sources):
+
+| Parameter | Value | Basis |
+|---|---|---|
+| Overcooling target | < 40% of cooled occupied hours below 23 °C | Project proposal KPI |
+| Grid emission factor | 0.4999 kgCO₂e/kWh (default; editable on Carbon, custom value flagged) | Thailand GHG Management Organization (TGO) — verify current figure before external reporting |
+| Demand charge | — | Not used in the dashboard (Energy shows the kW peaks only) |
+| Cost of inaction | attributable kWh ÷ calendar days since first seen × tariff | FDD prioritisation practice; zero where no defensible attribution |
+| Fault episode gap | 3 days | Same rule that groups offline points |
+| Verification windows | 2 weeks (schedule/metering), 4 weeks (comfort) | Project convention |
+| M&V band | ±1.645 σ (90%), G14 autocorrelation correction | IPMVP / ASHRAE G14 |
+| Energy-signature outlier | > 2 training SDs above the line | Project convention |
+| Pilot power | α 0.05, power 0.8, ρ 0.5 | Savings-page minimum pilot length |
+| Lockout low case | 50% of metered weekend/holiday excess | Notebook 06 |
+| Tornado ranges | tariff ±20%, lift ±0.5 °C, trim ±1 h | Project assumption |
+
+Rules: overcooled share = AC-kWh-weighted cooled occupied hours (notebook 01);
+combined savings = S × (1 − T/B0) + T + L per case; IPMVP Option B for
+zone-metered measures, C for floor-wide; alert states: people set Acknowledged /
+In progress / Muted, the system sets Cleared.
 
 Deliberately **not** used: the term "Unmet Load Hours" (it is defined relative to
 a setpoint, which this building does not expose) and the ASHRAE 55 adaptive
@@ -116,4 +220,4 @@ building is mechanically cooled).
 - Three of five plug meters are effectively frozen; two power spikes were
   uncapped.
 
-See the Methods page for the full list with evidence.
+See the notebooks (00a, 00b) for the full list with evidence.

@@ -1,0 +1,266 @@
+floor,column,rule,minutes,first,last,detail
+1,z1_Light(kW),interpolated,454,2018-07-23 16:06:00,2019-12-24 13:55:00,interior gaps <= 5 min
+1,z1_Plug(kW),interpolated,66,2018-08-22 07:05:00,2019-09-16 13:32:00,interior gaps <= 5 min
+1,z2_AC1(kW),range,84,2018-08-24 22:20:00,2019-06-21 12:17:00,"outside [0, 80] kW"
+1,z2_AC1(kW),interpolated,475,2018-07-23 16:06:00,2019-12-24 13:55:00,interior gaps <= 5 min
+1,z2_AC2(kW),range,3,2018-08-22 07:06:00,2018-09-10 10:47:00,"outside [0, 80] kW"
+1,z2_AC2(kW),interpolated,272,2018-07-23 16:06:00,2019-12-24 13:55:00,interior gaps <= 5 min
+1,z2_AC3(kW),spike,1,2018-09-07 15:50:00,2018-09-07 15:50:00,"> 1.00 kW, <= 3 min"
+1,z2_AC3(kW),interpolated,271,2018-07-23 16:06:00,2019-12-24 13:55:00,interior gaps <= 5 min
+1,z2_AC4(kW),interpolated,271,2018-07-23 16:06:00,2019-12-24 13:55:00,interior gaps <= 5 min
+1,z2_Light(kW),interpolated,129,2018-08-27 03:10:00,2019-12-13 14:20:00,interior gaps <= 5 min
+1,z2_Plug(kW),interpolated,324,2018-07-01 13:59:00,2019-12-13 06:58:00,interior gaps <= 5 min
+1,z3_Light(kW),range,8,2018-07-23 18:34:00,2018-09-26 19:17:00,"outside [0, 150] kW"
+1,z3_Light(kW),interpolated,97,2018-07-23 18:34:00,2019-01-12 09:53:00,interior gaps <= 5 min
+1,z3_Plug(kW),spike,2,2019-08-25 08:05:00,2019-08-25 08:06:00,"> 14.16 kW, <= 3 min"
+1,z3_Plug(kW),interpolated,273,2018-07-23 16:06:00,2019-12-24 13:55:00,interior gaps <= 5 min
+1,z4_Light(kW),range,1,2018-09-07 15:50:00,2018-09-07 15:50:00,"outside [0, 150] kW"
+1,z4_Light(kW),interpolated,91,2018-08-22 07:04:00,2019-12-24 13:54:00,interior gaps <= 5 min
+2,z1_AC1(kW),interpolated,233,2018-07-10 12:14:00,2019-12-06 16:04:00,interior gaps <= 5 min
+2,z1_Light(kW),interpolated,13,2018-09-19 13:03:00,2019-07-11 16:27:00,interior gaps <= 5 min
+2,z1_Plug(kW),interpolated,14,2018-12-28 11:00:00,2019-09-16 13:32:00,interior gaps <= 5 min
+2,z1_S1(degC),interpolated,3467,2018-07-01 00:28:00,2019-12-31 02:34:00,interior gaps <= 5 min
+2,z1_S1(RH%),interpolated,3467,2018-07-01 00:28:00,2019-12-31 02:34:00,interior gaps <= 5 min
+2,z1_S1(lux),interpolated,3467,2018-07-01 00:28:00,2019-12-31 02:34:00,interior gaps <= 5 min
+2,z2_AC1(kW),interpolated,123,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC2(kW),interpolated,1515,2018-07-23 15:49:00,2019-12-24 14:14:00,interior gaps <= 5 min
+2,z2_AC3(kW),interpolated,1515,2018-07-23 15:49:00,2019-12-24 14:14:00,interior gaps <= 5 min
+2,z2_AC4(kW),interpolated,1515,2018-07-23 15:49:00,2019-12-24 14:14:00,interior gaps <= 5 min
+2,z2_AC5(kW),spike,5,2018-07-10 13:25:00,2018-09-13 15:36:00,"> 4.92 kW, <= 3 min"
+2,z2_AC5(kW),interpolated,72,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC6(kW),spike,4,2018-07-10 13:25:00,2018-09-13 05:12:00,"> 4.56 kW, <= 3 min"
+2,z2_AC6(kW),interpolated,71,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC7(kW),spike,4,2018-07-10 13:25:00,2018-09-13 15:36:00,"> 3.42 kW, <= 3 min"
+2,z2_AC7(kW),interpolated,71,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC8(kW),spike,3,2018-07-11 15:04:00,2018-09-13 05:12:00,"> 3.36 kW, <= 3 min"
+2,z2_AC8(kW),interpolated,70,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC9(kW),spike,4,2018-07-10 13:25:00,2018-09-13 15:36:00,"> 3.81 kW, <= 3 min"
+2,z2_AC9(kW),interpolated,71,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC10(kW),spike,3,2018-07-11 15:04:00,2018-09-13 05:12:00,"> 3.81 kW, <= 3 min"
+2,z2_AC10(kW),interpolated,70,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC11(kW),interpolated,67,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC12(kW),interpolated,67,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC13(kW),spike,1,2018-08-03 12:04:00,2018-08-03 12:04:00,"> 5.55 kW, <= 3 min"
+2,z2_AC13(kW),interpolated,68,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_AC14(kW),interpolated,67,2018-07-10 13:22:00,2019-12-24 14:19:00,interior gaps <= 5 min
+2,z2_Light(kW),spike,1,2019-06-08 07:20:00,2019-06-08 07:20:00,"> 8.64 kW, <= 3 min"
+2,z2_Light(kW),interpolated,117,2018-07-23 15:49:00,2019-12-24 14:14:00,interior gaps <= 5 min
+2,z2_Plug(kW),spike,1,2019-06-08 07:20:00,2019-06-08 07:20:00,"> 3.84 kW, <= 3 min"
+2,z2_Plug(kW),interpolated,161,2018-07-23 15:49:00,2019-12-24 14:14:00,interior gaps <= 5 min
+2,z2_S1(degC),interpolated,3264,2018-07-01 04:37:00,2019-12-31 02:45:00,interior gaps <= 5 min
+2,z2_S1(RH%),interpolated,3261,2018-07-01 04:37:00,2019-12-31 02:45:00,interior gaps <= 5 min
+2,z2_S1(lux),interpolated,3263,2018-07-01 04:37:00,2019-12-31 02:45:00,interior gaps <= 5 min
+2,z3_Light(kW),spike,7,2018-07-10 13:25:00,2018-09-13 05:12:00,"> 4.65 kW, <= 3 min"
+2,z3_Light(kW),interpolated,17,2018-07-10 13:25:00,2019-09-16 13:32:00,interior gaps <= 5 min
+2,z3_Plug(kW),spike,1,2019-03-20 08:27:00,2019-03-20 08:27:00,"> 7.86 kW, <= 3 min"
+2,z3_Plug(kW),interpolated,9,2018-12-28 11:00:00,2019-07-11 16:27:00,interior gaps <= 5 min
+2,z3_S1(degC),interpolated,3375,2018-07-01 00:21:00,2019-12-30 02:07:00,interior gaps <= 5 min
+2,z3_S1(RH%),interpolated,3374,2018-07-01 00:21:00,2019-12-30 02:07:00,interior gaps <= 5 min
+2,z3_S1(lux),interpolated,3378,2018-07-01 00:21:00,2019-12-30 02:07:00,interior gaps <= 5 min
+2,z4_AC1(kW),spike,6,2018-09-19 12:55:00,2019-09-16 11:44:00,"> 33.72 kW, <= 3 min"
+2,z4_AC1(kW),interpolated,300,2018-09-04 11:28:00,2019-12-06 16:04:00,interior gaps <= 5 min
+2,z4_Light(kW),interpolated,1515,2018-07-23 15:49:00,2019-12-24 14:14:00,interior gaps <= 5 min
+2,z4_Plug(kW),interpolated,160,2018-07-23 15:49:00,2019-12-24 14:14:00,interior gaps <= 5 min
+2,z4_S1(degC),interpolated,1656,2019-03-06 14:35:00,2019-12-31 02:39:00,interior gaps <= 5 min
+2,z4_S1(RH%),interpolated,1654,2019-03-06 14:35:00,2019-12-31 02:39:00,interior gaps <= 5 min
+2,z4_S1(lux),interpolated,1659,2019-03-06 14:35:00,2019-12-31 02:39:00,interior gaps <= 5 min
+3,z1_AC1(kW),interpolated,2306,2018-08-17 17:26:00,2019-12-24 14:43:00,interior gaps <= 5 min
+3,z1_AC2(kW),interpolated,2306,2018-08-17 17:26:00,2019-12-24 14:43:00,interior gaps <= 5 min
+3,z1_AC3(kW),interpolated,2306,2018-08-17 17:26:00,2019-12-24 14:43:00,interior gaps <= 5 min
+3,z1_AC4(kW),interpolated,273,2018-09-04 11:29:00,2019-12-06 16:04:00,interior gaps <= 5 min
+3,z1_Light(kW),range,3,2018-10-11 10:41:00,2018-10-11 10:43:00,"outside [0, 150] kW"
+3,z1_Light(kW),spike,32,2018-10-11 10:08:00,2019-02-12 11:57:00,"> 18.15 kW, <= 3 min"
+3,z1_Light(kW),interpolated,171,2018-10-11 10:08:00,2019-09-16 13:39:00,interior gaps <= 5 min
+3,z1_Plug(kW),spike,26,2018-10-11 10:47:00,2019-02-12 13:04:00,"> 5.94 kW, <= 3 min"
+3,z1_Plug(kW),interpolated,109,2018-10-11 10:47:00,2019-09-16 13:40:00,interior gaps <= 5 min
+3,z1_S1(degC),interpolated,3705,2018-07-01 00:12:00,2019-12-31 02:55:00,interior gaps <= 5 min
+3,z1_S1(RH%),interpolated,3707,2018-07-01 00:12:00,2019-12-31 02:55:00,interior gaps <= 5 min
+3,z1_S1(lux),interpolated,3710,2018-07-01 00:12:00,2019-12-31 02:55:00,interior gaps <= 5 min
+3,z2_AC1(kW),interpolated,220,2018-09-04 11:29:00,2019-12-06 16:04:00,interior gaps <= 5 min
+3,z2_Light(kW),range,5,2018-10-11 10:08:00,2018-10-11 11:43:00,"outside [0, 150] kW"
+3,z2_Light(kW),spike,12,2018-10-11 09:46:00,2019-02-04 07:23:00,"> 22.08 kW, <= 3 min"
+3,z2_Light(kW),interpolated,833,2018-09-19 13:03:00,2019-12-28 19:03:00,interior gaps <= 5 min
+3,z2_Plug(kW),spike,7,2018-10-11 10:08:00,2018-10-11 13:46:00,"> 7.11 kW, <= 3 min"
+3,z2_Plug(kW),interpolated,117,2018-09-19 13:03:00,2019-11-10 20:08:00,interior gaps <= 5 min
+3,z2_S1(degC),interpolated,3357,2018-07-01 05:10:00,2019-12-31 02:20:00,interior gaps <= 5 min
+3,z2_S1(RH%),interpolated,3361,2018-07-01 05:10:00,2019-12-31 02:20:00,interior gaps <= 5 min
+3,z2_S1(lux),interpolated,3358,2018-07-01 05:10:00,2019-12-31 02:20:00,interior gaps <= 5 min
+3,z3_Light(kW),spike,33,2018-12-04 13:38:00,2019-02-12 13:04:00,"> 4.98 kW, <= 3 min"
+3,z3_Light(kW),interpolated,110,2018-10-11 09:36:00,2019-09-16 13:39:00,interior gaps <= 5 min
+3,z3_Plug(kW),spike,59,2018-12-04 13:38:00,2019-02-12 13:04:00,"> 2.55 kW, <= 3 min"
+3,z3_Plug(kW),interpolated,96,2018-09-19 14:33:00,2019-09-16 11:52:00,interior gaps <= 5 min
+3,z4_AC1(kW),interpolated,234,2018-09-04 11:29:00,2019-12-06 16:04:00,interior gaps <= 5 min
+3,z4_Light(kW),range,5,2019-02-07 09:04:00,2019-02-08 14:39:00,"outside [0, 150] kW"
+3,z4_Light(kW),spike,45,2018-12-04 17:44:00,2019-03-26 08:34:00,"> 10.47 kW, <= 3 min"
+3,z4_Light(kW),interpolated,2909,2018-10-11 09:15:00,2019-12-24 14:32:00,interior gaps <= 5 min
+3,z4_Plug(kW),spike,36,2019-02-05 08:05:00,2019-05-13 09:03:00,"> 5.28 kW, <= 3 min"
+3,z4_Plug(kW),interpolated,1387,2018-10-11 08:59:00,2019-12-24 14:32:00,interior gaps <= 5 min
+3,z4_S1(degC),interpolated,3263,2018-07-01 00:03:00,2019-12-31 02:02:00,interior gaps <= 5 min
+3,z4_S1(RH%),interpolated,3263,2018-07-01 00:03:00,2019-12-31 02:02:00,interior gaps <= 5 min
+3,z4_S1(lux),interpolated,3262,2018-07-01 00:03:00,2019-12-31 02:02:00,interior gaps <= 5 min
+3,z5_AC1(kW),interpolated,230,2018-09-04 11:29:00,2019-12-06 16:04:00,interior gaps <= 5 min
+3,z5_Light(kW),range,1,2019-02-06 12:34:00,2019-02-06 12:34:00,"outside [0, 150] kW"
+3,z5_Light(kW),spike,37,2018-12-04 17:44:00,2019-02-12 13:04:00,"> 9.21 kW, <= 3 min"
+3,z5_Light(kW),interpolated,2913,2018-10-11 09:15:00,2019-12-24 14:32:00,interior gaps <= 5 min
+3,z5_Plug(kW),spike,40,2019-02-04 09:21:00,2019-02-12 13:04:00,"> 3.84 kW, <= 3 min"
+3,z5_Plug(kW),interpolated,130,2018-10-11 14:44:00,2019-09-16 13:48:00,interior gaps <= 5 min
+3,z5_S1(degC),interpolated,2597,2018-07-01 01:23:00,2019-12-31 02:41:00,interior gaps <= 5 min
+3,z5_S1(RH%),interpolated,2597,2018-07-01 01:23:00,2019-12-31 02:41:00,interior gaps <= 5 min
+3,z5_S1(lux),interpolated,2597,2018-07-01 01:23:00,2019-12-31 02:41:00,interior gaps <= 5 min
+4,z1_AC1(kW),glitch_cap,1,2018-11-21 15:20:00,2018-11-21 15:20:00,> 5 kW (floor notebook)
+4,z1_AC1(kW),interpolated,1706,2018-07-01 00:43:00,2019-12-24 14:51:00,interior gaps <= 5 min
+4,z1_AC2(kW),glitch_cap,1,2018-11-21 15:20:00,2018-11-21 15:20:00,> 8 kW (floor notebook)
+4,z1_AC2(kW),interpolated,1706,2018-07-01 00:43:00,2019-12-24 14:51:00,interior gaps <= 5 min
+4,z1_AC3(kW),glitch_cap,1,2018-11-21 15:20:00,2018-11-21 15:20:00,> 8 kW (floor notebook)
+4,z1_AC3(kW),spike,9,2018-10-25 10:05:00,2019-12-14 14:36:00,"> 1.00 kW, <= 3 min"
+4,z1_AC3(kW),interpolated,1715,2018-07-01 00:43:00,2019-12-24 14:51:00,interior gaps <= 5 min
+4,z1_AC4(kW),interpolated,232,2018-09-04 11:29:00,2019-12-07 19:36:00,interior gaps <= 5 min
+4,z1_Light(kW),glitch_cap,2,2018-08-07 19:46:00,2018-12-14 09:35:00,> 20 kW (floor notebook)
+4,z1_Light(kW),interpolated,600,2018-07-01 00:43:00,2019-12-24 14:49:00,interior gaps <= 5 min
+4,z1_Plug(kW),range,1,2018-11-21 15:20:00,2018-11-21 15:20:00,"outside [0, 80] kW"
+4,z1_Plug(kW),glitch_cap,1,2018-12-14 09:35:00,2018-12-14 09:35:00,> 15 kW (floor notebook)
+4,z1_Plug(kW),interpolated,32,2018-09-19 13:03:00,2019-05-27 12:08:00,interior gaps <= 5 min
+4,z1_S1(degC),interpolated,3410,2018-07-01 01:55:00,2019-12-31 02:01:00,interior gaps <= 5 min
+4,z1_S1(RH%),interpolated,3407,2018-07-01 01:55:00,2019-12-31 02:01:00,interior gaps <= 5 min
+4,z1_S1(lux),interpolated,3408,2018-07-01 01:55:00,2019-12-31 02:01:00,interior gaps <= 5 min
+4,z2_AC1(kW),interpolated,239,2018-09-04 11:29:00,2019-12-26 11:31:00,interior gaps <= 5 min
+4,z2_Light(kW),glitch_cap,1,2018-12-14 09:35:00,2018-12-14 09:35:00,> 15 kW (floor notebook)
+4,z2_Light(kW),spike,2,2018-08-07 19:46:00,2018-12-04 09:43:00,"> 10.05 kW, <= 3 min"
+4,z2_Light(kW),interpolated,601,2018-07-01 00:43:00,2019-12-24 14:49:00,interior gaps <= 5 min
+4,z2_Plug(kW),spike,2,2018-07-05 15:28:00,2018-12-14 09:35:00,"> 4.20 kW, <= 3 min"
+4,z2_Plug(kW),interpolated,600,2018-07-01 00:43:00,2019-12-24 14:49:00,interior gaps <= 5 min
+4,z2_S1(degC),interpolated,3337,2018-07-01 02:29:00,2019-12-31 02:05:00,interior gaps <= 5 min
+4,z2_S1(RH%),interpolated,3337,2018-07-01 02:29:00,2019-12-31 02:05:00,interior gaps <= 5 min
+4,z2_S1(lux),interpolated,3336,2018-07-01 02:29:00,2019-12-31 02:05:00,interior gaps <= 5 min
+4,z3_Light(kW),spike,1,2018-12-12 15:21:00,2018-12-12 15:21:00,"> 4.26 kW, <= 3 min"
+4,z3_Light(kW),interpolated,96,2018-10-29 07:41:00,2019-05-27 12:08:00,interior gaps <= 5 min
+4,z3_Plug(kW),spike,1,2018-12-12 15:21:00,2018-12-12 15:21:00,"> 2.55 kW, <= 3 min"
+4,z3_Plug(kW),interpolated,62,2018-07-12 23:36:00,2019-05-27 12:08:00,interior gaps <= 5 min
+4,z4_AC1(kW),interpolated,225,2018-09-04 11:29:00,2019-12-26 04:45:00,interior gaps <= 5 min
+4,z4_Light(kW),glitch_cap,1,2018-12-26 16:43:00,2018-12-26 16:43:00,> 20 kW (floor notebook)
+4,z4_Light(kW),spike,4,2018-08-03 17:33:00,2018-12-26 15:32:00,"> 12.72 kW, <= 3 min"
+4,z4_Light(kW),interpolated,2032,2018-07-01 01:24:00,2019-12-24 14:47:00,interior gaps <= 5 min
+4,z4_Plug(kW),spike,1,2018-12-26 10:05:00,2018-12-26 10:05:00,"> 6.84 kW, <= 3 min"
+4,z4_Plug(kW),interpolated,818,2018-07-01 01:24:00,2019-12-24 14:47:00,interior gaps <= 5 min
+4,z4_S1(degC),interpolated,2911,2018-07-01 06:06:00,2019-12-31 02:28:00,interior gaps <= 5 min
+4,z4_S1(RH%),interpolated,2911,2018-07-01 06:06:00,2019-12-31 02:28:00,interior gaps <= 5 min
+4,z4_S1(lux),interpolated,2911,2018-07-01 06:06:00,2019-12-31 02:28:00,interior gaps <= 5 min
+4,z5_AC1(kW),interpolated,218,2018-09-04 11:29:00,2019-12-16 12:48:00,interior gaps <= 5 min
+4,z5_Light(kW),glitch_cap,1,2018-11-21 15:20:00,2018-11-21 15:20:00,> 15 kW (floor notebook)
+4,z5_Light(kW),spike,3,2018-12-26 10:05:00,2018-12-26 16:43:00,"> 7.35 kW, <= 3 min"
+4,z5_Light(kW),interpolated,2030,2018-07-01 01:24:00,2019-12-24 14:47:00,interior gaps <= 5 min
+4,z5_Plug(kW),interpolated,37,2018-07-12 23:36:00,2019-05-27 12:08:00,interior gaps <= 5 min
+4,z5_S1(degC),interpolated,3047,2018-07-01 00:35:00,2019-12-31 02:59:00,interior gaps <= 5 min
+4,z5_S1(RH%),interpolated,3048,2018-07-01 00:35:00,2019-12-31 02:59:00,interior gaps <= 5 min
+4,z5_S1(lux),interpolated,3048,2018-07-01 00:35:00,2019-12-31 02:59:00,interior gaps <= 5 min
+5,z1_AC4(kW),interpolated,686,2018-09-04 11:29:00,2019-12-06 16:04:00,interior gaps <= 5 min
+5,z1_AC1(kW),spike,2,2018-08-14 07:49:00,2018-08-14 07:58:00,"> 1.00 kW, <= 3 min"
+5,z1_AC1(kW),interpolated,4187,2018-07-23 15:22:00,2019-12-24 16:00:00,interior gaps <= 5 min
+5,z1_AC2(kW),interpolated,4185,2018-07-23 15:22:00,2019-12-24 16:00:00,interior gaps <= 5 min
+5,z1_AC3(kW),interpolated,4185,2018-07-23 15:22:00,2019-12-24 16:00:00,interior gaps <= 5 min
+5,z2_AC1(kW),interpolated,609,2018-09-04 11:29:00,2019-12-06 16:04:00,interior gaps <= 5 min
+5,z4_AC1(kW),interpolated,428,2018-09-04 11:29:00,2019-12-06 16:04:00,interior gaps <= 5 min
+5,z5_AC1(kW),interpolated,523,2018-09-04 11:29:00,2019-12-06 16:04:00,interior gaps <= 5 min
+5,z1_Light(kW),range,19,2018-07-03 16:14:00,2018-08-03 18:43:00,"outside [0, 25] kW"
+5,z1_Light(kW),glitch_cap,19,2018-07-04 11:18:00,2018-08-02 14:43:00,> 20 kW (floor notebook)
+5,z1_Light(kW),spike,1,2018-07-10 14:52:00,2018-07-10 14:52:00,"> 19.83 kW, <= 3 min"
+5,z1_Light(kW),interpolated,251,2018-07-03 16:14:00,2019-12-24 15:52:00,interior gaps <= 5 min
+5,z2_Light(kW),range,13,2018-07-03 16:14:00,2018-08-03 18:43:00,"outside [0, 25] kW"
+5,z2_Light(kW),glitch_cap,3,2018-07-25 18:39:00,2018-07-31 12:52:00,> 20 kW (floor notebook)
+5,z2_Light(kW),spike,35,2018-07-03 17:15:00,2019-12-23 08:39:00,"> 14.13 kW, <= 3 min"
+5,z2_Light(kW),interpolated,2499,2018-07-01 00:33:00,2019-12-24 15:53:00,interior gaps <= 5 min
+5,z3_Light(kW),interpolated,1854,2018-09-19 14:29:00,2019-09-16 11:27:00,interior gaps <= 5 min
+5,z4_Light(kW),range,4,2018-12-24 08:44:00,2019-07-02 11:57:00,"outside [0, 25] kW"
+5,z4_Light(kW),spike,10,2018-12-03 14:05:00,2019-04-01 10:20:00,"> 12.57 kW, <= 3 min"
+5,z4_Light(kW),interpolated,5076,2018-07-01 20:50:00,2019-12-24 15:52:00,interior gaps <= 5 min
+5,z5_Light(kW),spike,14,2018-12-03 14:05:00,2019-07-02 11:57:00,"> 10.05 kW, <= 3 min"
+5,z5_Light(kW),interpolated,5084,2018-07-01 20:50:00,2019-12-24 15:52:00,interior gaps <= 5 min
+5,z3_Plug(kW),interpolated,832,2018-08-17 17:26:00,2019-09-16 11:27:00,interior gaps <= 5 min
+5,z2_Plug(kW),spike,4,2018-07-03 16:14:00,2018-08-02 08:41:00,"> 2.85 kW, <= 3 min"
+5,z2_Plug(kW),interpolated,2460,2018-07-01 00:33:00,2019-12-24 15:53:00,interior gaps <= 5 min
+5,z5_Plug(kW),spike,9,2018-11-28 11:27:00,2019-07-02 11:57:00,"> 1.80 kW, <= 3 min"
+5,z5_Plug(kW),interpolated,2270,2018-07-03 07:29:00,2019-12-24 15:52:00,interior gaps <= 5 min
+5,z1_Plug(kW),range,2,2018-07-03 16:14:00,2018-11-28 11:27:00,"outside [0, 15] kW"
+5,z1_Plug(kW),glitch_cap,4,2018-07-09 17:13:00,2018-08-02 08:41:00,> 10 kW (floor notebook)
+5,z1_Plug(kW),interpolated,579,2018-07-03 16:14:00,2019-09-16 12:54:00,interior gaps <= 5 min
+5,z4_Plug(kW),range,1,2018-12-24 08:44:00,2018-12-24 08:44:00,"outside [0, 15] kW"
+5,z4_Plug(kW),spike,6,2018-12-24 08:41:00,2019-05-07 13:18:00,"> 10.02 kW, <= 3 min"
+5,z4_Plug(kW),interpolated,813,2018-09-19 13:03:00,2019-09-16 11:27:00,interior gaps <= 5 min
+5,z2_S1(degC),interpolated,2892,2018-07-01 03:57:00,2019-12-31 02:50:00,interior gaps <= 5 min
+5,z4_S1(degC),interpolated,3292,2018-07-01 00:42:00,2019-12-31 02:57:00,interior gaps <= 5 min
+5,z5_S1(degC),interpolated,3182,2018-07-01 01:21:00,2019-12-31 02:11:00,interior gaps <= 5 min
+5,z1_S1(degC),interpolated,3260,2018-07-01 00:07:00,2019-12-31 02:42:00,interior gaps <= 5 min
+5,z1_S1(RH%),interpolated,3260,2018-07-01 00:07:00,2019-12-31 02:42:00,interior gaps <= 5 min
+5,z1_S1(lux),interpolated,3260,2018-07-01 00:07:00,2019-12-31 02:42:00,interior gaps <= 5 min
+5,z2_S1(RH%),interpolated,2892,2018-07-01 03:57:00,2019-12-31 02:50:00,interior gaps <= 5 min
+5,z2_S1(lux),interpolated,2892,2018-07-01 03:57:00,2019-12-31 02:50:00,interior gaps <= 5 min
+5,z4_S1(RH%),interpolated,3293,2018-07-01 00:42:00,2019-12-31 02:57:00,interior gaps <= 5 min
+5,z4_S1(lux),interpolated,3291,2018-07-01 00:42:00,2019-12-31 02:57:00,interior gaps <= 5 min
+5,z5_S1(RH%),interpolated,3181,2018-07-01 01:21:00,2019-12-31 02:11:00,interior gaps <= 5 min
+5,z5_S1(lux),interpolated,3180,2018-07-01 01:21:00,2019-12-31 02:11:00,interior gaps <= 5 min
+6,z1_AC1(kW),interpolated,240,2018-09-04 11:29:00,2019-10-21 13:12:00,interior gaps <= 5 min
+6,z1_Light(kW),spike,15,2018-09-20 17:19:00,2018-10-03 14:27:00,"> 12.60 kW, <= 3 min"
+6,z1_Light(kW),interpolated,110,2018-07-23 15:06:00,2019-08-27 13:35:00,interior gaps <= 5 min
+6,z1_Plug(kW),interpolated,184,2018-07-23 15:06:00,2019-10-21 19:06:00,interior gaps <= 5 min
+6,z1_S1(degC),interpolated,3441,2018-07-01 03:15:00,2019-10-22 02:43:00,interior gaps <= 5 min
+6,z1_S1(RH%),interpolated,3442,2018-07-01 03:15:00,2019-10-22 02:43:00,interior gaps <= 5 min
+6,z1_S1(lux),interpolated,3444,2018-07-01 03:15:00,2019-10-22 02:43:00,interior gaps <= 5 min
+6,z2_AC1(kW),interpolated,239,2018-09-04 11:29:00,2019-10-21 13:12:00,interior gaps <= 5 min
+6,z2_Light(kW),spike,11,2018-09-20 17:19:00,2018-10-03 14:27:00,"> 23.76 kW, <= 3 min"
+6,z2_Light(kW),interpolated,106,2018-07-23 15:06:00,2019-08-27 13:35:00,interior gaps <= 5 min
+6,z2_Plug(kW),spike,11,2018-07-12 09:58:00,2018-08-03 09:39:00,"> 5.43 kW, <= 3 min"
+6,z2_Plug(kW),interpolated,20,2018-07-12 09:58:00,2019-07-13 02:26:00,interior gaps <= 5 min
+6,z2_S1(degC),interpolated,3464,2018-07-01 00:22:00,2019-10-01 02:34:00,interior gaps <= 5 min
+6,z2_S1(RH%),interpolated,3464,2018-07-01 00:22:00,2019-10-01 02:34:00,interior gaps <= 5 min
+6,z2_S1(lux),interpolated,3464,2018-07-01 00:22:00,2019-10-01 02:34:00,interior gaps <= 5 min
+6,z3_Light(kW),interpolated,10,2019-01-12 09:36:00,2019-07-13 02:26:00,interior gaps <= 5 min
+6,z3_Plug(kW),spike,23,2018-07-08 15:12:00,2018-08-04 18:40:00,"> 2.25 kW, <= 3 min"
+6,z3_Plug(kW),interpolated,43,2018-07-04 06:53:00,2019-07-13 02:26:00,interior gaps <= 5 min
+6,z4_AC1(kW),interpolated,1543,2018-07-01 05:07:00,2019-10-22 02:26:00,interior gaps <= 5 min
+6,z4_AC2(kW),spike,1,2018-07-02 12:08:00,2018-07-02 12:08:00,"> 9.27 kW, <= 3 min"
+6,z4_AC2(kW),interpolated,1544,2018-07-01 05:07:00,2019-10-22 02:26:00,interior gaps <= 5 min
+6,z4_AC3(kW),interpolated,1543,2018-07-01 05:07:00,2019-10-22 02:26:00,interior gaps <= 5 min
+6,z4_AC4(kW),interpolated,267,2018-09-04 11:29:00,2019-10-21 13:11:00,interior gaps <= 5 min
+6,z4_Light(kW),spike,2,2018-07-13 15:55:00,2018-08-14 09:27:00,"> 15.45 kW, <= 3 min"
+6,z4_Light(kW),interpolated,1017,2018-07-01 01:36:00,2019-08-18 11:34:00,interior gaps <= 5 min
+6,z4_Plug(kW),interpolated,21,2018-07-04 06:53:00,2019-07-13 02:26:00,interior gaps <= 5 min
+6,z4_S1(degC),interpolated,2977,2018-07-01 07:59:00,2019-10-22 02:34:00,interior gaps <= 5 min
+6,z4_S1(RH%),interpolated,2976,2018-07-01 07:59:00,2019-10-22 02:34:00,interior gaps <= 5 min
+6,z4_S1(lux),interpolated,2976,2018-07-01 07:59:00,2019-10-22 02:34:00,interior gaps <= 5 min
+6,z5_AC1(kW),interpolated,268,2018-09-04 11:29:00,2019-10-21 13:11:00,interior gaps <= 5 min
+6,z5_Light(kW),spike,2,2018-07-13 15:55:00,2018-08-14 09:27:00,"> 9.30 kW, <= 3 min"
+6,z5_Light(kW),interpolated,1625,2018-07-01 01:35:00,2019-10-21 17:16:00,interior gaps <= 5 min
+6,z5_Plug(kW),interpolated,1015,2018-07-01 01:36:00,2019-08-18 11:34:00,interior gaps <= 5 min
+6,z5_S1(degC),interpolated,3156,2018-07-01 00:06:00,2019-10-22 02:10:00,interior gaps <= 5 min
+6,z5_S1(RH%),interpolated,3163,2018-07-01 00:06:00,2019-10-22 02:10:00,interior gaps <= 5 min
+6,z5_S1(lux),interpolated,3156,2018-07-01 00:06:00,2019-10-22 02:10:00,interior gaps <= 5 min
+7,z1_AC1(kW),interpolated,2353,2018-11-14 13:47:00,2019-12-24 15:03:00,interior gaps <= 5 min
+7,z1_AC2(kW),spike,10,2018-07-16 09:37:00,2018-08-08 10:16:00,"> 1.44 kW, <= 3 min"
+7,z1_AC2(kW),interpolated,2363,2018-07-16 09:37:00,2019-12-24 15:03:00,interior gaps <= 5 min
+7,z1_AC3(kW),interpolated,2353,2018-11-14 13:47:00,2019-12-24 15:03:00,interior gaps <= 5 min
+7,z1_AC4(kW),interpolated,270,2018-08-04 13:38:00,2019-12-27 06:27:00,interior gaps <= 5 min
+7,z1_Light(kW),interpolated,1934,2018-09-19 14:34:00,2019-12-13 16:26:00,interior gaps <= 5 min
+7,z1_Plug(kW),interpolated,165,2018-09-19 14:34:00,2019-04-26 14:52:00,interior gaps <= 5 min
+7,z1_S1(degC),interpolated,3223,2018-07-01 00:57:00,2019-12-31 02:13:00,interior gaps <= 5 min
+7,z1_S1(RH%),interpolated,3221,2018-07-01 00:57:00,2019-12-31 02:13:00,interior gaps <= 5 min
+7,z1_S1(lux),interpolated,3221,2018-07-01 00:57:00,2019-12-31 02:13:00,interior gaps <= 5 min
+7,z2_AC1(kW),interpolated,258,2018-07-24 15:24:00,2019-12-31 20:27:00,interior gaps <= 5 min
+7,z2_Light(kW),interpolated,1934,2018-09-19 14:34:00,2019-12-13 16:26:00,interior gaps <= 5 min
+7,z2_Plug(kW),interpolated,2278,2018-09-19 14:34:00,2019-12-13 16:26:00,interior gaps <= 5 min
+7,z2_S1(degC),interpolated,3343,2018-07-01 02:06:00,2019-12-31 08:44:00,interior gaps <= 5 min
+7,z2_S1(RH%),interpolated,3344,2018-07-01 02:06:00,2019-12-31 08:44:00,interior gaps <= 5 min
+7,z2_S1(lux),interpolated,3347,2018-07-01 02:06:00,2019-12-31 08:44:00,interior gaps <= 5 min
+7,z3_Light(kW),interpolated,1000,2018-09-19 13:03:00,2019-04-26 14:52:00,interior gaps <= 5 min
+7,z3_Plug(kW),interpolated,1688,2018-09-19 14:34:00,2019-06-24 13:54:00,interior gaps <= 5 min
+7,z4_AC1(kW),interpolated,239,2018-07-26 15:50:00,2019-12-27 17:08:00,interior gaps <= 5 min
+7,z4_Light(kW),interpolated,3347,2018-09-19 13:03:00,2019-09-16 13:32:00,interior gaps <= 5 min
+7,z4_Plug(kW),interpolated,2353,2018-11-14 13:47:00,2019-12-24 15:03:00,interior gaps <= 5 min
+7,z4_S1(degC),interpolated,3899,2018-07-01 00:24:00,2019-12-31 02:15:00,interior gaps <= 5 min
+7,z4_S1(RH%),interpolated,3900,2018-07-01 00:24:00,2019-12-31 02:15:00,interior gaps <= 5 min
+7,z4_S1(lux),interpolated,3903,2018-07-01 00:24:00,2019-12-31 02:15:00,interior gaps <= 5 min
+7,z5_AC1(kW),interpolated,252,2018-08-15 09:43:00,2019-12-19 13:46:00,interior gaps <= 5 min
+7,z5_Light(kW),interpolated,2043,2018-11-14 13:47:00,2019-12-24 15:03:00,interior gaps <= 5 min
+7,z5_Plug(kW),interpolated,2353,2018-11-14 13:47:00,2019-12-24 15:03:00,interior gaps <= 5 min
+7,z5_S1(degC),interpolated,3524,2018-07-01 05:12:00,2019-12-31 02:13:00,interior gaps <= 5 min
+7,z5_S1(RH%),interpolated,3524,2018-07-01 05:12:00,2019-12-31 02:13:00,interior gaps <= 5 min
+7,z5_S1(lux),interpolated,3525,2018-07-01 05:12:00,2019-12-31 02:13:00,interior gaps <= 5 min

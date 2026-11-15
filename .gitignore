@@ -233,6 +233,10 @@ sample_data/
 .idea/
 # Office lock files
 ~$*
-# Dashboard build artefacts (regenerate with dashboard/build_cache.py)
+# Cleaned minute-level data is large (~115 MB); rebuild with `python -m sbanalytics.pipeline`.
+# The hourly/daily parquet files in data/cleaned/ are small and committed.
+data/cleaned/minute/
 dashboard/cache/
-floor_5_Terence/cache/
+
+# Claude Code local state and agent worktrees
+.claude/
